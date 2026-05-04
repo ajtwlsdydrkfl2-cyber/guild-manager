@@ -38,6 +38,14 @@
 .job-inp.max{border-color:var(--accent);color:var(--accent);}
 
 .two-line-th{line-height:1.3;}
+.rec-grid-pc{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;}
+.rec-grid-mobile{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:10px;}
+.boss-rec-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
+.boss-rec-name{font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:6px;}
+.boss-rec-btns{display:flex;gap:5px;flex-wrap:wrap;}
+.rec-tag-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Noto Sans KR',sans-serif;}
+.rec-tag-btn.done{background:var(--green);border-color:var(--green);color:#000;}
+.rec-tag-span{padding:4px 10px;border-radius:6px;border:1px solid var(--border);font-size:12px;font-weight:600;}
 </style>
 </head>
 <body>
@@ -337,32 +345,35 @@ function renderBossRec() {
     ${myBar()}
     <div style="font-size:12px;color:var(--text2);margin-bottom:12px">💡 O = 수령 완료. 본인 항목 직접 체크 가능.</div>
     <div class="mobile-only" style="padding-bottom:120px">${mobileBossHtml}</div>
-    <div class="pc-only card">
-      <div class="card-head"><div class="card-title">보스별 기록템 수령 현황</div></div>
-      <div style="overflow-x:auto">
-        <table>
-          <thead><tr>
-            <th class="sc tl" style="min-width:110px;left:0">닉네임</th>
-            ${bosses.map(b=>b.records.map(r=>`<th class="two-line-th" style="min-width:65px">${b.name}<br><span style="color:var(--accent2);font-weight:400">${r}</span></th>`).join('')).join('')}
-          </tr></thead>
-          <tbody>
-            ${sorted.map(m=>{
-              const rec=bossRec[m.id]||{};
-              const canEdit=admin||myId===m.id;
-              return `<tr>
-                <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
-                ${bosses.map(b=>b.records.map((r,ri)=>{
-                  const key=`${b.name}_${ri}`;
-                  const done=!!rec[key];
-                  return canEdit
-                    ?`<td><button class="rec-btn ${done?'done':''}" onclick="toggleRec(${m.id},'${key}',this)">${done?'O':''}</button></td>`
-                    :`<td style="color:${done?'var(--green)':'var(--text2)'}">${done?'O':'-'}</td>`;
-                }).join('')).join('')}
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
+    <div class="pc-only">
+      ${sorted.map((m,mi)=>{
+        const rec=bossRec[m.id]||{};
+        const canEdit=admin||myId===m.id;
+        const bossCards=bosses.map(b=>{
+          const btns=b.records.map((r,ri)=>{
+            const key=`${b.name}_${ri}`;
+            const done=!!rec[key];
+            const label=r.replace('루쿠스의 ','');
+            return canEdit
+              ?`<button onclick="toggleRec(${m.id},'${key}',this)" style="padding:5px 12px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'var(--green)':'var(--bg)'};color:${done?'#000':'var(--text2)'};font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:nowrap">${label}</button>`
+              :`<span style="padding:5px 12px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'var(--green)':'var(--bg)'};color:${done?'#000':'var(--text2)'};font-size:12px;font-weight:700;display:inline-block;white-space:nowrap">${label}</span>`;
+          }).join('');
+          return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;font-weight:700;color:var(--accent2);min-width:80px;flex-shrink:0">${b.name}</span>
+            <div style="display:flex;gap:5px">${btns}</div>
+          </div>`;
+        }).join('');
+        return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden">
+          <div style="padding:11px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+            <span style="color:var(--accent);font-weight:700">${mi+1}</span>
+            <span style="font-weight:700;font-size:14px">${m.nick}</span>
+            <span style="color:var(--text2);font-size:12px">${m.power.toLocaleString()}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:10px">
+            ${bossCards}
+          </div>
+        </div>`;
+      }).join('')}
     </div>
     </div>`;
 }
@@ -371,36 +382,27 @@ function renderBossRecMobile(sorted, myId, admin) {
   return sorted.map((m,mi)=>{
     const rec=bossRec[m.id]||{};
     const canEdit=admin||myId===m.id;
-
-    // 보스를 2열로 배치
     const bossCards=bosses.map(b=>{
-      const recCells=b.records.map((r,ri)=>{
+      const btns=b.records.map((r,ri)=>{
         const key=`${b.name}_${ri}`;
         const done=!!rec[key];
-        return `<div style="text-align:center">
-          <div style="font-size:10px;color:var(--text2);margin-bottom:3px">${r}</div>
-          ${canEdit
-            ?`<button style="width:34px;height:28px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'rgba(34,197,94,.15)':'var(--bg3)'};color:${done?'var(--green)':'var(--text2)'};font-weight:700;font-size:13px;cursor:pointer;"
-                onclick="toggleRec(${m.id},'${key}',this)">${done?'O':''}</button>`
-            :`<span style="display:inline-block;width:34px;height:28px;line-height:28px;text-align:center;border-radius:6px;border:1px solid var(--border);color:${done?'var(--green)':'var(--text2)'};font-weight:${done?'700':'400'}">${done?'O':'-'}</span>`}
-        </div>`;
+        const short=r.replace('루쿠스의 ','').replace(/^.+의 /,'');
+        return canEdit
+          ?`<button class="rec-tag-btn ${done?'done':''}" onclick="toggleRec(${m.id},'${key}',this)">${short}</button>`
+          :`<span class="rec-tag-span" style="color:${done?'var(--green)':'var(--text2)'};border-color:${done?'var(--green)':'var(--border)'};background:${done?'rgba(34,197,94,.15)':'var(--bg2)'}">${short}</span>`;
       }).join('');
-      return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
-        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:6px">${b.name}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">${recCells}</div>
+      return `<div class="boss-rec-card">
+        <div class="boss-rec-name">${b.name}</div>
+        <div class="boss-rec-btns">${btns}</div>
       </div>`;
     }).join('');
-
-    // 2열 그리드로 배치
     return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
       <div style="padding:11px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
         <span style="color:var(--accent);font-weight:700;font-size:13px">${mi+1}</span>
         <span style="font-weight:700;font-size:14px">${m.nick}</span>
         <span style="color:var(--text2);font-size:12px">${m.power.toLocaleString()}</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px">
-        ${bossCards}
-      </div>
+      <div class="rec-grid-mobile">${bossCards}</div>
     </div>`;
   }).join('');
 }
