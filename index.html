@@ -123,8 +123,7 @@ function doLogin() {
   const adminSv = cfg.servers.find(s => s.adminPw === pw);
   if (adminSv) {
     setSession({serverId: adminSv.id, serverName: adminSv.name, role: 'admin'});
-    showNotif();
-    setTimeout(() => location.href='dashboard.html', 1000);
+    location.href='dashboard.html';
     return;
   }
 
@@ -132,8 +131,7 @@ function doLogin() {
   const memberSv = cfg.servers.find(s => s.memberPw === pw);
   if (memberSv) {
     setSession({serverId: memberSv.id, serverName: memberSv.name, role: 'member'});
-    showNotif();
-    setTimeout(() => location.href='dashboard.html', 1000);
+    location.href='dashboard.html';
     return;
   }
 
