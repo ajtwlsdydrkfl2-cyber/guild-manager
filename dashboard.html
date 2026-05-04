@@ -129,6 +129,7 @@ window.addEventListener('load', () => {
   sess = requireLogin();
   if (!sess) return;
   initFirebase();
+  watchServerName();
   loadData();
   updateNightBadge();
   setInterval(updateNightBadge, 60000);

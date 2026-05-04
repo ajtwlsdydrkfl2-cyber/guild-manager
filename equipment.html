@@ -95,6 +95,7 @@ let curTab='equip';
 window.addEventListener('load', () => {
   sess = requireLogin(); if(!sess) return;
   initFirebase();
+  watchServerName();
   renderSidebar('equipment');
   // 로컬 우선 로드
   members = getData('members',[]);

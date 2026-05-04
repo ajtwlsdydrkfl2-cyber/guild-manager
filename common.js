@@ -61,9 +61,33 @@ function getServerName() {
   const s = getSession();
   if (!s) return '길드';
   if (s.role==='super') return '총관리자';
+  // Firebase config에서 최신 이름 읽기
   const cfg = getConfig();
   const sv = cfg.servers.find(x=>x.id===s.serverId);
   return sv ? sv.name : '길드';
+}
+
+// Firebase config 변경 감지해서 사이드바 이름 업데이트
+function watchServerName() {
+  if (typeof firebaseDB === 'undefined' || !firebaseDB) return;
+  const sess = getSession();
+  if (!sess) return;
+  firebaseDB.ref('config').on('value', snap => {
+    const cfg = snap.val();
+    if (!cfg) return;
+    // localStorage 업데이트
+    localStorage.setItem('gm_config', JSON.stringify(cfg));
+    // 사이드바 이름 업데이트
+    const sv = cfg.servers.find(x=>x.id===sess.serverId);
+    const name = sv ? sv.name : '길드';
+    const el = document.getElementById('sideServerName');
+    if (el) el.textContent = name;
+    // 세션도 업데이트
+    if (sv) {
+      sess.serverName = sv.name;
+      setSession(sess);
+    }
+  });
 }
 
 // ===== 주간 키 (일요일 23:59 초기화) =====

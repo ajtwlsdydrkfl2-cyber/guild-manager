@@ -50,6 +50,7 @@ window.addEventListener('load',()=>{
   sess=requireLogin(); if(!sess) return;
   if(!isAdmin()){location.href='dashboard.html';return;}
   initFirebase();
+  watchServerName();
   renderSidebar('admin');
   cfg=getConfig();
   members=getData('members',[]);

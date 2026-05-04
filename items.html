@@ -91,6 +91,7 @@ let curTab='warehouse';
 window.addEventListener('load',()=>{
   sess=requireLogin(); if(!sess) return;
   initFirebase();
+  watchServerName();
   renderSidebar('items');
   members=getData('members',[]);
   bosses=getData('bosses',DEFAULT_BOSSES);
