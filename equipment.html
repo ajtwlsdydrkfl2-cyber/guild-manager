@@ -108,7 +108,7 @@ window.addEventListener('load', () => {
   renderEquip();
 
   // Firebase 실시간 동기화
-  fbListen('members', d => { if(d){ members=Array.isArray(d)?d:Object.values(d); setData('members',members); if(curTab==='equip')renderEquip(); if(curTab==='boss')renderBossRec(); if(curTab==='required')renderRequired(); if(curTab==='stone')renderStone(); }});
+  // members는 로컬 저장 방식 사용 (Firebase 리스너 제거로 덮어쓰기 방지)
   fbListen('eqData', d => { if(d){ eqData=d; setData('eqData',eqData); if(curTab==='equip')renderEquip(); }});
   fbListen('bossRec', d => { if(d){ bossRec=d; setData('bossRec',bossRec); if(curTab==='boss')renderBossRec(); }});
   fbListen('reqData', d => { if(d){ reqData=d; setData('reqData',reqData); if(curTab==='required')renderRequired(); }});

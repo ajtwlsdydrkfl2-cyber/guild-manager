@@ -157,19 +157,19 @@ function loadData() {
   attend = getData('attend', {});
 
   // Firebase 실시간 동기화
-  fbListen('members', data => {
-    if (data) {
-      // 최근 5초 이내 로컬 저장이면 Firebase 업데이트 무시
-      const lastSave = parseInt(localStorage.getItem('gm_lastMemberSave')||'0');
-      if (Date.now() - lastSave < 5000) return;
+  // members는 실시간 리스너 대신 주기적으로 확인 (덮어쓰기 방지)
+  setInterval(() => {
+    fbGet('members', data => {
+      if (!data) return;
       const fbMembers = Array.isArray(data) ? data : Object.values(data);
-      if (fbMembers.length > 0) {
+      if (fbMembers.length > 0 && JSON.stringify(fbMembers.map(m=>m.id).sort()) !== JSON.stringify(members.map(m=>m.id).sort())) {
         members = fbMembers;
         setData('members', members);
         if (curTab==='dash') renderDash();
       }
-    }
-  });
+    });
+  }, 10000); // 10초마다 체크
+
   fbListen('bosses', data => {
     if (data) { bosses = Array.isArray(data) ? data : Object.values(data); setData('bosses', bosses); }
     else { bosses = DEFAULT_BOSSES; }
