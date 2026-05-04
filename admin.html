@@ -360,7 +360,7 @@ function renderDataSection(){
     : logs.slice(0,30).map(l=>`
         <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(30,45,69,.4);font-size:13px">
           <div>
-            <span style="color:${l.action==='추가'?'var(--green)':'var(--red)';};font-weight:700;margin-right:8px">${l.action==='추가'?'➕':'➖'} ${l.action}</span>
+            <span style="color:${l.action==='추가'?'var(--green)':'var(--red)'};font-weight:700;margin-right:8px">${l.action==='추가'?'➕':'➖'} ${l.action}</span>
             <span style="font-weight:600">${l.bossName}</span>
           </div>
           <div style="text-align:right">
