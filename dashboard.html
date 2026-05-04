@@ -174,6 +174,12 @@ function loadData() {
     if (data) { bosses = Array.isArray(data) ? data : Object.values(data); setData('bosses', bosses); }
     else { bosses = DEFAULT_BOSSES; }
   });
+  fbListen('eqData', data => {
+    if (data) {
+      setData('eqData', data);
+      if (curTab==='dash') renderDash();
+    }
+  });
   fbListen('attend', data => {
     const newAttend = data || {};
     if (JSON.stringify(newAttend) !== JSON.stringify(attend)) {
@@ -204,7 +210,17 @@ function switchTab(tab, el) {
 // ===== 대시보드 =====
 function renderDash() {
   const admin = isAdmin();
-  const mPts = members.map(m=>({...m, pts:calcPoints(m.id), rate:calcRate(m.id)}));
+  const eqDataLocal = getData('eqData',{});
+  const mPts = members.map(m=>{
+    const eq = eqDataLocal[m.id]||{};
+    return {
+      ...m,
+      spec: eq.spec !== undefined ? eq.spec : m.spec,
+      itemLv: eq.itemLv !== undefined ? eq.itemLv : m.itemLv,
+      pts: calcPoints(m.id),
+      rate: calcRate(m.id)
+    };
+  });
   const sorted = [...mPts].sort((a,b)=>sortDir==='desc'?b.power-a.power:a.power-b.power);
   const byPts = [...mPts].sort((a,b)=>b.pts-a.pts);
   const maxP = members.length ? Math.max(...members.map(m=>m.power)) : 1;
