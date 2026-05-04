@@ -86,6 +86,7 @@
     <div class="tab-bar">
       <div class="tab active" onclick="switchTab('dash',this)">🏠 길드원 현황</div>
       <div class="tab" onclick="switchTab('boss',this)">⚔️ 보스 포인트</div>
+      <div class="tab" onclick="switchTab('history',this)">📊 주간 기록</div>
     </div>
     <div class="content" id="content"></div>
   </div>
@@ -133,6 +134,7 @@ window.addEventListener('load', () => {
   loadData();
   updateNightBadge();
   setInterval(updateNightBadge, 60000);
+  setInterval(checkAutoSave, 60000); // 1분마다 자동저장 체크
   // URL 파라미터로 보스탭 자동 전환
   const urlTab = new URLSearchParams(location.search).get('tab');
   if (urlTab === 'boss') {
@@ -180,9 +182,12 @@ function switchTab(tab, el) {
   curTab = tab;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if (el && el.classList) el.classList.add('active');
-  document.getElementById('pageTitle').textContent = tab==='dash' ? '길드원 현황' : '보스 포인트';
+  const titles = {dash:'길드원 현황', boss:'보스 포인트', history:'📊 주간 기록'};
+  document.getElementById('pageTitle').textContent = titles[tab]||'대시보드';
   renderSidebar(tab==='boss'?'boss':'dashboard');
-  tab==='dash' ? renderDash() : renderBoss();
+  if(tab==='dash') renderDash();
+  else if(tab==='boss') renderBoss();
+  else renderHistory();
 }
 
 // ===== 대시보드 =====
@@ -505,6 +510,108 @@ function setAttMobile(bn, rk, mid, newSt, btn) {
   const scrollPos = document.getElementById('content').scrollTop;
   renderBoss();
   document.getElementById('content').scrollTop = scrollPos;
+}
+
+// ===== 주간 기록 저장 =====
+function saveWeeklyHistory() {
+  const wk = getWeekKey();
+  const mPts = members.map(m=>({
+    id: m.id,
+    nick: m.nick,
+    power: m.power,
+    pts: calcPoints(m.id),
+    rate: calcRate(m.id)
+  })).sort((a,b)=>b.pts-a.pts||b.rate-a.rate);
+
+  const history = getData('weeklyHistory', {});
+  history[wk] = {
+    savedAt: Date.now(),
+    weekKey: wk,
+    rankings: mPts
+  };
+  setData('weeklyHistory', history);
+  fbSet('weeklyHistory', history);
+  showToast('주간 기록 저장됨!', 'success');
+}
+
+// 매주 일요일 23:50부터 자동 저장 체크
+function checkAutoSave() {
+  const now = new Date();
+  const day = now.getDay(); // 0=일요일
+  const h = now.getHours();
+  const m = now.getMinutes();
+  // 일요일 23:50~23:58 사이에 자동 저장
+  if (day===0 && h===23 && m>=50 && m<=58) {
+    const wk = getWeekKey();
+    const history = getData('weeklyHistory', {});
+    if (!history[wk]) {
+      saveWeeklyHistory();
+    }
+  }
+}
+
+// ===== 주간 기록 화면 =====
+function renderHistory() {
+  const history = getData('weeklyHistory', {});
+  const weeks = Object.keys(history).sort((a,b)=>b.localeCompare(a));
+
+  document.getElementById('content').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;color:var(--text2)">주간 포인트 순위 기록</div>
+      ${isAdmin()?`<button class="btn btn-p btn-sm" onclick="saveWeeklyHistory()">💾 지금 저장</button>`:''}
+    </div>
+    ${weeks.length===0 ? `
+      <div style="text-align:center;padding:60px 20px;color:var(--text2)">
+        <div style="font-size:40px;margin-bottom:12px">📊</div>
+        <div style="font-size:15px;margin-bottom:6px">저장된 주간 기록이 없습니다</div>
+        <div style="font-size:13px">매주 일요일 23:50에 자동 저장됩니다</div>
+      </div>
+    ` : weeks.map(wk => {
+      const rec = history[wk];
+      const date = `${wk.slice(0,4)}년 ${parseInt(wk.slice(4,6))}월 ${parseInt(wk.slice(6,8))}일 주`;
+      return `
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-head">
+            <div class="card-title">📅 ${date}</div>
+            <div style="font-size:11px;color:var(--text2)">${fmtDT(rec.savedAt)} 저장</div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr>
+                <th class="tl">순위</th>
+                <th class="tl">닉네임</th>
+                <th>포인트</th>
+                <th>참여율</th>
+                <th>전투력</th>
+              </tr></thead>
+              <tbody>
+                ${rec.rankings.map((m,i)=>{
+                  const badge = i===0?'<span class="badge b-gold">🏆 1위</span>':
+                               i===1?'<span class="badge b-silver">🥈 2위</span>':
+                               i===2?'<span class="badge b-bronze">🥉 3위</span>':
+                               `<span style="color:var(--text2)">${i+1}위</span>`;
+                  return `<tr>
+                    <td class="tl">${badge}</td>
+                    <td class="tl" style="font-weight:600">${m.nick}</td>
+                    <td style="color:var(--accent);font-weight:700">${m.pts.toFixed(1)}</td>
+                    <td style="color:var(--accent2)">${m.rate.toFixed(1)}%</td>
+                    <td>${m.power.toLocaleString()}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }).join('')}
+  `;
+
+  // Firebase에서도 로드
+  fbGet('weeklyHistory', data => {
+    if (data) {
+      setData('weeklyHistory', data);
+      renderHistory();
+    }
+  });
 }
 
 // ===== 디스코드 웹훅 =====
