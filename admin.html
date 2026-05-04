@@ -49,12 +49,18 @@ let sess, cfg, members=[], bosses=[], schedules=[];
 window.addEventListener('load',()=>{
   sess=requireLogin(); if(!sess) return;
   if(!isAdmin()){location.href='dashboard.html';return;}
+  initFirebase();
   renderSidebar('admin');
   cfg=getConfig();
   members=getData('members',[]);
   bosses=getData('bosses',DEFAULT_BOSSES);
   schedules=JSON.parse(localStorage.getItem('gm_schedules')||'[]');
   document.getElementById('roleTag').textContent=isSuperAdmin()?'🔓 총관리자':'🔑 서버 관리자';
+
+  // Firebase에서 데이터 로드
+  fbListen('members', d=>{if(d){members=Array.isArray(d)?d:Object.values(d);setData('members',members);renderMemberList();}});
+  fbListen('bosses', d=>{if(d){bosses=Array.isArray(d)?d:Object.values(d);setData('bosses',bosses);renderBossList();}});
+
   renderAll();
 });
 
