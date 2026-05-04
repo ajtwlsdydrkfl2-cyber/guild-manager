@@ -447,7 +447,7 @@ function setAtt(bn,rk,mid,st) {
   if(st==='') delete attend[wk][bn][rk].attendance[mid];
   else attend[wk][bn][rk].attendance[mid]=st;
   setData('attend',attend);
-  fbSet('attend', attend);
+  fbSet('attend',attend);
   // 포인트 셀 업데이트
   const pts=calcPoints(mid);
   const rows=document.querySelectorAll('#bossTable tbody tr');
@@ -550,11 +550,13 @@ function setAttMobile(bn, rk, mid, newSt, btn) {
   if(curSt===newSt) {
     delete attend[wk][bn][rk].attendance[mid];
     setData('attend',attend);
+    fbSet('attend',attend);
     renderBoss();
     return;
   }
   attend[wk][bn][rk].attendance[mid]=newSt;
   setData('attend',attend);
+  fbSet('attend',attend);
   const scrollPos = document.getElementById('content').scrollTop;
   renderBoss();
   document.getElementById('content').scrollTop = scrollPos;
