@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>관리자 — 길드 매니저</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style id="commonStyle"></style>
+<style>
+.sec-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.sv-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;}
+.sv-card-title{font-size:12px;color:var(--accent);font-weight:700;margin-bottom:10px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.inline-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.boss-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(30,45,69,.4);}
+.sched-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(30,45,69,.4);}
+.msg{font-size:12px;min-height:16px;margin-top:6px;}
+.msg-ok{color:var(--green);}
+.msg-err{color:var(--red);}
+@media(max-width:768px){.grid2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">관리자</div>
+      </div>
+      <div style="font-size:12px;background:rgba(240,165,0,.12);color:var(--accent);padding:4px 12px;border-radius:20px;border:1px solid rgba(240,165,0,.25)" id="roleTag"></div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+let sess, cfg, members=[], bosses=[], schedules=[];
+
+window.addEventListener('load',()=>{
+  sess=requireLogin(); if(!sess) return;
+  if(!isAdmin()){location.href='dashboard.html';return;}
+  renderSidebar('admin');
+  cfg=getConfig();
+  members=getData('members',[]);
+  bosses=getData('bosses',DEFAULT_BOSSES);
+  schedules=JSON.parse(localStorage.getItem('gm_schedules')||'[]');
+  document.getElementById('roleTag').textContent=isSuperAdmin()?'🔓 총관리자':'🔑 서버 관리자';
+  renderAll();
+});
+
+function renderAll(){
+  const super_=isSuperAdmin();
+  document.getElementById('content').innerHTML=`
+    ${super_?renderSuperSection():''}
+    ${renderServerSection()}
+    ${renderBossSection()}
+    ${renderDataSection()}
+  `;
+  renderMemberList();
+  renderBossList();
+  if(super_) renderServerList();
+}
+
+// ===== 총관리자 전용: 서버 설정 =====
+function renderSuperSection(){
+  return `
+    <div class="sec-title">🌐 서버 설정 (총관리자 전용)</div>
+    <div id="serverList" style="margin-bottom:24px"></div>
+    <div class="grid2" style="margin-bottom:24px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">총관리자 비밀번호 변경</div></div>
+        <div class="card-body">
+          <div class="fg"><label>현재 비밀번호</label><input class="inp" type="password" id="sp-cur"></div>
+          <div class="fg"><label>새 비밀번호</label><input class="inp" type="password" id="sp-new"></div>
+          <div class="fg"><label>확인</label><input class="inp" type="password" id="sp-new2"></div>
+          <button class="btn btn-p" onclick="changeSuperPw()">변경</button>
+          <div class="msg" id="sp-msg"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">데이터 전체 관리</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-s" onclick="exportAll()">💾 전체 백업</button>
+          <button class="btn btn-s" onclick="document.getElementById('impF').click()">📂 백업 불러오기</button>
+          <input type="file" id="impF" style="display:none" accept=".json" onchange="importAll(event)">
+          <button class="btn btn-d" onclick="if(confirm('전체 초기화?')){localStorage.clear();sessionStorage.clear();location.href='index.html';}">⚠️ 전체 초기화</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderServerList(){
+  document.getElementById('serverList').innerHTML=cfg.servers.map((s,i)=>`
+    <div class="sv-card">
+      <div class="sv-card-title">서버 ${s.id}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:110px">
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">서버 이름</label>
+          <input class="inp" type="text" value="${s.name}" id="sn_${i}" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:110px">
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">길드원 비번</label>
+          <input class="inp" type="text" value="${s.memberPw}" id="mp_${i}" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:110px">
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">서버관리자 비번</label>
+          <input class="inp" type="text" value="${s.adminPw}" id="ap_${i}" style="width:100%">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-p btn-sm" onclick="saveServer(${i})">저장</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function saveServer(i){
+  cfg.servers[i].name=document.getElementById(`sn_${i}`).value.trim()||cfg.servers[i].name;
+  cfg.servers[i].memberPw=document.getElementById(`mp_${i}`).value.trim()||cfg.servers[i].memberPw;
+  cfg.servers[i].adminPw=document.getElementById(`ap_${i}`).value.trim()||cfg.servers[i].adminPw;
+  saveConfig(cfg);
+  showToast(`서버 ${cfg.servers[i].id} 저장됨`,'success');
+}
+
+function changeSuperPw(){
+  const cur=document.getElementById('sp-cur').value;
+  const nw=document.getElementById('sp-new').value;
+  const nw2=document.getElementById('sp-new2').value;
+  const msg=document.getElementById('sp-msg');
+  if(cur!==cfg.superAdminPw){msg.className='msg msg-err';msg.textContent='현재 비밀번호 틀림';return;}
+  if(nw.length<4){msg.className='msg msg-err';msg.textContent='4자 이상 입력';return;}
+  if(nw!==nw2){msg.className='msg msg-err';msg.textContent='비밀번호 불일치';return;}
+  cfg.superAdminPw=nw; saveConfig(cfg);
+  msg.className='msg msg-ok';msg.textContent='변경 완료!';
+  ['sp-cur','sp-new','sp-new2'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ===== 서버 관리자 공통 =====
+function renderServerSection(){
+  return `
+    <div class="sec-title">👥 길드원 관리</div>
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-head">
+        <div class="card-title">길드원 목록 (${getServerName()})</div>
+        <div style="display:flex;gap:6px">
+          ${!isSuperAdmin()?`
+          <div class="fg" style="margin:0">
+            <select class="sel" id="pwChangeSel" style="font-size:12px;padding:4px 8px">
+              <option value="member">길드원 비번 변경</option>
+              <option value="admin">관리자 비번 변경</option>
+            </select>
+          </div>
+          <button class="btn btn-s btn-sm" onclick="changeMyPw()">비번 변경</button>`:''}
+          <button class="btn btn-p btn-sm" onclick="showAddForm()">+ 추가</button>
+        </div>
+      </div>
+      <div id="addForm" style="display:none;padding:14px;border-bottom:1px solid var(--border);background:var(--bg3)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <input class="inp" type="text" id="nm-nick" placeholder="닉네임" style="flex:1;min-width:100px">
+          <input class="inp" type="number" id="nm-power" placeholder="전투력" style="flex:1;min-width:100px">
+          
+          <input class="inp" type="number" id="nm-spec" placeholder="전문화" style="width:80px">
+          <input class="inp" type="number" id="nm-itemlv" placeholder="장비Lv" style="width:80px">
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-p btn-sm" onclick="addMember()">추가</button>
+          <button class="btn btn-s btn-sm" onclick="document.getElementById('addForm').style.display='none'">취소</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th class="tl">닉네임</th><th>전투력</th><th>전문화</th><th>장비기록포인트</th><th>관리</th></tr></thead>
+          <tbody id="memberTbody"></tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function renderMemberList(){
+  const tbody=document.getElementById('memberTbody'); if(!tbody) return;
+  const sorted=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  tbody.innerHTML=sorted.map(m=>`<tr>
+    <td class="tl" style="font-weight:600">${m.nick}</td>
+    <td>${m.power.toLocaleString()}</td>
+    <td></td>
+    <td>${m.spec||'-'}</td><td>${m.itemLv||'-'}</td>
+    <td style="display:flex;gap:4px">
+      <button class="btn btn-s btn-sm" onclick="editPower(${m.id})">전투력</button>
+      <button class="btn btn-d btn-sm" onclick="delMember(${m.id})">🗑️</button>
+    </td>
+  </tr>`).join('');
+}
+
+function showAddForm(){document.getElementById('addForm').style.display='block';}
+
+function addMember(){
+  const nick=document.getElementById('nm-nick').value.trim();
+  if(!nick){showToast('닉네임 입력','error');return;}
+  const id=Math.max(0,...members.map(m=>m.id),0)+1;
+  members.push({id,nick,power:parseInt(document.getElementById('nm-power').value)||0,spec:parseInt(document.getElementById('nm-spec').value)||0,itemLv:parseInt(document.getElementById('nm-itemlv').value)||0});
+  setData('members',members);
+  document.getElementById('addForm').style.display='none';
+  renderMemberList();
+  showToast(`${nick} 추가됨`,'success');
+}
+
+function editPower(id){
+  const m=members.find(x=>x.id===id); if(!m) return;
+  const v=prompt(`${m.nick} 전투력 수정 (현재: ${m.power.toLocaleString()})`);
+  if(v===null) return;
+  const n=parseInt(v);
+  if(n>0){m.power=n;setData('members',members);renderMemberList();showToast('전투력 수정됨','success');}
+}
+
+function delMember(id){
+  const m=members.find(x=>x.id===id);
+  if(!confirm(`"${m?.nick}" 삭제?`)) return;
+  members=members.filter(x=>x.id!==id);
+  setData('members',members);
+  renderMemberList();
+  showToast('삭제됨');
+}
+
+function changeMyPw(){
+  const type=document.getElementById('pwChangeSel').value;
+  const nw=prompt(`새 ${type==='member'?'길드원':'관리자'} 비밀번호:`);
+  if(!nw?.trim()) return;
+  const sid=sess.serverId;
+  const sv=cfg.servers.find(s=>s.id===sid); if(!sv) return;
+  if(type==='member') sv.memberPw=nw.trim();
+  else sv.adminPw=nw.trim();
+  saveConfig(cfg);
+  showToast('비밀번호 변경됨!','success');
+}
+
+// ===== 보스 관리 =====
+function renderBossSection(){
+  return `
+    <div class="sec-title">⚔️ 보스 관리</div>
+    <div class="grid2" style="margin-bottom:24px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">보스 목록</div></div>
+        <div class="card-body">
+          <div id="bossList" style="max-height:380px;overflow-y:auto"></div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <input class="inp" type="text" id="nb-name" placeholder="보스 이름" style="flex:1">
+            <input class="inp" type="number" id="nb-pts" value="1" min="1" style="width:50px;text-align:center">
+            <button class="btn btn-p btn-sm" onclick="addBoss()">추가</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">이번주 영웅 악세 선택지</div></div>
+        <div class="card-body">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">매주 갱신. 길드원 창고템 신청 참고용.</div>
+          <div id="heroAccList"></div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <input class="inp" type="text" id="ha-name" placeholder="예: 크란시아 반지" style="flex:1">
+            <button class="btn btn-p btn-sm" onclick="addHeroAcc()">추가</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderBossList(){
+  const el=document.getElementById('bossList'); if(!el) return;
+  const sorted=[...bosses].sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  el.innerHTML=sorted.map(b=>`
+    <div class="boss-row">
+      <div>
+        <span style="font-weight:600;font-size:13px">${b.name}</span>
+        <span style="color:var(--accent);font-size:12px;margin-left:6px">${b.pts}pt</span>
+        <span style="color:var(--text2);font-size:11px;margin-left:6px">${b.records?.join(', ')||''}</span>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <input type="number" value="${b.pts}" min="1" max="10" style="width:42px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:3px 6px;font-size:12px;text-align:center;" onchange="updateBossPts('${b.name}',this.value)">
+        <button class="btn btn-d btn-sm" onclick="delBoss('${b.name}')">🗑️</button>
+      </div>
+    </div>`).join('');
+  // 영웅 악세
+  const haEl=document.getElementById('heroAccList'); if(!haEl) return;
+  const haList=getData('heroAccList',[]);
+  haEl.innerHTML=haList.length===0?'<p style="color:var(--text2);font-size:13px">없음</p>':
+    haList.map((a,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(30,45,69,.4)">
+      <span style="font-size:13px">${a}</span>
+      <button class="btn btn-d btn-sm" onclick="delHeroAcc(${i})">삭제</button>
+    </div>`).join('');
+}
+
+function addBoss(){
+  const name=document.getElementById('nb-name').value.trim();
+  const pts=parseInt(document.getElementById('nb-pts').value)||1;
+  if(!name) return;
+  if(bosses.find(b=>b.name===name)){showToast('이미 있는 보스','error');return;}
+  bosses.push({name,pts,records:[]});
+  setData('bosses',bosses);
+  document.getElementById('nb-name').value='';
+  renderBossList();
+  showToast(`${name} 추가됨`,'success');
+}
+
+function delBoss(name){
+  if(!confirm(`${name} 삭제?`)) return;
+  bosses=bosses.filter(b=>b.name!==name);
+  setData('bosses',bosses);
+  renderBossList();
+}
+
+function updateBossPts(name,val){
+  const b=bosses.find(x=>x.name===name);
+  if(b){b.pts=parseInt(val)||1;setData('bosses',bosses);showToast(`${name} 점수 변경`,'success');}
+}
+
+function addHeroAcc(){
+  const v=document.getElementById('ha-name').value.trim(); if(!v) return;
+  const list=getData('heroAccList',[]);
+  list.push(v);
+  setData('heroAccList',list);
+  document.getElementById('ha-name').value='';
+  renderBossList();
+  showToast('추가됨','success');
+}
+function delHeroAcc(i){
+  const list=getData('heroAccList',[]);
+  list.splice(i,1);
+  setData('heroAccList',list);
+  renderBossList();
+}
+
+// ===== 데이터 관리 =====
+function renderDataSection(){
+  return `
+    <div class="sec-title">💾 데이터 관리</div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head"><div class="card-title">백업 / 복원</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-s" onclick="exportServer()">💾 이 서버 백업</button>
+          <button class="btn btn-s" onclick="document.getElementById('impSv').click()">📂 서버 백업 불러오기</button>
+          <input type="file" id="impSv" style="display:none" accept=".json" onchange="importServer(event)">
+          <button class="btn btn-s" onclick="resetWeekly()">🔄 이번주 포인트 초기화</button>
+          <button class="btn btn-s" onclick="resetWarehouse()">📦 창고템 초기화</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function exportServer(){
+  const keys=['members','bosses','attend','eqData','bossRec','reqData','stoneData','jobData','wItems','wReqs','qItems','grades','heroAccList','extraJobs','abilList'];
+  const data={};
+  keys.forEach(k=>{const v=getData(k,null);if(v!==null)data[k]=v;});
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download=`guild_s${sess.serverId}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();showToast('백업 완료!','success');
+}
+
+function importServer(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      Object.keys(data).forEach(k=>setData(k,data[k]));
+      showToast('불러오기 완료!','success');location.reload();
+    }catch{showToast('파일 오류','error');}
+  };
+  r.readAsText(f);
+}
+
+function exportAll(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);data[k]=localStorage.getItem(k);}
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download=`guild_full_${new Date().toISOString().slice(0,10)}.json`;a.click();
+  showToast('전체 백업!','success');
+}
+
+function importAll(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(d).forEach(k=>localStorage.setItem(k,d[k]));showToast('불러오기 완료!','success');location.reload();}catch{showToast('파일 오류','error');}};
+  r.readAsText(f);
+}
+
+function resetWeekly(){
+  if(!confirm('이번주 포인트 초기화?')) return;
+  setData('attend',{});showToast('초기화됨','success');
+}
+function resetWarehouse(){
+  if(!confirm('창고템 초기화?')) return;
+  setData('wItems',[]);setData('wReqs',[]);setData('qItems',[]);showToast('초기화됨','success');
+}
+
+function fmtDT(ts){const d=new Date(ts);return`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+</script>
+</body>
+</html>

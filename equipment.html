@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>장비 기록 — 길드 매니저</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style id="commonStyle"></style>
+<style>
+.my-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:rgba(240,165,0,.05);border:1px solid rgba(240,165,0,.12);border-radius:var(--radius);margin-bottom:14px;}
+.eq-inp{width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 6px;font-size:12px;font-family:'Noto Sans KR',sans-serif;text-align:center;}
+.eq-inp:focus{outline:none;border-color:var(--accent);}
+.eq-inp.done{border-color:var(--green);color:var(--green);}
+.rec-btn{width:34px;height:26px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
+.rec-btn.done{background:rgba(34,197,94,.15);border-color:var(--green);color:var(--green);font-weight:700;}
+
+/* 드롭다운 장비 색상 */
+.eq-sel{background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 6px;font-size:12px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;width:90px;}
+.eq-sel:focus{outline:none;}
+.eq-sel.myth{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.1);}
+.eq-sel.legend{border-color:#eab308;color:#eab308;background:rgba(234,179,8,.1);}
+.eq-sel.hero{border-color:#a855f7;color:#a855f7;background:rgba(168,85,247,.1);}
+.eq-sel.rare{border-color:#3b82f6;color:#3b82f6;background:rgba(59,130,246,.1);}
+
+/* 필수장비 */
+.req-cell{cursor:pointer;border-radius:4px;padding:3px 7px;font-size:11px;transition:all .15s;display:inline-block;}
+.req-done{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.req-need{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.req-empty{color:var(--text2);border:1px dashed var(--border);}
+
+/* 이동석 색상 (수치에 따라 점점 붉어짐) */
+.stone-inp{width:50px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;text-align:center;font-weight:700;}
+.stone-inp:focus{outline:none;border-color:var(--accent);}
+
+/* 직업 레벨 */
+.job-inp{width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 6px;font-size:12px;font-family:'Noto Sans KR',sans-serif;text-align:center;}
+.job-inp:focus{outline:none;border-color:var(--accent);}
+.job-inp.max{border-color:var(--accent);color:var(--accent);}
+
+.two-line-th{line-height:1.3;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">장비 기록</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('equip',this)">🛡️ 장비/스펙</div>
+      <div class="tab" onclick="switchTab('boss',this)">📋 보스기록템</div>
+      <div class="tab" onclick="switchTab('required',this)">⭐ 필수장비</div>
+      <div class="tab" onclick="switchTab('stone',this)">💎 이동석</div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- 필수장비 수정 모달 -->
+<div class="modal-ov" id="modal-req">
+  <div class="modal">
+    <div class="modal-title">⭐ <span id="reqTitle"></span></div>
+    <input type="hidden" id="reqMid"><input type="hidden" id="reqItem">
+    <div class="fg"><label>상태 선택</label>
+      <select class="sel" id="reqStatus" style="width:100%">
+        <option value="완료">✅ 완료</option>
+        <option value="1">1개 필요</option><option value="2">2개 필요</option>
+        <option value="3">3개 필요</option><option value="4">4개 필요</option>
+        <option value="5">5개 필요</option><option value="6">6개 필요</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('req')">취소</button>
+      <button class="btn btn-p" onclick="saveReq()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+let sess, members=[], bosses=[], eqData={}, bossRec={}, reqData={}, stoneData={}, jobData={};
+let curTab='equip';
+
+window.addEventListener('load', () => {
+  sess = requireLogin(); if(!sess) return;
+  renderSidebar('equipment');
+  members = getData('members',[]);
+  bosses = getData('bosses', DEFAULT_BOSSES);
+  eqData = getData('eqData',{});
+  bossRec = getData('bossRec',{});
+  reqData = getData('reqData',{});
+  stoneData = getData('stoneData',{});
+  jobData = getData('jobData',{});
+  renderEquip();
+});
+
+function switchTab(tab, el) {
+  curTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const fns={equip:renderEquip,boss:renderBossRec,required:renderRequired,stone:renderStone};
+  fns[tab]?.();
+}
+
+function getMyId() { return parseInt(sessionStorage.getItem('gm_myNick'))||null; }
+function setMyId(v) { if(v) sessionStorage.setItem('gm_myNick',v); else sessionStorage.removeItem('gm_myNick'); }
+
+function myBar() {
+  const sorted=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  const myId=getMyId();
+  return `<div class="my-bar">
+    <span style="font-size:12px;color:var(--text2)">내 닉네임:</span>
+    <select class="sel" onchange="setMyId(this.value);switchTab(curTab,document.querySelector('.tab.active'))">
+      <option value="">선택하세요</option>
+      ${sorted.map(m=>`<option value="${m.id}" ${myId===m.id?'selected':''}>${m.nick}</option>`).join('')}
+    </select>
+    <span style="font-size:11px;color:var(--text2)">선택 후 본인 항목 수정 가능</span>
+  </div>`;
+}
+
+// ===== 장비/스펙 =====
+function renderEquip() {
+  const sorted=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  const myId=getMyId(); const admin=isAdmin();
+  const mobileEquipHtml = renderEquipMobile(sorted, myId, admin);
+  document.getElementById('content').innerHTML=`
+    ${myBar()}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">💡 본인 닉네임 선택 후 직접 수정 가능. 전투력은 길드장이 수정합니다.</div>
+    <!-- 모바일 아코디언 -->
+    <div class="mobile-only" style="padding-bottom:120px">${mobileEquipHtml}</div>
+    <!-- PC 테이블 -->
+    <div class="pc-only card">
+      <div class="card-head"><div class="card-title">장비 / 스펙 현황</div></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="sc tl" style="min-width:110px;left:0">닉네임</th>
+            <th>전투력</th><th>전문화Lv</th><th>장비기록포인트</th>
+            <th>무기</th><th>보조장비</th>
+            <th>목걸이</th><th>귀걸이</th><th>반지</th><th>팔찌</th><th>허리띠</th>
+            <th>망토</th>
+          </tr></thead>
+          <tbody>
+            ${sorted.map(m=>{
+              const eq=eqData[m.id]||{};
+              const canEdit=admin||myId===m.id;
+              const GEAR_FIELDS=[
+                {key:'weapon',label:'무기'},{key:'subweapon',label:'보조장비'},
+                {key:'acc_neck',label:'목걸이'},{key:'acc_ear',label:'귀걸이'},
+                {key:'acc_ring',label:'반지'},{key:'acc_brace',label:'팔찌'},
+                {key:'acc_belt',label:'허리띠'},{key:'cloak',label:'망토'}
+              ];
+              const gradeColor2=(v)=>v==='신화'?'#ef4444':v==='전설'?'#eab308':v==='영웅'?'#a855f7':v==='희귀'?'#3b82f6':'var(--text2)';
+              const gradeCls=(v)=>v==='신화'?'myth':v==='전설'?'legend':v==='영웅'?'hero':v==='희귀'?'rare':'';
+              const gradeCell=(fkey)=>{
+                const v=eq[fkey]||'';
+                if(canEdit) return `<select class="eq-sel ${gradeCls(v)}" onchange="saveEq(${m.id},'${fkey}',this.value,false);this.className='eq-sel '+(['신화','전설','영웅','희귀'].includes(this.value)?{신화:'myth',전설:'legend',영웅:'hero',희귀:'rare'}[this.value]:'')">
+                  <option value="">-</option>
+                  <option value="신화" ${v==='신화'?'selected':''}>신화</option>
+                  <option value="전설" ${v==='전설'?'selected':''}>전설</option>
+                  <option value="영웅" ${v==='영웅'?'selected':''}>영웅</option>
+                  <option value="희귀" ${v==='희귀'?'selected':''}>희귀</option>
+                </select>`;
+                return v?`<span style="color:${gradeColor2(v)};font-weight:600">${v}</span>`:'-';
+              };
+              return `<tr>
+                <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
+                <td style="color:var(--accent);font-weight:600">${m.power.toLocaleString()}</td>
+                <td>${canEdit?`<input class="eq-inp ${m.spec>0?'done':''}" type="number" value="${m.spec||''}" placeholder="-" onchange="saveEq(${m.id},'spec',this.value,true);this.className='eq-inp'+(this.value>0?' done':'')">`:m.spec||'-'}</td>
+                <td>${canEdit?`<input class="eq-inp ${m.itemLv>0?'done':''}" type="number" value="${m.itemLv||''}" placeholder="-" onchange="saveEq(${m.id},'itemLv',this.value,true);this.className='eq-inp'+(this.value>0?' done':'')">`:m.itemLv||'-'}</td>
+                ${GEAR_FIELDS.map(f=>`<td>${gradeCell(f.key)}</td>`).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>`;
+}
+
+function renderEquipMobile(sorted, myId, admin) {
+  const gc=(v)=>v==='신화'?'#ef4444':v==='전설'?'#eab308':v==='영웅'?'#a855f7':v==='희귀'?'#3b82f6':'var(--text2)';
+  const gSel=(mid,fk,v)=>`<select class="sel" style="font-size:12px;padding:4px 6px;width:70px" onchange="saveEq(${mid},'${fk}',this.value,false);renderEquip()">
+    <option value="" ${!v?'selected':''}>-</option>
+    <option value="신화" ${v==='신화'?'selected':''} style="color:#ef4444">신화</option>
+    <option value="전설" ${v==='전설'?'selected':''} style="color:#eab308">전설</option>
+    <option value="영웅" ${v==='영웅'?'selected':''} style="color:#a855f7">영웅</option>
+    <option value="희귀" ${v==='희귀'?'selected':''} style="color:#3b82f6">희귀</option>
+  </select>`;
+  const gTxt=(v)=>`<span style="color:${gc(v)};font-weight:600">${v||'-'}</span>`;
+
+  return sorted.map((m,i)=>{
+    const eq=eqData[m.id]||{};
+    const sd=stoneData[m.id]||{};
+    const canEdit=admin||myId===m.id;
+
+    // 무기/보조/망토 한줄
+    const gear1=['weapon','subweapon','cloak'];
+    const gear1Labels=['무기','보조','망토'];
+    const gear1Row=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 14px;border-bottom:1px solid rgba(30,45,69,.4)">
+      ${gear1.map((k,i)=>`<div style="text-align:center">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${gear1Labels[i]}</div>
+        ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+      </div>`).join('')}
+    </div>`;
+
+    // 악세 5개 (목/귀/반/팔/허)
+    const accKeys=[['acc_neck','목걸이'],['acc_ear','귀걸이'],['acc_ring','반지'],['acc_brace','팔찌'],['acc_belt','허리띠']];
+    // 첫줄 3개, 둘째줄 2개
+    const acc1=accKeys.slice(0,3);
+    const acc2=accKeys.slice(3,5);
+    const accRow=`
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px 4px">
+        ${acc1.map(([k,l])=>`<div style="text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${l}</div>
+          ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+        </div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:4px 14px 10px;border-bottom:1px solid rgba(30,45,69,.4)">
+        ${acc2.map(([k,l])=>`<div style="text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${l}</div>
+          ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+        </div>`).join('')}
+      </div>`;
+
+    // 이동석 3개 한줄
+    const stoneRow=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 14px">
+      ${STONE_LIST.map(s=>{
+        const v=parseInt(sd[s.name])||0;
+        const bg=stoneColor(v,s.max);
+        return `<div style="text-align:center;background:${bg};border-radius:6px;padding:6px 4px">
+          <div style="font-size:9px;color:rgba(255,255,255,.7);margin-bottom:3px">${s.name}<br>(최대${s.max})</div>
+          ${canEdit
+            ?`<input type="number" value="${v||''}" min="0" max="${s.max}" placeholder="0"
+                style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.3);color:#fff;font-size:14px;font-weight:700;text-align:center;font-family:'Noto Sans KR',sans-serif"
+                onchange="saveStone(${m.id},'${s.name}',this.value,${s.max},this.closest('div'));renderEquip()">`
+            :`<span style="font-size:16px;font-weight:700;color:${v>0?'#fff':'var(--text2)'}">${v||'-'}</span>`}
+        </div>`;
+      }).join('')}
+    </div>`;
+
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden">
+      <div style="display:flex;align-items:center;padding:12px 14px;background:var(--bg3);border-bottom:1px solid var(--border)">
+        <span style="color:var(--accent);font-weight:700;font-size:13px;margin-right:8px">${i+1}</span>
+        <span style="font-weight:700;font-size:15px;flex:1">${m.nick}</span>
+        <span style="color:var(--text2);font-size:12px">${m.power.toLocaleString()}</span>
+      </div>
+      <div style="display:flex;gap:16px;padding:8px 14px;border-bottom:1px solid rgba(30,45,69,.4)">
+        <div style="font-size:12px;color:var(--text2)">전문화: <span style="color:var(--text);font-weight:600">${canEdit?`<input type="number" value="${m.spec||''}" placeholder="-" style="width:60px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:2px 6px;font-size:12px;text-align:center" onchange="saveEq(${m.id},'spec',this.value,true)">`:m.spec||'-'}</span></div>
+        <div style="font-size:12px;color:var(--text2)">기록포인트: <span style="color:var(--text);font-weight:600">${canEdit?`<input type="number" value="${m.itemLv||''}" placeholder="-" style="width:60px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:2px 6px;font-size:12px;text-align:center" onchange="saveEq(${m.id},'itemLv',this.value,true)">`:m.itemLv||'-'}</span></div>
+      </div>
+      ${gear1Row}${accRow}${stoneRow}
+    </div>`;
+  }).join('');
+}
+
+function toggleAcc(header) {
+  const body=header.nextElementSibling;
+  const arrow=header.querySelector('.acc-arrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+function saveEq(mid, field, val, isMember) {
+  if(isMember) {
+    const m=members.find(x=>x.id===mid); if(!m) return;
+    m[field]=parseInt(val)||0;
+    setData('members',members);
+  } else {
+    if(!eqData[mid]) eqData[mid]={};
+    eqData[mid][field]=val;
+    setData('eqData',eqData);
+  }
+  showToast('저장됨','success');
+}
+
+// ===== 보스 기록템 =====
+function renderBossRec() {
+  const sorted=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  const myId=getMyId(); const admin=isAdmin();
+
+  const mobileBossHtml = renderBossRecMobile(sorted, myId, admin);
+  document.getElementById('content').innerHTML=`
+    ${myBar()}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">💡 O = 수령 완료. 본인 항목 직접 체크 가능.</div>
+    <div class="mobile-only" style="padding-bottom:120px">${mobileBossHtml}</div>
+    <div class="pc-only card">
+      <div class="card-head"><div class="card-title">보스별 기록템 수령 현황</div></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="sc tl" style="min-width:110px;left:0">닉네임</th>
+            ${bosses.map(b=>b.records.map(r=>`<th class="two-line-th" style="min-width:65px">${b.name}<br><span style="color:var(--accent2);font-weight:400">${r}</span></th>`).join('')).join('')}
+          </tr></thead>
+          <tbody>
+            ${sorted.map(m=>{
+              const rec=bossRec[m.id]||{};
+              const canEdit=admin||myId===m.id;
+              return `<tr>
+                <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
+                ${bosses.map(b=>b.records.map((r,ri)=>{
+                  const key=`${b.name}_${ri}`;
+                  const done=!!rec[key];
+                  return canEdit
+                    ?`<td><button class="rec-btn ${done?'done':''}" onclick="toggleRec(${m.id},'${key}',this)">${done?'O':''}</button></td>`
+                    :`<td style="color:${done?'var(--green)':'var(--text2)'}">${done?'O':'-'}</td>`;
+                }).join('')).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>`;
+}
+
+function renderBossRecMobile(sorted, myId, admin) {
+  return sorted.map((m,mi)=>{
+    const rec=bossRec[m.id]||{};
+    const canEdit=admin||myId===m.id;
+    const bossRows=bosses.map(b=>{
+      const recCells=b.records.map((r,ri)=>{
+        const key=`${b.name}_${ri}`;
+        const done=!!rec[key];
+        return `<div style="text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${r}</div>
+          ${canEdit
+            ?`<button style="width:36px;height:30px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'rgba(34,197,94,.15)':'var(--bg3)'};color:${done?'var(--green)':'var(--text2)'};font-weight:700;font-size:13px;cursor:pointer;"
+                onclick="toggleRec(${m.id},'${key}',this)">${done?'O':''}</button>`
+            :`<span style="display:inline-block;width:36px;height:30px;line-height:30px;text-align:center;border-radius:6px;border:1px solid var(--border);color:${done?'var(--green)':'var(--text2)'};font-weight:${done?'700':'400'}">${done?'O':'-'}</span>`}
+        </div>`;
+      }).join('');
+      return `<div style="display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid rgba(30,45,69,.4);gap:10px">
+        <div style="min-width:90px;font-size:12px;font-weight:600;color:var(--accent2)">${b.name}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${recCells}</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
+      <div style="padding:11px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <span style="color:var(--accent);font-weight:700;font-size:13px">${mi+1}</span>
+        <span style="font-weight:700;font-size:14px">${m.nick}</span>
+        <span style="color:var(--text2);font-size:12px">${m.power.toLocaleString()}</span>
+      </div>
+      ${bossRows}
+    </div>`;
+  }).join('');
+}
+
+function toggleRec(mid, key, btn) {
+  if(!bossRec[mid]) bossRec[mid]={};
+  bossRec[mid][key]=!bossRec[mid][key];
+  const done=bossRec[mid][key];
+  // 버튼 즉시 색상 변경
+  btn.style.border=`1px solid ${done?'var(--green)':'var(--border)'}`;
+  btn.style.background=done?'rgba(34,197,94,.15)':'var(--bg3)';
+  btn.style.color=done?'var(--green)':'var(--text2)';
+  btn.textContent=done?'O':'';
+  setData('bossRec',bossRec);
+}
+
+// ===== 필수 장비 =====
+function renderRequired() {
+  const sorted=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  const myId=getMyId(); const admin=isAdmin();
+
+  const mobileReqHtml = renderRequiredMobile(sorted, myId, admin);
+  document.getElementById('content').innerHTML=`
+    ${myBar()}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">💡 항목 클릭 → 완료/필요 개수 설정. 지급 시 자동 차감됩니다.</div>
+    <div class="mobile-only" style="padding-bottom:120px">${mobileReqHtml}</div>
+    <div class="pc-only card">
+      <div class="card-head"><div class="card-title">필수 장비 12종</div></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="sc tl" style="min-width:110px;left:0">닉네임</th>
+            ${REQUIRED_ITEMS.map(it=>`<th class="two-line-th" style="min-width:78px">${it.name}<br><span style="color:var(--accent2);font-weight:400">${it.sub}</span></th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${sorted.map(m=>{
+              const req=reqData[m.id]||{};
+              const canEdit=admin||myId===m.id;
+              return `<tr>
+                <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
+                ${REQUIRED_ITEMS.map(it=>{
+                  const key=`${it.name}_${it.sub}`;
+                  const v=req[key];
+                  const isDone=v==='완료'||parseInt(v)===0;
+                  const cls=!v?'req-empty':isDone?'req-done':'req-need';
+                  const label=!v?'-':isDone?'✅완료':`${v}개 필요`;
+                  return canEdit
+                    ?`<td><span class="${cls} req-cell" onclick="openReq(${m.id},'${key}','${it.name} ${it.sub}','${v||''}')">${label}</span></td>`
+                    :`<td><span class="${cls}">${label}</span></td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>`;
+}
+
+function renderRequiredMobile(sorted, myId, admin) {
+  // 같은 이름끼리 묶기
+  const groups = [];
+  REQUIRED_ITEMS.forEach(it=>{
+    const last = groups[groups.length-1];
+    if(last && last.name===it.name) last.subs.push(it.sub);
+    else groups.push({name:it.name, subs:[it.sub]});
+  });
+
+  return sorted.map((m,mi)=>{
+    const req=reqData[m.id]||{};
+    const canEdit=admin||myId===m.id;
+
+    const groupRows = groups.map(g=>{
+      const cells = g.subs.map(sub=>{
+        const key=`${g.name}_${sub}`;
+        const v=req[key];
+        const isDone=v==='완료'||parseInt(v)===0;
+        const cls=!v?'req-empty':isDone?'req-done':'req-need';
+        const label=!v?'-':isDone?'✅':v+'개';
+        return `<div style="text-align:center">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${sub}</div>
+          ${canEdit
+            ?`<span class="${cls} req-cell" style="display:inline-block;min-width:44px;padding:5px 8px;font-size:12px;border-radius:6px;cursor:pointer"
+                onclick="openReq(${m.id},'${key}','${g.name} ${sub}','${v||''}')">${label}</span>`
+            :`<span class="${cls}" style="display:inline-block;min-width:44px;padding:5px 8px;font-size:12px;border-radius:6px">${label}</span>`}
+        </div>`;
+      }).join('');
+      return `<div style="padding:10px 14px;border-bottom:1px solid rgba(30,45,69,.4)">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">${g.name}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${cells}</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
+      <div style="padding:11px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <span style="color:var(--accent);font-weight:700;font-size:13px">${mi+1}</span>
+        <span style="font-weight:700;font-size:14px">${m.nick}</span>
+        <span style="color:var(--text2);font-size:12px">${m.power.toLocaleString()}</span>
+      </div>
+      ${groupRows}
+    </div>`;
+  }).join('');
+}
+
+
+function openReq(mid, key, name, cur) {
+  document.getElementById('reqMid').value=mid;
+  document.getElementById('reqItem').value=key;
+  document.getElementById('reqTitle').textContent=name;
+  document.getElementById('reqStatus').value=cur||'완료';
+  openModal('req');
+}
+function saveReq() {
+  const mid=parseInt(document.getElementById('reqMid').value);
+  const key=document.getElementById('reqItem').value;
+  const st=document.getElementById('reqStatus').value;
+  if(!reqData[mid]) reqData[mid]={};
+  reqData[mid][key]=st;
+  setData('reqData',reqData);
+  closeModal('req');
+  renderRequired();
+  showToast('저장됨!','success');
+}
+
+// 지급 처리 (items.html에서 호출)
+function processGive(mid, key, cnt) {
+  if(!reqData[mid]) reqData[mid]={};
+  const cur=parseInt(reqData[mid][key])||0;
+  const rem=cur-cnt;
+  reqData[mid][key]=rem<=0?'완료':String(rem);
+  setData('reqData',reqData);
+}
+
+// ===== 이동석 =====
+function stoneColor(val, max) {
+  if(!val||val===0) return 'var(--bg3)';
+  const ratio=val/max;
+  if(ratio<=0.2) return 'rgba(239,68,68,.1)';
+  if(ratio<=0.4) return 'rgba(239,68,68,.2)';
+  if(ratio<=0.6) return 'rgba(239,68,68,.35)';
+  if(ratio<=0.8) return 'rgba(239,68,68,.55)';
+  return 'rgba(239,68,68,.8)';
+}
+
+function renderStone() {
+  const sorted=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  const myId=getMyId(); const admin=isAdmin();
+
+  document.getElementById('content').innerHTML=`
+    ${myBar()}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">💡 이동석 강화 수치 입력. 최대치: 실험실 5 / 티리오사무덤 5 / 죽은자의대지 7. 수치가 높을수록 붉어집니다.</div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">이동석 보유 현황</div>
+        <div style="font-size:11px;color:var(--text2)">최대: 실험실 5 / 티리오사무덤 5 / 죽은자의대지 7</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="sc tl" style="min-width:110px;left:0">닉네임</th>
+            ${STONE_LIST.map(s=>`<th style="min-width:100px">${s.name}<br><span style="color:var(--accent2);font-weight:400">최대 ${s.max}</span></th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${sorted.map(m=>{
+              const sd=stoneData[m.id]||{};
+              const canEdit=admin||myId===m.id;
+              return `<tr>
+                <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
+                ${STONE_LIST.map(s=>{
+                  const v=parseInt(sd[s.name])||0;
+                  const bg=stoneColor(v,s.max);
+                  return canEdit
+                    ?`<td style="background:${bg}"><input class="stone-inp" type="number" value="${v||''}" min="0" max="${s.max}" placeholder="0"
+                        style="background:transparent;border-color:transparent;color:${v>0?'#fff':'var(--text2)'}"
+                        onchange="saveStone(${m.id},'${s.name}',this.value,${s.max},this.closest('td'))"></td>`
+                    :`<td style="background:${bg};font-weight:700;color:${v>0?'#fff':'var(--text2)'}">${v||'-'}</td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>`;
+}
+
+function renderStoneMobile(sorted, myId, admin) {
+  return sorted.map(m=>{
+    const sd=stoneData[m.id]||{};
+    const canEdit=admin||myId===m.id;
+    const rows=STONE_LIST.map(s=>{
+      const v=parseInt(sd[s.name])||0;
+      const bg=stoneColor(v,s.max);
+      return `<div class="acc-row" style="background:${bg}">
+        <span class="acc-label">${s.name} <span style="color:var(--text2);font-size:11px">(최대 ${s.max})</span></span>
+        ${canEdit
+          ?`<input class="stone-inp" type="number" value="${v||''}" min="0" max="${s.max}" placeholder="0"
+              style="width:60px;background:rgba(0,0,0,.3);border-color:rgba(255,255,255,.2);color:#fff"
+              onchange="saveStone(${m.id},'${s.name}',this.value,${s.max},this.closest('.acc-row'));renderStone()">`
+          :`<span style="font-weight:700;color:${v>0?'#fff':'var(--text2)'}">${v||'-'}</span>`}
+      </div>`;
+    }).join('');
+    return `<div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>${m.nick}</span><span class="acc-arrow">▼</span>
+      </div>
+      <div class="acc-body">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function saveStone(mid, sname, val, max, cell) {
+  const v=Math.min(parseInt(val)||0, max);
+  if(!stoneData[mid]) stoneData[mid]={};
+  stoneData[mid][sname]=v;
+  setData('stoneData',stoneData);
+  cell.style.background=stoneColor(v,max);
+  showToast('저장됨','success');
+}
+
+// ===== 직업/어빌 =====
+function renderJob() {
+  const sorted=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  const myId=getMyId(); const admin=isAdmin();
+  const extraJobs=getData('extraJobs',[]);
+  const allHidden=[...JOB_LIST.hidden,...extraJobs.filter(j=>j.type==='hidden').map(j=>j.name)];
+  const allNormal=[...JOB_LIST.normal,...extraJobs.filter(j=>j.type==='normal').map(j=>j.name)];
+  const abilList=getData('abilList',['무장해제','초감각','자기장생성','결계형성']);
+
+  document.getElementById('content').innerHTML=`
+    ${myBar()}
+    ${admin?`
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="btn btn-s btn-sm" onclick="addJobPrompt('hidden')">+ 히든직업 추가</button>
+      <button class="btn btn-s btn-sm" onclick="addJobPrompt('normal')">+ 일반직업 추가</button>
+      <button class="btn btn-s btn-sm" onclick="addAbilPrompt()">+ 어빌 추가</button>
+    </div>`:''}
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-head"><div class="card-title">히든 직업 레벨 (목표: 800+)</div></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="sc tl" style="min-width:110px;left:0">닉네임</th>
+            ${allHidden.map(j=>`<th style="min-width:70px">${j}</th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${sorted.map(m=>{
+              const jd=jobData[m.id]||{};
+              const canEdit=admin||myId===m.id;
+              return `<tr>
+                <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
+                ${allHidden.map(j=>{
+                  const v=jd['h_'+j]||'';
+                  const isMax=parseInt(v)>=800;
+                  return canEdit
+                    ?`<td><input class="job-inp ${isMax?'max':''}" type="number" value="${v}" placeholder="-"
+                        onchange="saveJob(${m.id},'h_${j}',this.value);this.className='job-inp'+(parseInt(this.value)>=800?' max':'')"></td>`
+                    :`<td style="color:${isMax?'var(--accent)':'var(--text2)'};font-weight:${isMax?'700':'400'}">${v||'-'}</td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-head"><div class="card-title">일반 직업 레벨</div></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="sc tl" style="min-width:110px;left:0">닉네임</th>
+            ${allNormal.map(j=>`<th style="min-width:70px">${j}</th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${sorted.map(m=>{
+              const jd=jobData[m.id]||{};
+              const canEdit=admin||myId===m.id;
+              return `<tr>
+                <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
+                ${allNormal.map(j=>{
+                  const v=jd['n_'+j]||'';
+                  const isMax=parseInt(v)>=800;
+                  return canEdit
+                    ?`<td><input class="job-inp ${isMax?'max':''}" type="number" value="${v}" placeholder="-"
+                        onchange="saveJob(${m.id},'n_${j}',this.value);this.className='job-inp'+(parseInt(this.value)>=800?' max':'')"></td>`
+                    :`<td style="color:${isMax?'var(--accent)':'var(--text2)'};font-weight:${isMax?'700':'400'}">${v||'-'}</td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title">어빌리티 (스킬북) 보유 현황</div></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="sc tl" style="min-width:110px;left:0">닉네임</th>
+            ${abilList.map(a=>`<th style="min-width:80px">${a}</th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${sorted.map(m=>{
+              const jd=jobData[m.id]||{};
+              const canEdit=admin||myId===m.id;
+              return `<tr>
+                <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
+                ${abilList.map(a=>{
+                  const key='ab_'+a;
+                  const done=!!jd[key];
+                  return canEdit
+                    ?`<td><button class="rec-btn ${done?'done':''}" onclick="toggleAbil(${m.id},'${key}',this)">${done?'O':''}</button></td>`
+                    :`<td style="color:${done?'var(--green)':'var(--text2)'}">${done?'O':'-'}</td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function saveJob(mid, key, val) {
+  if(!jobData[mid]) jobData[mid]={};
+  jobData[mid][key]=val;
+  setData('jobData',jobData);
+}
+
+function toggleAbil(mid, key, btn) {
+  if(!jobData[mid]) jobData[mid]={};
+  jobData[mid][key]=!jobData[mid][key];
+  btn.className='rec-btn'+(jobData[mid][key]?' done':'');
+  btn.textContent=jobData[mid][key]?'O':'';
+  setData('jobData',jobData);
+}
+
+function addJobPrompt(type) {
+  const name=prompt(`추가할 ${type==='hidden'?'히든':'일반'} 직업 이름:`);
+  if(!name?.trim()) return;
+  const extra=getData('extraJobs',[]);
+  extra.push({type,name:name.trim()});
+  setData('extraJobs',extra);
+  renderJob();
+  showToast('추가됨!','success');
+}
+
+function addAbilPrompt() {
+  const name=prompt('추가할 어빌리티(스킬북) 이름:');
+  if(!name?.trim()) return;
+  const list=getData('abilList',['무장해제','초감각','자기장생성','결계형성']);
+  list.push(name.trim());
+  setData('abilList',list);
+  renderJob();
+  showToast('추가됨!','success');
+}
+
+// ===== 모달 =====
+function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
+function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+</script>
+</body>
+</html>

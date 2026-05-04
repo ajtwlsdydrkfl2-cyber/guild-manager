@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>대시보드 — 길드 매니저</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style id="commonStyle"></style>
+<style>
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:15px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.sc-gold::before{background:var(--accent);}
+.sc-teal::before{background:var(--accent2);}
+.sc-green::before{background:var(--green);}
+.sc-blue::before{background:#3b82f6;}
+.stat-label{font-size:11px;color:var(--text2);margin-bottom:7px;}
+.stat-val{font-size:22px;font-weight:700;}
+.pbar{height:3px;background:var(--border);border-radius:2px;width:60px;display:inline-block;vertical-align:middle;margin-left:5px;overflow:hidden;}
+.pfill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));}
+.search-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.sort-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
+.sort-btn.on{border-color:var(--accent);color:var(--accent);}
+.night-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.25);color:var(--accent2);font-size:12px;font-weight:600;}
+.boss-ctrl{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.round-boss{font-weight:700;font-size:11px;color:var(--accent);}
+.round-time{font-size:10px;color:var(--text2);}
+.round-del{display:block;margin-top:3px;background:none;border:none;color:var(--red);font-size:10px;cursor:pointer;opacity:.6;}
+.round-del:hover{opacity:1;}
+.att-sel{background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text2);padding:4px 6px;font-size:12px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;min-width:78px;}
+.att-sel.join{background:rgba(34,197,94,.1);border-color:var(--green);color:var(--green);}
+.att-sel.late{background:rgba(234,179,8,.1);border-color:var(--yellow);color:var(--yellow);}
+.att-sel.miss{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red);}
+.night-mark{font-size:10px;color:var(--accent2);}
+@media(max-width:768px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .content{padding-bottom:100px!important;}
+  /* 모바일 보스 카드 */
+  .boss-card-mobile{display:block;}
+  .boss-table-pc{display:none;}
+  /* 모바일 대시보드 테이블 */
+  .dash-table-wrap{overflow-x:auto;}
+  .dash-table-wrap table th:nth-child(3),
+  .dash-table-wrap table td:nth-child(3),
+  .dash-table-wrap table th:nth-child(6),
+  .dash-table-wrap table td:nth-child(6),
+  .dash-table-wrap table th:nth-child(7),
+  .dash-table-wrap table td:nth-child(7){display:none;}
+}
+@media(min-width:769px){
+  .boss-card-mobile{display:none;}
+  .boss-table-pc{display:block;}
+}
+.boss-round-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;}
+.boss-round-title{padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.boss-round-name{font-size:14px;font-weight:700;color:var(--accent);}
+.boss-round-time{font-size:11px;color:var(--text2);}
+.member-att-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(30,45,69,.4);}
+.member-att-name{font-size:14px;font-weight:600;}
+.member-att-pts{font-size:12px;color:var(--accent);margin-left:6px;}
+.att-btns{display:flex;gap:6px;}
+.att-btn{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
+.att-btn-join{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.att-btn-join.on{background:var(--green);color:#000;}
+.att-btn-late{background:rgba(234,179,8,.1);color:var(--yellow);border:1px solid rgba(234,179,8,.3);}
+.att-btn-late.on{background:var(--yellow);color:#000;}
+.att-btn-miss{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.att-btn-miss.on{background:var(--red);color:#fff;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title" id="pageTitle">대시보드</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="night-badge" id="nightBadge" style="display:none">🌙 새벽 +20%</div>
+        <button class="btn btn-s btn-sm" onclick="exportData()">💾 백업</button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('dash',this)">🏠 길드원 현황</div>
+      <div class="tab" onclick="switchTab('boss',this)">⚔️ 보스 포인트</div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- 모달: 길드원 추가/수정 -->
+<div class="modal-ov" id="modal-member">
+  <div class="modal">
+    <div class="modal-title" id="memberModalTitle">👤 길드원 추가</div>
+    <input type="hidden" id="m-id">
+    <div class="fg"><label>닉네임</label><input class="inp" type="text" id="m-nick" placeholder="예: T포차"></div>
+    <div class="fg"><label>전투력</label><input class="inp" type="number" id="m-power" placeholder="예: 230000"></div>
+
+    <div class="fg"><label>전문화 레벨</label><input class="inp" type="number" id="m-spec" placeholder="예: 150"></div>
+    <div class="fg"><label>장비 레벨</label><input class="inp" type="number" id="m-itemlv" placeholder="예: 1200"></div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('member')">취소</button>
+      <button class="btn btn-p" onclick="saveMember()">저장하기</button>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+const DISCORD_WEBHOOKS = {
+  1: null,
+  2: null,
+  3: null,
+  4: null,
+  5: 'https://discord.com/api/webhooks/1500660643395534979/6Uc_Byj8zFzCaVycBDbFKEEjdemMejl2XnqwBAb0UYQclL0sLqxw9g-w9WC_WsH-SqQJ',
+};
+let sess, members=[], bosses=[], attend={}, sortDir='desc', curTab='dash', searchQ='';
+
+window.addEventListener('load', () => {
+  sess = requireLogin();
+  if (!sess) return;
+  loadData();
+  updateNightBadge();
+  setInterval(updateNightBadge, 60000);
+  // URL 파라미터로 보스탭 자동 전환
+  const urlTab = new URLSearchParams(location.search).get('tab');
+  if (urlTab === 'boss') {
+    renderSidebar('boss');
+    curTab = 'boss';
+    document.querySelector('.tab:nth-child(1)').classList.remove('active');
+    document.querySelector('.tab:nth-child(2)').classList.add('active');
+    document.getElementById('pageTitle').textContent = '보스 포인트';
+    renderBoss();
+  } else {
+    renderSidebar('dashboard');
+    renderDash();
+  }
+});
+
+function loadData() {
+  members = getData('members', []);
+  bosses = getData('bosses', DEFAULT_BOSSES);
+  if (!getData('bosses', null)) setData('bosses', DEFAULT_BOSSES);
+  attend = getData('attend', {});
+}
+
+function updateNightBadge() {
+  document.getElementById('nightBadge').style.display = isNightBonus() ? 'inline-flex' : 'none';
+}
+
+function switchTab(tab, el) {
+  curTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if (el && el.classList) el.classList.add('active');
+  document.getElementById('pageTitle').textContent = tab==='dash' ? '길드원 현황' : '보스 포인트';
+  renderSidebar(tab==='boss'?'boss':'dashboard');
+  tab==='dash' ? renderDash() : renderBoss();
+}
+
+// ===== 대시보드 =====
+function renderDash() {
+  const admin = isAdmin();
+  const mPts = members.map(m=>({...m, pts:calcPoints(m.id), rate:calcRate(m.id)}));
+  const sorted = [...mPts].sort((a,b)=>sortDir==='desc'?b.power-a.power:a.power-b.power);
+  const byPts = [...mPts].sort((a,b)=>b.pts-a.pts);
+  const maxP = members.length ? Math.max(...members.map(m=>m.power)) : 1;
+  const avgP = members.length ? Math.round(members.reduce((s,m)=>s+m.power,0)/members.length) : 0;
+  const filtered = sorted.filter(m=>m.nick.toLowerCase().includes(searchQ.toLowerCase()));
+  const rounds = countRounds();
+
+  document.getElementById('content').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card sc-gold"><div class="stat-label">총 길드원</div><div class="stat-val">${members.length}<span style="font-size:14px;color:var(--text2)"> 명</span></div></div>
+      <div class="stat-card sc-teal"><div class="stat-label">평균 전투력</div><div class="stat-val" style="font-size:18px">${avgP.toLocaleString()}</div></div>
+      <div class="stat-card sc-green"><div class="stat-label">최고 전투력</div><div class="stat-val" style="font-size:18px">${maxP.toLocaleString()}</div></div>
+      <div class="stat-card sc-blue"><div class="stat-label">이번주 보스 회차</div><div class="stat-val">${rounds}<span style="font-size:14px;color:var(--text2)"> 회</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">멤버 목록</div>
+        <div class="search-row">
+          ${admin?`<button class="btn btn-p btn-sm" onclick="openAddMember()">👤 추가</button>`:''}
+          <input class="inp" type="text" placeholder="검색..." value="${searchQ}" oninput="searchQ=this.value;renderDash()" style="width:120px;padding:5px 10px;">
+          <button class="sort-btn ${sortDir==='desc'?'on':''}" onclick="setSort('desc')">🔽 높은순</button>
+          <button class="sort-btn ${sortDir==='asc'?'on':''}" onclick="setSort('asc')">🔼 낮은순</button>
+        </div>
+      </div>
+      <div class="dash-table-wrap" style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="tl">순위</th><th class="tl">닉네임</th><th>전투력</th>
+            <th>이번주 포인트</th><th>포인트 순위</th><th>참여율</th>
+            <th>전문화</th><th>장비기록포인트</th>
+            ${admin?'<th>관리</th>':''}
+          </tr></thead>
+          <tbody>
+            ${filtered.map((m,i)=>{
+              const pr = byPts.findIndex(x=>x.id===m.id)+1;
+              const prB = pr===1?`<span class="badge b-gold">🏆 1위</span>`:pr===2?`<span class="badge b-silver">🥈 2위</span>`:pr===3?`<span class="badge b-bronze">🥉 3위</span>`:`<span style="color:var(--text2)">${pr}위</span>`;
+              const pct = Math.round((m.power/maxP)*100);
+              return `<tr>
+                <td class="tl" style="color:var(--text2);font-weight:600">${i+1}</td>
+                <td class="tl" style="font-weight:600">${m.nick}</td>
+                <td>${m.power.toLocaleString()}<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div></td>
+                <td><span style="color:var(--accent);font-weight:700;font-size:14px">${m.pts.toFixed(1)}</span></td>
+                <td>${prB}</td>
+                <td style="color:var(--accent2)">${m.rate.toFixed(1)}%</td>
+                <td>${m.spec>0?m.spec:'-'}</td>
+                <td>${m.itemLv>0?m.itemLv:'-'}</td>
+                ${admin?`<td style="display:flex;gap:4px"><button class="btn btn-s btn-sm" onclick="openEditMember(${m.id})">✏️</button><button class="btn btn-d btn-sm" onclick="delMember(${m.id})">🗑️</button></td>`:''}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function setSort(d){sortDir=d;renderDash();}
+
+function calcPoints(mid) {
+  const wk=getWeekKey(), wkData=attend[wk]||{};
+  let t=0;
+  for(const bn in wkData) for(const rk in wkData[bn]){
+    const r=wkData[bn][rk], b=bosses.find(x=>x.name===bn);
+    const pts=b?b.pts:1, bonus=r.nightBonus?1.2:1;
+    const st=r.attendance?.[mid];
+    if(st==='참여') t+=pts*bonus;
+    else if(st==='늦참') t+=pts*0.5*bonus;
+  }
+  return Math.round(t*10)/10;
+}
+
+function calcRate(mid) {
+  const wk=getWeekKey(), wkData=attend[wk]||{};
+  let total=0, joined=0;
+  for(const bn in wkData) for(const rk in wkData[bn]){
+    total++;
+    const st=wkData[bn][rk].attendance?.[mid];
+    if(st==='참여'||st==='늦참') joined++;
+  }
+  return total>0?Math.round((joined/total)*1000)/10:0;
+}
+
+function countRounds(){
+  const wk=getWeekKey(), wkData=attend[wk]||{};
+  let c=0;
+  for(const bn in wkData) c+=Object.keys(wkData[bn]).length;
+  return c;
+}
+
+// ===== 보스 =====
+let selBoss='';
+
+function renderBoss() {
+  const wk=getWeekKey(), wkData=attend[wk]||{};
+  const sortedBosses=[...bosses].sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  const sortedMembers=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  const rounds=[];
+  for(const bn in wkData) for(const rk in wkData[bn]) rounds.push({bn,rk,...wkData[bn][rk]});
+  rounds.sort((a,b)=>b.time-a.time);
+  const admin=isAdmin();
+
+  document.getElementById('content').innerHTML=`
+    <div class="boss-ctrl">
+      <select class="sel" id="bossSelEl">
+        <option value="">보스 선택 (ㄱㄴㄷ순)</option>
+        ${sortedBosses.map(b=>`<option value="${b.name}">${b.name} (${b.pts}pt)</option>`).join('')}
+      </select>
+      <button class="btn btn-p" onclick="addRound()">+ 회차 추가</button>
+      ${isNightBonus()?`<div class="night-badge">🌙 새벽 보너스 +20% 적용 중</div>`:''}
+      ${admin&&rounds.length?`<button class="btn btn-s btn-sm" onclick="if(confirm('이번주 전체 초기화?')){attend[getWeekKey()]={};setData('attend',attend);renderBoss();}">🔄 초기화</button>`:''}
+    </div>
+    ${rounds.length===0?`
+      <div style="text-align:center;padding:60px 20px;color:var(--text2)">
+        <div style="font-size:40px;margin-bottom:12px">⚔️</div>
+        <div style="font-size:15px;margin-bottom:6px">등록된 보스 회차가 없습니다</div>
+        <div style="font-size:13px">보스를 선택하고 회차 추가를 눌러주세요</div>
+      </div>
+    `:`
+      <!-- PC: 가로 테이블 -->
+      <div class="boss-table-pc">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">보스 참여 체크</div>
+            <div style="font-size:11px;color:var(--text2)">이름/전투력/포인트 고정 | 보스 컬럼 가로 스크롤</div>
+          </div>
+          <div style="overflow-x:auto">
+            <table id="bossTable">
+              <thead><tr>
+                <th class="sc tl" style="min-width:32px;left:0">No</th>
+                <th class="sc tl" style="min-width:120px;left:32px">닉네임</th>
+                <th class="sc" style="min-width:90px;left:152px">전투력</th>
+                <th class="sc" style="min-width:70px;left:242px">포인트</th>
+                ${rounds.map(r=>`
+                  <th style="min-width:110px">
+                    <div class="round-boss">${r.bn}</div>
+                    <div class="round-time">${fmtDT(r.time)}${r.nightBonus?'<span class="night-mark"> 🌙</span>':''}</div>
+                    ${admin?`<button class="round-del" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>`:''}
+                  </th>`).join('')}
+              </tr></thead>
+              <tbody>
+                ${sortedMembers.map((m,i)=>{
+                  const pts=calcPoints(m.id);
+                  return `<tr>
+                    <td class="sc" style="left:0;color:var(--text2)">${i+1}</td>
+                    <td class="sc tl" style="left:32px;font-weight:600">${m.nick}</td>
+                    <td class="sc" style="left:152px">${m.power.toLocaleString()}</td>
+                    <td class="sc" style="left:242px"><span style="color:var(--accent);font-weight:700">${pts.toFixed(1)}</span></td>
+                    ${rounds.map(r=>{
+                      const st=r.attendance?.[m.id]||'';
+                      return `<td><select class="att-sel ${st==='참여'?'join':st==='늦참'?'late':st==='미참'?'miss':''}"
+                        onchange="setAtt('${r.bn}','${r.rk}',${m.id},this.value);this.className='att-sel '+(this.value==='참여'?'join':this.value==='늦참'?'late':this.value==='미참'?'miss':'')">
+                        <option value="" ${!st?'selected':''}>-</option>
+                        <option value="참여" ${st==='참여'?'selected':''}>✓ 참여</option>
+                        <option value="늦참" ${st==='늦참'?'selected':''}>⏱ 늦참</option>
+                        <option value="미참" ${st==='미참'?'selected':''}>✗ 미참</option>
+                      </select></td>`;
+                    }).join('')}
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모바일: 카드 방식 -->
+      <div class="boss-card-mobile" style="padding-bottom:120px">
+        ${rounds.map(r=>`
+          <div class="boss-round-card">
+            <div class="boss-round-title">
+              <div>
+                <div class="boss-round-name">⚔️ ${r.bn}${r.nightBonus?' 🌙':''}</div>
+                <div class="boss-round-time">${fmtDT(r.time)}</div>
+              </div>
+              ${admin?`<button class="btn btn-d btn-sm" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>`:''}
+            </div>
+            ${sortedMembers.map(m=>{
+              const st=r.attendance?.[m.id]||'';
+              const pts=calcPoints(m.id);
+              return `<div class="member-att-row">
+                <div>
+                  <span class="member-att-name">${m.nick}</span>
+                  <span class="member-att-pts">${pts.toFixed(1)}pt</span>
+                </div>
+                <div class="att-btns">
+                  <button class="att-btn att-btn-join ${st==='참여'?'on':''}"
+                    onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'참여',this)">참</button>
+                  <button class="att-btn att-btn-late ${st==='늦참'?'on':''}"
+                    onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'늦참',this)">늦</button>
+                  <button class="att-btn att-btn-miss ${st==='미참'?'on':''}"
+                    onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'미참',this)">미</button>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>`).join('')}
+      </div>
+    `}`;
+}
+
+function addRound() {
+  const bn=document.getElementById('bossSelEl').value;
+  if(!bn){showToast('보스를 선택해주세요','error');return;}
+  const wk=getWeekKey();
+  // 최신 데이터 다시 로드
+  attend=getData('attend',{});
+  if(!attend[wk]) attend[wk]={};
+  if(!attend[wk][bn]) attend[wk][bn]={};
+  const rk=Date.now().toString();
+  attend[wk][bn][rk]={time:Date.now(),nightBonus:isNightBonus(),attendance:{}};
+  setData('attend',attend);
+  showToast(`${bn} 회차 추가됨`,'success');
+  sendPush(`⚔️ ${bn} 출현!`,'보스 참여 체크를 해주세요');
+  sendDiscord(bn);
+  renderBoss();
+  setTimeout(()=>document.getElementById('content').scrollTop=0,50);
+}
+
+function setAtt(bn,rk,mid,st) {
+  const wk=getWeekKey();
+  if(!attend[wk]?.[bn]?.[rk]) return;
+  if(!attend[wk][bn][rk].attendance) attend[wk][bn][rk].attendance={};
+  if(st==='') delete attend[wk][bn][rk].attendance[mid];
+  else attend[wk][bn][rk].attendance[mid]=st;
+  setData('attend',attend);
+  // 포인트 셀 업데이트
+  const pts=calcPoints(mid);
+  const rows=document.querySelectorAll('#bossTable tbody tr');
+  const sm=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
+  const idx=sm.findIndex(m=>m.id===mid);
+  if(rows[idx]) rows[idx].querySelectorAll('td')[3].innerHTML=`<span style="color:var(--accent);font-weight:700">${pts.toFixed(1)}</span>`;
+}
+
+function delRound(bn,rk) {
+  if(!confirm(`${bn} 회차 삭제?`)) return;
+  const wk=getWeekKey();
+  delete attend[wk]?.[bn]?.[rk];
+  setData('attend',attend);
+  renderBoss();
+}
+
+// ===== 멤버 CRUD =====
+function openAddMember() {
+  document.getElementById('memberModalTitle').textContent='👤 길드원 추가';
+  document.getElementById('m-id').value='';
+  ['m-nick','m-power','m-spec','m-itemlv'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-server').value='T';
+  openModal('member');
+}
+
+function openEditMember(id) {
+  const m=members.find(x=>x.id===id); if(!m) return;
+  document.getElementById('memberModalTitle').textContent=`✏️ 수정 — ${m.nick}`;
+  document.getElementById('m-id').value=id;
+  document.getElementById('m-nick').value=m.nick;
+  document.getElementById('m-power').value=m.power||'';
+  document.getElementById('m-server').value=m.server||'T';
+  document.getElementById('m-spec').value=m.spec||'';
+  document.getElementById('m-itemlv').value=m.itemLv||'';
+  openModal('member');
+}
+
+function saveMember() {
+  const id=document.getElementById('m-id').value;
+  const nick=document.getElementById('m-nick').value.trim();
+  if(!nick){showToast('닉네임을 입력해주세요','error');return;}
+  if(id) {
+    const m=members.find(x=>x.id===parseInt(id)); if(!m) return;
+    m.nick=nick; m.power=parseInt(document.getElementById('m-power').value)||m.power;
+    m.spec=parseInt(document.getElementById('m-spec').value)||0;
+    m.itemLv=parseInt(document.getElementById('m-itemlv').value)||0;
+  } else {
+    const newId=Math.max(0,...members.map(m=>m.id))+1;
+    members.push({id:newId,nick,power:parseInt(document.getElementById('m-power').value)||0,spec:parseInt(document.getElementById('m-spec').value)||0,itemLv:parseInt(document.getElementById('m-itemlv').value)||0});
+  }
+  setData('members',members);
+  closeModal('member');
+  renderDash();
+  showToast('저장됨!','success');
+}
+
+function delMember(id) {
+  const m=members.find(x=>x.id===id);
+  if(!confirm(`"${m?.nick}" 삭제?`)) return;
+  members=members.filter(x=>x.id!==id);
+  setData('members',members);
+  renderDash();
+  showToast('삭제됨');
+}
+
+// ===== 모달 =====
+function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
+function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+
+// ===== 사이드바 =====
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+
+// ===== 모바일 참여 체크 =====
+function setAttMobile(bn, rk, mid, newSt, btn) {
+  const wk=getWeekKey();
+  if(!attend[wk]?.[bn]?.[rk]) return;
+  if(!attend[wk][bn][rk].attendance) attend[wk][bn][rk].attendance={};
+  const curSt = attend[wk][bn][rk].attendance[mid];
+  // 같은 버튼 누르면 취소
+  if(curSt===newSt) {
+    delete attend[wk][bn][rk].attendance[mid];
+    setData('attend',attend);
+    renderBoss();
+    return;
+  }
+  attend[wk][bn][rk].attendance[mid]=newSt;
+  setData('attend',attend);
+  const scrollPos = document.getElementById('content').scrollTop;
+  renderBoss();
+  document.getElementById('content').scrollTop = scrollPos;
+}
+
+// ===== 디스코드 웹훅 =====
+async function sendDiscord(bossName) {
+  const sess = getSession();
+  const webhook = DISCORD_WEBHOOKS[sess?.serverId];
+  if (!webhook) return; // 웹훅 없는 서버는 스킵
+  const sname = getServerName();
+  const siteUrl = location.origin;
+  try {
+    await fetch(webhook, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        embeds: [{
+          title: `⚔️ ${bossName} 출현!`,
+          description: `**${sname}** 보스가 등록되었습니다.\n참여 체크를 해주세요!`,
+          color: 0xf0a500,
+          fields: [{
+            name: '📍 참여 체크',
+            value: `[클릭해서 바로 이동](${siteUrl}/dashboard.html?tab=boss)`
+          }],
+          footer: {text: '길드 매니저 알림'},
+          timestamp: new Date().toISOString()
+        }]
+      })
+    });
+  } catch(e) {
+    console.log('디스코드 알림 실패:', e);
+  }
+}
+
+// ===== 백업 =====
+function exportData(){
+  const data={members,bosses,attend};
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download=`guild_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+  showToast('백업 다운로드!','success');
+}
+</script>
+</body>
+</html>

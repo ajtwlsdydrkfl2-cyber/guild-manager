@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>아이템 분배 — 길드 매니저</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style id="commonStyle"></style>
+<style>
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.dia-grid{display:grid;grid-template-columns:280px 1fr;gap:14px;}
+.qty-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.qty-ok{background:rgba(34,197,94,.15);color:var(--green);}
+.qty-sold{background:rgba(239,68,68,.15);color:var(--red);}
+.item-sel{background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px;font-family:'Noto Sans KR',sans-serif;min-width:90px;}
+.item-sel:focus{outline:none;border-color:var(--accent);}
+.dia-stat{text-align:center;padding:12px;background:var(--bg3);border-radius:var(--radius);}
+.dia-stat-lbl{font-size:11px;color:var(--text2);margin-bottom:5px;}
+.dia-stat-val{font-size:20px;font-weight:700;}
+@media(max-width:768px){.grid2{grid-template-columns:1fr;}.dia-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">아이템 분배</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('warehouse',this)">📦 창고템</div>
+      <div class="tab" onclick="switchTab('qty',this)">⚖️ 수량성 분배</div>
+      <div class="tab" onclick="switchTab('diamond',this)">💎 다이아 분배</div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-addItem">
+  <div class="modal">
+    <div class="modal-title">📦 고투력 아이템 등록</div>
+    <div class="fg"><label>아이템명</label><input class="inp" type="text" id="it-name" placeholder="예: 신화 검은가시 목걸이"></div>
+    <div class="fg"><label>수량</label><input class="inp" type="number" id="it-qty" value="1" min="1"></div>
+    <div class="fg"><label>등급</label><select class="sel" id="it-grade" style="width:100%"><option>신화</option><option>전설</option><option>영웅</option><option>희귀</option><option>일반</option></select></div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('addItem')">취소</button>
+      <button class="btn btn-p" onclick="addItem()">등록</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-addQty">
+  <div class="modal">
+    <div class="modal-title">⚖️ 수량성 아이템 등록</div>
+    <div class="fg"><label>아이템명</label><input class="inp" type="text" id="qi-name" placeholder="예: 찬핵"></div>
+    <div class="fg"><label>총 수량</label><input class="inp" type="number" id="qi-qty" value="50" min="1"></div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('addQty')">취소</button>
+      <button class="btn btn-p" onclick="addQtyItem()">등록</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-give">
+  <div class="modal">
+    <div class="modal-title">✅ 지급 처리</div>
+    <input type="hidden" id="give-mid"><input type="hidden" id="give-item">
+    <div id="giveInfo" style="font-size:13px;color:var(--text2);margin-bottom:16px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('give')">취소</button>
+      <button class="btn btn-p" onclick="confirmGive()">지급 완료</button>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+let sess, members=[], bosses=[], attend={}, warehouseItems=[], warehouseReqs=[], qtyItems=[];
+let curTab='warehouse';
+
+window.addEventListener('load',()=>{
+  sess=requireLogin(); if(!sess) return;
+  renderSidebar('items');
+  members=getData('members',[]);
+  bosses=getData('bosses',DEFAULT_BOSSES);
+  attend=getData('attend',{});
+  warehouseItems=getData('wItems',[]);
+  warehouseReqs=getData('wReqs',[]);
+  qtyItems=getData('qItems',[]);
+  renderWarehouse();
+});
+
+function switchTab(tab,el){
+  curTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ({warehouse:renderWarehouse,qty:renderQty,diamond:renderDiamond})[tab]?.();
+}
+
+function getStats(){
+  const wk=getWeekKey(), wkData=attend[wk]||{};
+  let totalR=0;
+  for(const bn in wkData) for(const rk in wkData[bn]) totalR++;
+  return members.map(m=>{
+    let joined=0;
+    for(const bn in wkData) for(const rk in wkData[bn]){
+      const st=wkData[bn][rk].attendance?.[m.id];
+      if(st==='참여'||st==='늦참') joined++;
+    }
+    const wk2=getWeekKey(),wkD2=attend[wk2]||{};
+    let pts=0;
+    for(const bn in wkD2) for(const rk in wkD2[bn]){
+      const r=wkD2[bn][rk],b=bosses.find(x=>x.name===bn);
+      const p=b?b.pts:1,bo=r.nightBonus?1.2:1;
+      const st=r.attendance?.[m.id];
+      if(st==='참여') pts+=p*bo;
+      else if(st==='늦참') pts+=p*0.5*bo;
+    }
+    pts=Math.round(pts*10)/10;
+    const rate=totalR>0?Math.round((joined/totalR)*1000)/10:0;
+    return{...m,pts,rate,joined,totalR};
+  }).sort((a,b)=>b.pts-a.pts||b.rate-a.rate);
+}
+
+// ===== 창고템 =====
+function renderWarehouse(){
+  const stats=getStats();
+  const admin=isAdmin();
+  const items=warehouseItems.filter(i=>i.qty>0);
+  const gc={신화:'b-red',전설:'b-gold',영웅:'b-purple',희귀:'b-silver',일반:'b-silver'};
+  const pending=warehouseReqs.filter(r=>!r.done);
+
+  document.getElementById('content').innerHTML=`
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">이번주 고투력 아이템</div>
+          ${admin?`<button class="btn btn-p btn-sm" onclick="openModal('addItem')">+ 등록</button>`:''}
+        </div>
+        <div class="card-body">
+          ${warehouseItems.length===0?'<p style="color:var(--text2);font-size:13px;text-align:center;padding:16px 0">등록된 아이템 없음</p>':
+          warehouseItems.map(it=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="badge ${gc[it.grade]||'b-silver'}">${it.grade}</span>
+                <span style="font-weight:600;font-size:13px">${it.name}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="qty-badge ${it.qty>0?'qty-ok':'qty-sold'}">×${it.qty}</span>
+                ${admin?`<button class="btn btn-d btn-sm" onclick="delItem(${it.id})">삭제</button>`:''}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">신청 현황</div></div>
+        <div class="card-body">
+          ${pending.length===0?'<p style="color:var(--text2);font-size:13px;text-align:center;padding:16px 0">신청 내역 없음</p>':
+          pending.map(r=>{
+            const m=members.find(x=>x.id===r.memberId);
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+              <div><span style="font-weight:600;font-size:13px">${m?.nick}</span> <span style="color:var(--text2);font-size:12px">→ ${r.itemName}</span></div>
+              ${admin?`<div style="display:flex;gap:4px">
+                <button class="btn btn-p btn-sm" onclick="giveItem(${r.memberId},'${r.itemName}')">✅ 지급</button>
+                <button class="btn btn-d btn-sm" onclick="cancelReq(${r.id})">✗</button>
+              </div>`:''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">아이템 신청 (참여율 높은 순)</div>
+        <div style="font-size:11px;color:var(--text2)">품절 시 선택 불가</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="tl">순위</th><th class="tl">닉네임</th>
+            <th>포인트</th><th>참여율</th>
+            ${items.map(it=>`<th>${it.name}<br><span class="qty-badge ${it.qty>0?'qty-ok':'qty-sold'}">×${it.qty}</span></th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${stats.map((m,i)=>{
+              const myReqs=warehouseReqs.filter(r=>r.memberId===m.id&&!r.done);
+              const myDone=warehouseReqs.filter(r=>r.memberId===m.id&&r.done);
+              return `<tr>
+                <td class="tl" style="color:var(--accent);font-weight:700">${i+1}</td>
+                <td class="tl" style="font-weight:600">${m.nick}</td>
+                <td style="color:var(--accent)">${m.pts.toFixed(1)}</td>
+                <td style="color:var(--accent2)">${m.rate.toFixed(1)}%</td>
+                ${items.map(it=>{
+                  const alrReq=myReqs.find(r=>r.itemName===it.name);
+                  const alrDone=myDone.find(r=>r.itemName===it.name);
+                  if(alrDone) return `<td><span class="badge b-green">✅ 수령</span></td>`;
+                  if(alrReq) return `<td><span class="badge b-blue">신청중</span>${admin?`<button class="btn btn-p btn-sm" style="margin-left:4px" onclick="giveItem(${m.id},'${it.name}')">지급</button>`:''}</td>`;
+                  if(it.qty<=0) return `<td><span class="badge b-red">품절</span></td>`;
+                  return `<td><select class="item-sel" onchange="reqItem(${m.id},'${it.name}',this)">
+                    <option value="">-</option><option value="신청">신청하기</option>
+                  </select></td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function reqItem(mid,itemName,sel){
+  if(sel.value!=='신청'){return;} sel.value='';
+  const it=warehouseItems.find(x=>x.name===itemName&&x.qty>0);
+  if(!it){showToast('품절된 아이템입니다','error');return;}
+  if(warehouseReqs.find(r=>r.memberId===mid&&r.itemName===itemName&&!r.done)){showToast('이미 신청했습니다','error');return;}
+  warehouseReqs.push({id:Date.now(),memberId:mid,itemName,done:false});
+  setData('wReqs',warehouseReqs);
+  showToast('신청 완료!','success');
+  renderWarehouse();
+}
+
+function giveItem(mid,itemName){
+  document.getElementById('give-mid').value=mid;
+  document.getElementById('give-item').value=itemName;
+  const m=members.find(x=>x.id===mid),it=warehouseItems.find(x=>x.name===itemName);
+  document.getElementById('giveInfo').innerHTML=`<strong>${m?.nick}</strong>에게 <strong style="color:var(--accent)">${itemName}</strong> 지급 처리?<br><span style="font-size:12px;color:var(--text2)">현재 수량: ${it?.qty||0}개</span>`;
+  openModal('give');
+}
+
+function confirmGive(){
+  const mid=parseInt(document.getElementById('give-mid').value);
+  const itemName=document.getElementById('give-item').value;
+  const req=warehouseReqs.find(r=>r.memberId===mid&&r.itemName===itemName&&!r.done);
+  if(req) req.done=true;
+  const it=warehouseItems.find(x=>x.name===itemName);
+  if(it) it.qty=Math.max(0,it.qty-1);
+  setData('wItems',warehouseItems); setData('wReqs',warehouseReqs);
+  closeModal('give'); showToast('지급 완료!','success'); renderWarehouse();
+}
+
+function cancelReq(id){warehouseReqs=warehouseReqs.filter(r=>r.id!==id);setData('wReqs',warehouseReqs);renderWarehouse();}
+function addItem(){
+  const name=document.getElementById('it-name').value.trim();
+  if(!name) return;
+  warehouseItems.push({id:Date.now(),name,qty:parseInt(document.getElementById('it-qty').value)||1,grade:document.getElementById('it-grade').value});
+  setData('wItems',warehouseItems); closeModal('addItem'); renderWarehouse(); showToast('등록됨!','success');
+}
+function delItem(id){warehouseItems=warehouseItems.filter(x=>x.id!==id);setData('wItems',warehouseItems);renderWarehouse();}
+
+// ===== 수량성 =====
+function renderQty(){
+  const stats=getStats().filter(m=>m.rate>=30);
+  const totalRate=stats.reduce((s,m)=>s+m.rate,0);
+  const admin=isAdmin();
+
+  document.getElementById('content').innerHTML=`
+    <div style="margin-bottom:12px;padding:10px 14px;background:rgba(240,165,0,.05);border:1px solid rgba(240,165,0,.12);border-radius:var(--radius);font-size:13px;color:var(--text2)">
+      💡 참여율 30% 이상 길드원에게 참여율 비례 자동 분배. 30% 미만은 제외됩니다.
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">수량성 아이템</div>
+          ${admin?`<button class="btn btn-p btn-sm" onclick="openModal('addQty')">+ 등록</button>`:''}
+        </div>
+        <div class="card-body">
+          ${qtyItems.length===0?'<p style="color:var(--text2);font-size:13px;text-align:center;padding:16px 0">등록된 아이템 없음</p>':
+          qtyItems.map(qi=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+              <div><span style="font-weight:600;font-size:13px">${qi.name}</span> <span style="color:var(--accent);font-size:12px;margin-left:6px">${qi.qty}개</span></div>
+              ${admin?`<button class="btn btn-d btn-sm" onclick="delQtyItem(${qi.id})">삭제</button>`:''}
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">분배 대상 (30% 이상 ${stats.length}명)</div></div>
+        <div class="card-body" style="max-height:300px;overflow-y:auto">
+          ${stats.map((m,i)=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(30,45,69,.4)">
+              <div><span style="color:var(--accent);font-weight:700;font-size:12px;margin-right:8px">${i+1}위</span><span style="font-weight:600;font-size:13px">${m.nick}</span></div>
+              <span style="color:var(--accent2);font-size:12px">${m.rate.toFixed(1)}%</span>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    ${qtyItems.length>0&&stats.length>0?`
+    <div class="card">
+      <div class="card-head"><div class="card-title">분배 결과</div></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="tl">순위</th><th class="tl">닉네임</th><th>참여율</th>
+            ${qtyItems.map(qi=>`<th>${qi.name}<br><span style="color:var(--accent2);font-weight:400;font-size:10px">총 ${qi.qty}개</span></th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${stats.map((m,i)=>`<tr>
+              <td class="tl" style="color:var(--accent);font-weight:700">${i+1}</td>
+              <td class="tl" style="font-weight:600">${m.nick}</td>
+              <td style="color:var(--accent2)">${m.rate.toFixed(1)}%</td>
+              ${qtyItems.map(qi=>{
+                const share=totalRate>0?Math.floor(qi.qty*(m.rate/totalRate)):0;
+                return `<td style="font-weight:600;color:${share>0?'var(--text)':'var(--text2)'}">${share>0?share+'개':'-'}</td>`;
+              }).join('')}
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`:''}`;
+}
+
+function addQtyItem(){
+  const name=document.getElementById('qi-name').value.trim();
+  if(!name) return;
+  qtyItems.push({id:Date.now(),name,qty:parseInt(document.getElementById('qi-qty').value)||0});
+  setData('qItems',qtyItems); closeModal('addQty'); renderQty(); showToast('등록됨!','success');
+}
+function delQtyItem(id){qtyItems=qtyItems.filter(x=>x.id!==id);setData('qItems',qtyItems);renderQty();}
+
+// ===== 다이아 =====
+function renderDiamond(){
+  const grades=getData('grades',DEFAULT_GRADES);
+  document.getElementById('content').innerHTML=`
+    <div class="dia-grid">
+      <div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-head"><div class="card-title">기본 설정</div></div>
+          <div class="card-body">
+            <div class="fg"><label>이번주 총 다이아</label><input class="inp" type="number" id="totalDia" value="${getData('diaTot',30000)}" oninput="setData('diaTot',parseInt(this.value)||0);calcDia()"></div>
+            <div class="fg"><label>운영비 (제외)</label><input class="inp" type="number" id="opCost" value="${getData('diaOp',10000)}" oninput="setData('diaOp',parseInt(this.value)||0);calcDia()"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">등급별 배율</div></div>
+          <div class="card-body">
+            ${grades.map((g,i)=>`
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+                <span style="font-size:12px;color:var(--text2);min-width:150px">${g.label}</span>
+                <input type="number" value="${g.ratio}" step="0.1" min="0" style="width:65px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 7px;font-size:13px;text-align:center;"
+                  oninput="updateGrade(${i},this.value)">
+                <span style="font-size:12px;color:var(--text2)">배</span>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">분배 결과</div></div>
+        <div class="card-body">
+          <div id="diaSummary" style="margin-bottom:14px"></div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th class="tl">순위</th><th class="tl">닉네임</th><th>포인트</th><th>등급</th><th>배율</th><th>분배 💎</th></tr></thead>
+              <tbody id="diaTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  calcDia();
+}
+
+function updateGrade(i,val){
+  const grades=getData('grades',DEFAULT_GRADES);
+  grades[i].ratio=parseFloat(val)||0;
+  setData('grades',grades);
+  calcDia();
+}
+
+function calcDia(){
+  const total=parseInt(document.getElementById('totalDia')?.value)||0;
+  const op=parseInt(document.getElementById('opCost')?.value)||0;
+  const pool=total-op;
+  const grades=getData('grades',DEFAULT_GRADES);
+  const stats=getStats();
+  const wg=stats.map((m,i)=>{
+    let g;
+    const rate=m.rate;
+    if(rate<10) g=6; else if(rate<20) g=5;
+    else{const p=((i+1)/stats.length)*100;g=p<=20?1:p<=40?2:p<=65?3:4;}
+    return{...m,g};
+  });
+  const el=wg.filter(m=>m.g<=4);
+  const tr=el.reduce((s,m)=>s+(grades.find(x=>x.g===m.g)?.ratio||0),0);
+  const base=tr>0?Math.floor(pool/tr):0;
+  const sumEl=document.getElementById('diaSummary');
+  if(sumEl) sumEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+    ${[['총 다이아',total,'var(--accent)'],['배분 풀',pool,'var(--accent2)'],['3등급 기준',base,'var(--text)']].map(([l,v,c])=>
+    `<div class="dia-stat"><div class="dia-stat-lbl">${l}</div><div class="dia-stat-val" style="color:${c}">${v.toLocaleString()}</div></div>`).join('')}
+  </div>`;
+  const gc=['','#f0a500','#94a3b8','#e2e8f0','#6b7280','#4b5563','#374151'];
+  const tbody=document.getElementById('diaTbody');
+  if(tbody) tbody.innerHTML=wg.map((m,i)=>{
+    const ro=grades.find(x=>x.g===m.g);
+    const amt=m.g<=4?Math.floor(base*(ro?.ratio||0)):0;
+    return `<tr>
+      <td class="tl" style="color:var(--text2)">${i+1}</td>
+      <td class="tl" style="font-weight:600">${m.nick}</td>
+      <td style="color:var(--accent)">${m.pts.toFixed(1)}</td>
+      <td style="color:${gc[m.g]};font-weight:700">${m.g}등급</td>
+      <td style="color:var(--text2)">${ro?.ratio||0}×</td>
+      <td style="font-weight:700;color:var(--accent)">${amt>0?amt.toLocaleString():'-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
+function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+</script>
+</body>
+</html>

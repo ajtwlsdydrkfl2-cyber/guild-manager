@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>길드 매니저 — 로그인</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#080c14;--bg2:#0e1520;--bg3:#141d2e;--border:#1e2d45;--accent:#f0a500;--accent2:#14b8a6;--text:#e2e8f0;--text2:#64748b;--red:#ef4444;--green:#22c55e;--radius:10px;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(240,165,0,.025)1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.025)1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+.top-line{position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1;}
+.logo-area{text-align:center;margin-bottom:36px;animation:fadeDown .5s ease both;}
+.logo-icon{font-size:52px;display:block;margin-bottom:12px;filter:drop-shadow(0 0 20px rgba(240,165,0,.4));}
+.logo-title{font-family:'Black Han Sans',sans-serif;font-size:26px;color:var(--accent);letter-spacing:2px;}
+.logo-sub{font-size:12px;color:var(--text2);margin-top:6px;letter-spacing:1px;}
+.card{width:100%;max-width:380px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;position:relative;overflow:hidden;animation:fadeUp .5s ease .1s both;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.card-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;}
+.pw-wrap{position:relative;margin-bottom:6px;}
+.pw-inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:16px;padding:13px 44px 13px 16px;font-family:'Noto Sans KR',sans-serif;letter-spacing:3px;text-align:center;transition:border-color .2s;}
+.pw-inp:focus{outline:none;border-color:var(--accent);}
+.pw-inp::placeholder{letter-spacing:1px;font-size:13px;color:var(--text2);}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text2);cursor:pointer;font-size:17px;padding:4px;}
+.err{font-size:12px;color:var(--red);min-height:18px;margin-bottom:12px;text-align:center;}
+.login-btn{width:100%;padding:13px;border-radius:var(--radius);background:var(--accent);color:#000;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;border:none;cursor:pointer;transition:all .2s;letter-spacing:1px;}
+.login-btn:hover{background:#fbbf24;transform:translateY(-1px);}
+.divider{display:flex;align-items:center;gap:10px;margin:18px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.divider span{font-size:11px;color:var(--text2);}
+.guide-btn{width:100%;padding:10px;border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;font-family:'Noto Sans KR',sans-serif;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.guide-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+
+/* 총관리자 서버 선택 */
+.server-select-wrap{display:none;}
+.server-select-wrap.show{display:block;}
+.server-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.sv-btn{padding:12px 8px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;font-family:'Noto Sans KR',sans-serif;cursor:pointer;transition:all .15s;text-align:center;}
+.sv-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.notif-banner{width:100%;max-width:380px;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.25);border-radius:var(--radius);padding:14px;margin-top:14px;display:none;animation:fadeUp .4s ease both;}
+.notif-banner.show{display:block;}
+.nb-title{font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:4px;}
+.nb-desc{font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5;}
+.nb-btns{display:flex;gap:8px;}
+.nb-allow{flex:1;padding:7px;border-radius:6px;background:var(--accent2);color:#000;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.nb-deny{padding:7px 12px;border-radius:6px;background:transparent;color:var(--text2);font-size:12px;border:1px solid var(--border);cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.bottom-note{margin-top:20px;font-size:11px;color:var(--text2);text-align:center;animation:fadeUp .5s ease .3s both;}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="top-line"></div>
+<div class="wrap">
+  <div class="logo-area">
+    <span class="logo-icon">⚔️</span>
+    <div class="logo-title" id="mainTitle">길드 매니저</div>
+    <div class="logo-sub">GUILD MANAGEMENT SYSTEM</div>
+  </div>
+
+  <!-- 비번 입력 -->
+  <div class="card" id="loginCard">
+    <div class="card-label">서버 비밀번호 입력</div>
+    <div class="pw-wrap">
+      <input type="password" class="pw-inp" id="pwInp" placeholder="비밀번호 입력" maxlength="30" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="pw-toggle" onclick="togglePw()">👁</button>
+    </div>
+    <div class="err" id="errMsg"></div>
+    <button class="login-btn" onclick="doLogin()">입장하기</button>
+    <div class="divider"><span>또는</span></div>
+    <button class="guide-btn" onclick="location.href='guide.html'">📖 사용 설명서 보기</button>
+
+    <!-- 총관리자 서버 선택 -->
+    <div class="server-select-wrap" id="serverSelectWrap">
+      <div class="divider"><span>접속할 서버 선택</span></div>
+      <div class="server-grid" id="serverGrid"></div>
+      <button class="guide-btn" onclick="resetLogin()">← 다시 입력</button>
+    </div>
+  </div>
+
+  <div class="notif-banner" id="notifBanner">
+    <div class="nb-title">🔔 보스 알림 받기</div>
+    <div class="nb-desc">보스 출현 5분 전과 등록 시 푸시 알림을 받을 수 있습니다.</div>
+    <div class="nb-btns">
+      <button class="nb-allow" onclick="allowNotif()">🔔 알림 허용</button>
+      <button class="nb-deny" onclick="denyNotif()">나중에</button>
+    </div>
+  </div>
+
+  <div class="bottom-note">문의사항은 길드장에게 연락해주세요</div>
+</div>
+
+<script src="common.js"></script>
+<script>
+window.addEventListener('load', () => {
+  const sess = getSession();
+  if (sess) {
+    location.href = sess.role==='super' ? 'admin.html' : 'dashboard.html';
+    return;
+  }
+  document.getElementById('pwInp').focus();
+});
+
+function doLogin() {
+  const pw = document.getElementById('pwInp').value.trim();
+  const err = document.getElementById('errMsg');
+  err.textContent = '';
+  if (!pw) { err.textContent = '비밀번호를 입력해주세요'; return; }
+
+  const cfg = getConfig();
+
+  // 총관리자
+  if (pw === cfg.superAdminPw) {
+    document.getElementById('pwInp').disabled = true;
+    showSuperServerSelect();
+    return;
+  }
+
+  // 서버 관리자
+  const adminSv = cfg.servers.find(s => s.adminPw === pw);
+  if (adminSv) {
+    setSession({serverId: adminSv.id, serverName: adminSv.name, role: 'admin'});
+    showNotif();
+    setTimeout(() => location.href='dashboard.html', 1000);
+    return;
+  }
+
+  // 일반 길드원
+  const memberSv = cfg.servers.find(s => s.memberPw === pw);
+  if (memberSv) {
+    setSession({serverId: memberSv.id, serverName: memberSv.name, role: 'member'});
+    showNotif();
+    setTimeout(() => location.href='dashboard.html', 1000);
+    return;
+  }
+
+  err.textContent = '비밀번호가 올바르지 않습니다';
+  document.getElementById('pwInp').select();
+}
+
+function showSuperServerSelect() {
+  const cfg = getConfig();
+  const grid = document.getElementById('serverGrid');
+  grid.innerHTML = cfg.servers.map(s =>
+    `<button class="sv-btn" onclick="enterAsSuper(${s.id},'${s.name}')">${s.name}</button>`
+  ).join('') + `<button class="sv-btn" style="border-color:var(--accent);color:var(--accent)" onclick="enterSuperAdmin()">⚙️ 총관리</button>`;
+  document.getElementById('serverSelectWrap').classList.add('show');
+}
+
+function enterAsSuper(sid, sname) {
+  setSession({serverId: sid, serverName: sname, role: 'super'});
+  location.href = 'dashboard.html';
+}
+
+function enterSuperAdmin() {
+  setSession({serverId: 0, serverName: '총관리자', role: 'super'});
+  location.href = 'admin.html';
+}
+
+function resetLogin() {
+  document.getElementById('pwInp').disabled = false;
+  document.getElementById('pwInp').value = '';
+  document.getElementById('serverSelectWrap').classList.remove('show');
+  document.getElementById('pwInp').focus();
+}
+
+function togglePw() {
+  const inp = document.getElementById('pwInp');
+  inp.type = inp.type==='password' ? 'text' : 'password';
+}
+
+function showNotif() {
+  if (Notification.permission === 'default') {
+    setTimeout(() => document.getElementById('notifBanner').classList.add('show'), 400);
+  }
+}
+
+async function allowNotif() {
+  await Notification.requestPermission();
+  document.getElementById('notifBanner').classList.remove('show');
+}
+function denyNotif() { document.getElementById('notifBanner').classList.remove('show'); }
+</script>
+</body>
+</html>
