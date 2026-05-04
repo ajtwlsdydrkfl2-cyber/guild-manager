@@ -371,31 +371,36 @@ function renderBossRecMobile(sorted, myId, admin) {
   return sorted.map((m,mi)=>{
     const rec=bossRec[m.id]||{};
     const canEdit=admin||myId===m.id;
-    const bossRows=bosses.map(b=>{
+
+    // 보스를 2열로 배치
+    const bossCards=bosses.map(b=>{
       const recCells=b.records.map((r,ri)=>{
         const key=`${b.name}_${ri}`;
         const done=!!rec[key];
         return `<div style="text-align:center">
-          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${r}</div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:3px">${r}</div>
           ${canEdit
-            ?`<button style="width:36px;height:30px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'rgba(34,197,94,.15)':'var(--bg3)'};color:${done?'var(--green)':'var(--text2)'};font-weight:700;font-size:13px;cursor:pointer;"
+            ?`<button style="width:34px;height:28px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'rgba(34,197,94,.15)':'var(--bg3)'};color:${done?'var(--green)':'var(--text2)'};font-weight:700;font-size:13px;cursor:pointer;"
                 onclick="toggleRec(${m.id},'${key}',this)">${done?'O':''}</button>`
-            :`<span style="display:inline-block;width:36px;height:30px;line-height:30px;text-align:center;border-radius:6px;border:1px solid var(--border);color:${done?'var(--green)':'var(--text2)'};font-weight:${done?'700':'400'}">${done?'O':'-'}</span>`}
+            :`<span style="display:inline-block;width:34px;height:28px;line-height:28px;text-align:center;border-radius:6px;border:1px solid var(--border);color:${done?'var(--green)':'var(--text2)'};font-weight:${done?'700':'400'}">${done?'O':'-'}</span>`}
         </div>`;
       }).join('');
-      return `<div style="display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid rgba(30,45,69,.4);gap:10px">
-        <div style="min-width:90px;font-size:12px;font-weight:600;color:var(--accent2)">${b.name}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">${recCells}</div>
+      return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:6px">${b.name}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${recCells}</div>
       </div>`;
     }).join('');
 
+    // 2열 그리드로 배치
     return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
       <div style="padding:11px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
         <span style="color:var(--accent);font-weight:700;font-size:13px">${mi+1}</span>
         <span style="font-weight:700;font-size:14px">${m.nick}</span>
         <span style="color:var(--text2);font-size:12px">${m.power.toLocaleString()}</span>
       </div>
-      ${bossRows}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px">
+        ${bossCards}
+      </div>
     </div>`;
   }).join('');
 }
