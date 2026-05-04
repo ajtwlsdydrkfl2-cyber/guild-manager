@@ -36,6 +36,11 @@
   </div>
 </div>
 
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="common.js"></script>
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
@@ -55,6 +60,8 @@ window.addEventListener('load',()=>{
 
 function renderAll(){
   const super_=isSuperAdmin();
+  // Firebase에서 config 로드
+  fbGetConfig(fbCfg => { cfg = fbCfg; if(super_) renderServerList(); });
   document.getElementById('content').innerHTML=`
     ${super_?renderSuperSection():''}
     ${renderServerSection()}
@@ -122,7 +129,7 @@ function saveServer(i){
   cfg.servers[i].name=document.getElementById(`sn_${i}`).value.trim()||cfg.servers[i].name;
   cfg.servers[i].memberPw=document.getElementById(`mp_${i}`).value.trim()||cfg.servers[i].memberPw;
   cfg.servers[i].adminPw=document.getElementById(`ap_${i}`).value.trim()||cfg.servers[i].adminPw;
-  saveConfig(cfg);
+  fbSetConfig(cfg);
   showToast(`서버 ${cfg.servers[i].id} 저장됨`,'success');
 }
 
@@ -203,6 +210,7 @@ function addMember(){
   const id=Math.max(0,...members.map(m=>m.id),0)+1;
   members.push({id,nick,power:parseInt(document.getElementById('nm-power').value)||0,spec:parseInt(document.getElementById('nm-spec').value)||0,itemLv:parseInt(document.getElementById('nm-itemlv').value)||0});
   setData('members',members);
+  fbSet('members',members);
   document.getElementById('addForm').style.display='none';
   renderMemberList();
   showToast(`${nick} 추가됨`,'success');
@@ -221,6 +229,7 @@ function delMember(id){
   if(!confirm(`"${m?.nick}" 삭제?`)) return;
   members=members.filter(x=>x.id!==id);
   setData('members',members);
+  fbSet('members',members);
   renderMemberList();
   showToast('삭제됨');
 }
@@ -299,6 +308,7 @@ function addBoss(){
   if(bosses.find(b=>b.name===name)){showToast('이미 있는 보스','error');return;}
   bosses.push({name,pts,records:[]});
   setData('bosses',bosses);
+  fbSet('bosses',bosses);
   document.getElementById('nb-name').value='';
   renderBossList();
   showToast(`${name} 추가됨`,'success');
@@ -308,12 +318,14 @@ function delBoss(name){
   if(!confirm(`${name} 삭제?`)) return;
   bosses=bosses.filter(b=>b.name!==name);
   setData('bosses',bosses);
+  fbSet('bosses',bosses);
   renderBossList();
 }
 
 function updateBossPts(name,val){
   const b=bosses.find(x=>x.name===name);
-  if(b){b.pts=parseInt(val)||1;setData('bosses',bosses);showToast(`${name} 점수 변경`,'success');}
+  if(b){b.pts=parseInt(val)||1;setData('bosses',bosses);
+  fbSet('bosses',bosses);showToast(`${name} 점수 변경`,'success');}
 }
 
 function addHeroAcc(){

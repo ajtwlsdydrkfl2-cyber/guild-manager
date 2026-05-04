@@ -81,6 +81,11 @@
   </div>
 </div>
 
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="common.js"></script>
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
@@ -89,7 +94,9 @@ let curTab='equip';
 
 window.addEventListener('load', () => {
   sess = requireLogin(); if(!sess) return;
+  initFirebase();
   renderSidebar('equipment');
+  // 로컬 우선 로드
   members = getData('members',[]);
   bosses = getData('bosses', DEFAULT_BOSSES);
   eqData = getData('eqData',{});
@@ -98,6 +105,13 @@ window.addEventListener('load', () => {
   stoneData = getData('stoneData',{});
   jobData = getData('jobData',{});
   renderEquip();
+
+  // Firebase 실시간 동기화
+  fbListen('members', d => { if(d){ members=Array.isArray(d)?d:Object.values(d); setData('members',members); if(curTab==='equip')renderEquip(); if(curTab==='boss')renderBossRec(); if(curTab==='required')renderRequired(); if(curTab==='stone')renderStone(); }});
+  fbListen('eqData', d => { if(d){ eqData=d; setData('eqData',eqData); if(curTab==='equip')renderEquip(); }});
+  fbListen('bossRec', d => { if(d){ bossRec=d; setData('bossRec',bossRec); if(curTab==='boss')renderBossRec(); }});
+  fbListen('reqData', d => { if(d){ reqData=d; setData('reqData',reqData); if(curTab==='required')renderRequired(); }});
+  fbListen('stoneData', d => { if(d){ stoneData=d; setData('stoneData',stoneData); if(curTab==='stone')renderStone(); }});
 });
 
 function switchTab(tab, el) {
@@ -367,6 +381,7 @@ function toggleRec(mid, key, btn) {
   btn.style.color=done?'var(--green)':'var(--text2)';
   btn.textContent=done?'O':'';
   setData('bossRec',bossRec);
+  fbSet('bossRec', bossRec);
 }
 
 // ===== 필수 장비 =====
@@ -472,6 +487,7 @@ function saveReq() {
   if(!reqData[mid]) reqData[mid]={};
   reqData[mid][key]=st;
   setData('reqData',reqData);
+  fbSet('reqData', reqData);
   closeModal('req');
   renderRequired();
   showToast('저장됨!','success');
@@ -569,6 +585,7 @@ function saveStone(mid, sname, val, max, cell) {
   if(!stoneData[mid]) stoneData[mid]={};
   stoneData[mid][sname]=v;
   setData('stoneData',stoneData);
+  fbSet('stoneData', stoneData);
   cell.style.background=stoneColor(v,max);
   showToast('저장됨','success');
 }

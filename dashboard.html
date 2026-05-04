@@ -108,6 +108,11 @@
   </div>
 </div>
 
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="common.js"></script>
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
@@ -123,6 +128,7 @@ let sess, members=[], bosses=[], attend={}, sortDir='desc', curTab='dash', searc
 window.addEventListener('load', () => {
   sess = requireLogin();
   if (!sess) return;
+  initFirebase();
   loadData();
   updateNightBadge();
   setInterval(updateNightBadge, 60000);
@@ -142,10 +148,27 @@ window.addEventListener('load', () => {
 });
 
 function loadData() {
+  // 로컬 우선 로드 (빠른 초기 렌더)
   members = getData('members', []);
   bosses = getData('bosses', DEFAULT_BOSSES);
-  if (!getData('bosses', null)) setData('bosses', DEFAULT_BOSSES);
   attend = getData('attend', {});
+
+  // Firebase 실시간 동기화
+  fbListen('members', data => {
+    if (data) { members = Array.isArray(data) ? data : Object.values(data); setData('members', members); }
+    else { members = []; }
+    if (curTab==='dash') renderDash();
+  });
+  fbListen('bosses', data => {
+    if (data) { bosses = Array.isArray(data) ? data : Object.values(data); setData('bosses', bosses); }
+    else { bosses = DEFAULT_BOSSES; }
+  });
+  fbListen('attend', data => {
+    if (data) { attend = data; setData('attend', attend); }
+    else { attend = {}; }
+    if (curTab==='dash') renderDash();
+    if (curTab==='boss') renderBoss();
+  });
 }
 
 function updateNightBadge() {
@@ -374,6 +397,7 @@ function addRound() {
   const rk=Date.now().toString();
   attend[wk][bn][rk]={time:Date.now(),nightBonus:isNightBonus(),attendance:{}};
   setData('attend',attend);
+  fbSet('attend', attend);
   showToast(`${bn} 회차 추가됨`,'success');
   sendPush(`⚔️ ${bn} 출현!`,'보스 참여 체크를 해주세요');
   sendDiscord(bn);
@@ -388,6 +412,7 @@ function setAtt(bn,rk,mid,st) {
   if(st==='') delete attend[wk][bn][rk].attendance[mid];
   else attend[wk][bn][rk].attendance[mid]=st;
   setData('attend',attend);
+  fbSet('attend', attend);
   // 포인트 셀 업데이트
   const pts=calcPoints(mid);
   const rows=document.querySelectorAll('#bossTable tbody tr');
@@ -437,6 +462,7 @@ function saveMember() {
     members.push({id:newId,nick,power:parseInt(document.getElementById('m-power').value)||0,spec:parseInt(document.getElementById('m-spec').value)||0,itemLv:parseInt(document.getElementById('m-itemlv').value)||0});
   }
   setData('members',members);
+  fbSet('members', members);
   closeModal('member');
   renderDash();
   showToast('저장됨!','success');

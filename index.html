@@ -93,9 +93,15 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   <div class="bottom-note">문의사항은 길드장에게 연락해주세요</div>
 </div>
 
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="common.js"></script>
 <script>
 window.addEventListener('load', () => {
+  initFirebase();
   const sess = getSession();
   if (sess) {
     location.href = sess.role==='super' ? 'admin.html' : 'dashboard.html';
@@ -110,37 +116,37 @@ function doLogin() {
   err.textContent = '';
   if (!pw) { err.textContent = '비밀번호를 입력해주세요'; return; }
 
-  const cfg = getConfig();
+  fbGetConfig(cfg => {
+    // 총관리자
+    if (pw === cfg.superAdminPw) {
+      document.getElementById('pwInp').disabled = true;
+      showSuperServerSelect(cfg);
+      return;
+    }
 
-  // 총관리자
-  if (pw === cfg.superAdminPw) {
-    document.getElementById('pwInp').disabled = true;
-    showSuperServerSelect();
-    return;
-  }
+    // 서버 관리자
+    const adminSv = cfg.servers.find(s => s.adminPw === pw);
+    if (adminSv) {
+      setSession({serverId: adminSv.id, serverName: adminSv.name, role: 'admin'});
+      location.href='dashboard.html';
+      return;
+    }
 
-  // 서버 관리자
-  const adminSv = cfg.servers.find(s => s.adminPw === pw);
-  if (adminSv) {
-    setSession({serverId: adminSv.id, serverName: adminSv.name, role: 'admin'});
-    location.href='dashboard.html';
-    return;
-  }
+    // 일반 길드원
+    const memberSv = cfg.servers.find(s => s.memberPw === pw);
+    if (memberSv) {
+      setSession({serverId: memberSv.id, serverName: memberSv.name, role: 'member'});
+      location.href='dashboard.html';
+      return;
+    }
 
-  // 일반 길드원
-  const memberSv = cfg.servers.find(s => s.memberPw === pw);
-  if (memberSv) {
-    setSession({serverId: memberSv.id, serverName: memberSv.name, role: 'member'});
-    location.href='dashboard.html';
-    return;
-  }
-
-  err.textContent = '비밀번호가 올바르지 않습니다';
-  document.getElementById('pwInp').select();
+    err.textContent = '비밀번호가 올바르지 않습니다';
+    document.getElementById('pwInp').select();
+  });
 }
 
-function showSuperServerSelect() {
-  const cfg = getConfig();
+function showSuperServerSelect(cfg) {
+  if (!cfg) cfg = getConfig();
   const grid = document.getElementById('serverGrid');
   grid.innerHTML = cfg.servers.map(s =>
     `<button class="sv-btn" onclick="enterAsSuper(${s.id},'${s.name}')">${s.name}</button>`

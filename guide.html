@@ -7,61 +7,48 @@
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-:root{--bg:#080c14;--bg2:#0e1520;--bg3:#141d2e;--border:#1e2d45;--accent:#f0a500;--accent2:#14b8a6;--text:#e2e8f0;--text2:#64748b;--red:#ef4444;--green:#22c55e;--yellow:#eab308;--purple:#a855f7;--blue:#3b82f6;--radius:10px;}
+:root{--bg:#080c14;--bg2:#0e1520;--bg3:#141d2e;--border:#1e2d45;--accent:#f0a500;--accent2:#14b8a6;--text:#e2e8f0;--text2:#64748b;--red:#ef4444;--green:#22c55e;--radius:10px;}
 html,body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100%;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(240,165,0,.02)1px,transparent 1px),linear-gradient(90deg,rgba(240,165,0,.02)1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
 .wrap{max-width:780px;margin:0 auto;padding:28px 20px;position:relative;z-index:1;}
 .top-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px;}
 .back-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:13px;cursor:pointer;text-decoration:none;transition:all .15s;}
 .back-btn:hover{border-color:var(--accent);color:var(--accent);}
-.hero{text-align:center;margin-bottom:36px;}
-.hero-icon{font-size:48px;display:block;margin-bottom:12px;filter:drop-shadow(0 0 20px rgba(240,165,0,.4));}
-.hero-title{font-family:'Black Han Sans',sans-serif;font-size:24px;color:var(--accent);margin-bottom:6px;}
+.hero{text-align:center;margin-bottom:44px;}
+.hero-icon{font-size:52px;display:block;margin-bottom:12px;filter:drop-shadow(0 0 20px rgba(240,165,0,.4));}
+.hero-title{font-family:'Black Han Sans',sans-serif;font-size:26px;color:var(--accent);margin-bottom:8px;}
 .hero-sub{font-size:13px;color:var(--text2);line-height:1.6;}
-.section{margin-bottom:32px;}
-.sec-title{font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;position:relative;overflow:hidden;}
+.section{margin-bottom:36px;}
+.sec-title{font-size:17px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:10px;position:relative;overflow:hidden;}
 .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
 .card.gold::before{background:var(--accent);}
 .card.teal::before{background:var(--accent2);}
 .card.green::before{background:var(--green);}
-.card.blue::before{background:var(--blue);}
+.card.blue::before{background:#3b82f6;}
 .card.red::before{background:var(--red);}
-.card.purple::before{background:var(--purple);}
-.card-title{font-size:13px;font-weight:700;margin-bottom:10px;}
+.card-title{font-size:13px;font-weight:700;margin-bottom:9px;}
 .card-body{font-size:13px;color:var(--text2);line-height:1.8;}
 .card-body strong{color:var(--text);}
-.hl{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius);padding:12px 14px;margin:10px 0;font-size:13px;color:var(--text);}
-.hl-gold{background:rgba(240,165,0,.07);border-color:rgba(240,165,0,.18);}
+.step-list{list-style:none;}
+.step-item{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start;}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.step-text{font-size:13px;color:var(--text2);line-height:1.7;}
+.step-text strong{color:var(--text);}
+.hl{background:rgba(240,165,0,.07);border:1px solid rgba(240,165,0,.18);border-radius:var(--radius);padding:12px 14px;margin:10px 0;font-size:13px;color:var(--text);}
 .hl-teal{background:rgba(20,184,166,.07);border-color:rgba(20,184,166,.18);}
-.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;}
-.tag-gold{background:rgba(240,165,0,.2);color:var(--accent);}
-.tag-green{background:rgba(34,197,94,.15);color:#22c55e;}
-.tag-red{background:rgba(239,68,68,.15);color:#ef4444;}
-.tag-blue{background:rgba(59,130,246,.15);color:#60a5fa;}
-.tag-purple{background:rgba(168,85,247,.15);color:#a855f7;}
-.tag-gray{background:rgba(100,116,139,.15);color:#94a3b8;}
+.hl-red{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.18);}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;margin:0 2px;}
+.b-gold{background:rgba(240,165,0,.2);color:var(--accent);}
+.b-green{background:rgba(34,197,94,.15);color:#22c55e;}
+.b-red{background:rgba(239,68,68,.15);color:#ef4444;}
 .gtable{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
 .gtable th{text-align:left;padding:7px 10px;font-size:11px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);background:var(--bg3);}
 .gtable td{padding:7px 10px;border-bottom:1px solid rgba(30,45,69,.5);color:var(--text2);}
 .gtable td strong{color:var(--text);}
-.item-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(30,45,69,.4);}
-.item-row:last-child{border-bottom:none;}
-.item-name{min-width:100px;font-weight:600;font-size:13px;}
-.item-qty{min-width:50px;font-size:12px;color:var(--text2);}
-.item-desc{font-size:13px;color:var(--text2);line-height:1.6;}
-.item-desc strong{color:var(--text);}
-.step-list{list-style:none;}
-.step-item{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;}
-.step-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#000;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.step-text{font-size:13px;color:var(--text2);line-height:1.7;}
-.step-text strong{color:var(--text);}
-.bottom{text-align:center;padding:28px 0;border-top:1px solid var(--border);margin-top:32px;}
+.bottom{text-align:center;padding:28px 0;border-top:1px solid var(--border);margin-top:36px;}
 .enter-btn{display:inline-flex;align-items:center;gap:7px;padding:12px 26px;border-radius:10px;background:var(--accent);color:#000;font-size:14px;font-weight:700;text-decoration:none;transition:all .15s;}
-.enter-btn:hover{background:#fbbf24;}
-.warn-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:20px;}
-.warn-title{font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px;}
-.warn-desc{font-size:13px;color:var(--text2);line-height:1.6;}
+.enter-btn:hover{background:#fbbf24;transform:translateY(-1px);}
 </style>
 </head>
 <body>
@@ -74,39 +61,33 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   <div class="hero">
     <span class="hero-icon">⚔️</span>
     <div class="hero-title">길드 매니저 사용 설명서</div>
-    <div class="hero-sub">처음 접속하시는 분들을 위한 가이드입니다.<br>규정 관련 문의는 운영진에게 개인 문의 바랍니다.</div>
+    <div class="hero-sub">처음 접속하시는 분들을 위한 가이드입니다.<br>궁금한 점은 길드장에게 문의해주세요.</div>
   </div>
 
-  <!-- 중요 공지 -->
-  <div class="warn-box">
-    <div class="warn-title">⚠️ 보스 참여율 30% 미만 → 전체 분배 수령 불가</div>
-    <div class="warn-desc">기존 등록 아이템은 수령 불가 · 미분배 아이템 거래소 판매 예정</div>
-  </div>
-
-  <!-- 시작하기 -->
   <div class="section">
     <div class="sec-title">🚀 시작하기</div>
     <div class="card gold">
       <div class="card-title">📱 접속 방법</div>
       <ul class="step-list">
-        <li class="step-item"><div class="step-num">1</div><div class="step-text">운영진에게 <strong>서버 비밀번호</strong>를 받으세요</div></li>
+        <li class="step-item"><div class="step-num">1</div><div class="step-text">길드장에게 <strong>서버 비밀번호</strong>를 받으세요</div></li>
         <li class="step-item"><div class="step-num">2</div><div class="step-text">로그인 화면에서 비밀번호 입력 후 <strong>입장하기</strong></div></li>
-        <li class="step-item"><div class="step-num">3</div><div class="step-text">모바일에서 <strong>홈 화면에 추가</strong>하면 앱처럼 사용 가능</div></li>
+        <li class="step-item"><div class="step-num">3</div><div class="step-text"><strong>알림 허용</strong>을 눌러주세요 — 보스 출현 5분 전 알림을 받을 수 있어요</div></li>
+        <li class="step-item"><div class="step-num">4</div><div class="step-text">모바일에서 <strong>홈 화면에 추가</strong>하면 앱처럼 사용 가능합니다</div></li>
       </ul>
+      <div class="hl">💡 <strong>비밀번호는 브라우저가 기억합니다.</strong> 다음 접속부터는 바로 입장 가능해요.</div>
     </div>
   </div>
 
-  <!-- 보스 포인트 -->
   <div class="section">
     <div class="sec-title">⚔️ 보스 포인트</div>
     <div class="card teal">
       <div class="card-title">✅ 참여 체크 방법</div>
-      <div class="card-body">보스 포인트 탭 → 본인 이름 옆 <strong>참 / 늦 / 미</strong> 버튼 클릭</div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <span class="tag tag-green">참 — 정시 참여 (풀 포인트)</span>
-        <span class="tag tag-gold">늦 — 늦게 참여 (50%)</span>
-        <span class="tag tag-red">미 — 불참 (0점)</span>
-      </div>
+      <div class="card-body">대시보드 → <strong>보스 포인트</strong> 탭 → 본인 이름 옆 드롭다운 클릭</div>
+      <ul class="step-list" style="margin-top:10px">
+        <li class="step-item"><div class="step-num" style="background:var(--green)">✓</div><div class="step-text"><strong>참여</strong> — 제 시간 참여 (풀 포인트)</div></li>
+        <li class="step-item"><div class="step-num" style="background:var(--accent)">⏱</div><div class="step-text"><strong>늦참</strong> — 보스 뜬 후 참여 (포인트 50%)</div></li>
+        <li class="step-item"><div class="step-num" style="background:var(--red)">✗</div><div class="step-text"><strong>미참</strong> — 불참 (포인트 없음)</div></li>
+      </ul>
     </div>
     <div class="card gold">
       <div class="card-title">💰 포인트 계산</div>
@@ -118,126 +99,36 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
           <tr><td><strong>최상위</strong></td><td>3pt</td><td>3pt</td><td>1.5pt</td></tr>
         </tbody>
       </table>
-      <div class="hl-teal hl" style="margin-top:10px">🌙 <strong>새벽 보너스 (00:00~07:00):</strong> 해당 시간대 참여 시 포인트 +20%</div>
+      <div class="hl">🌙 <strong>새벽 보너스 (00:00~07:00):</strong> 해당 시간대 참여 시 포인트 +20%</div>
     </div>
-    <div class="hl-teal hl">📅 <strong>매주 일요일 23:59 자동 초기화</strong></div>
+    <div class="hl-teal hl">📅 <strong>매주 일요일 23:59 자동 초기화.</strong> 포인트는 해당 주 아이템 분배 기준으로만 사용됩니다.</div>
   </div>
 
-  <!-- 아이템 분배 규정 -->
   <div class="section">
-    <div class="sec-title">📦 아이템 분배 규정</div>
-
-    <!-- 핀볼 품목 -->
-    <div class="card blue">
-      <div class="card-title">🎯 핀볼 품목</div>
-      <div class="item-row">
-        <div class="item-name">전설 방어구</div>
-        <div class="item-qty">1개씩</div>
-        <div class="item-desc"><span class="tag tag-gold">기여도순</span> 분배</div>
-      </div>
-      <div class="item-row">
-        <div class="item-name">어빌 (번개정령)</div>
-        <div class="item-qty">1개씩</div>
-        <div class="item-desc">
-          <span class="tag tag-green">구어빌</span> 기여도순 분배<br>
-          <span class="tag tag-blue">신어빌</span> 투력순 분배<br>
-          <span class="tag tag-gold">1주 여러개</span> 고투력순 · 인당 1개
-        </div>
-      </div>
-      <div class="item-row">
-        <div class="item-name">전설 망토</div>
-        <div class="item-qty">1개씩</div>
-        <div class="item-desc"><span class="tag tag-gold">기여도순</span> 분배</div>
-      </div>
-    </div>
-
-    <!-- 기여도 선택 품목 -->
-    <div class="card gold">
-      <div class="card-title">🏆 기여도 선택 품목</div>
-      <div class="item-row">
-        <div class="item-name">영웅 무기</div>
-        <div class="item-qty">1개씩</div>
-        <div class="item-desc"><span class="tag tag-gold">기여도</span> 랜덤 분배</div>
-      </div>
-      <div class="item-row">
-        <div class="item-name">영웅 악세</div>
-        <div class="item-qty">매주 2개씩</div>
-        <div class="item-desc">기여도순 분배 · 중복 부위 X<br><span style="font-size:12px;color:var(--red)">※ 고투력 아이템은 길드장 별도 분배</span></div>
-      </div>
-      <div class="item-row">
-        <div class="item-name">영웅 망토</div>
-        <div class="item-qty">1개씩</div>
-        <div class="item-desc"><span class="tag tag-gold">기여도순</span> 분배</div>
-      </div>
-      <div class="item-row">
-        <div class="item-name">희귀 망토</div>
-        <div class="item-qty">1개씩</div>
-        <div class="item-desc">—</div>
-      </div>
-      <div class="item-row">
-        <div class="item-name">희귀 악세</div>
-        <div class="item-qty">상시 신청</div>
-        <div class="item-desc"><strong>상시 분배</strong></div>
-      </div>
-    </div>
-
-    <!-- 수량성 아이템 -->
+    <div class="sec-title">📦 아이템 분배</div>
     <div class="card green">
+      <div class="card-title">🏆 고투력 아이템 — 참여율 순 선택</div>
+      <div class="card-body">길드장이 등록한 고투력 아이템을 <strong>참여율 높은 순서</strong>로 드롭다운에서 선택할 수 있어요.</div>
+      <ul class="step-list" style="margin-top:10px">
+        <li class="step-item"><div class="step-num">1</div><div class="step-text"><strong>창고템</strong> 탭 접속</div></li>
+        <li class="step-item"><div class="step-num">2</div><div class="step-text">본인 행에서 원하는 아이템 드롭다운 선택</div></li>
+        <li class="step-item"><div class="step-num">3</div><div class="step-text">수량 소진 시 <span class="badge b-red">품절</span> — 선택 불가</div></li>
+        <li class="step-item"><div class="step-num">4</div><div class="step-text">길드장 지급 처리 시 <span class="badge b-green">✅ 수령</span> 표시</div></li>
+      </ul>
+    </div>
+    <div class="card teal">
       <div class="card-title">⚖️ 수량성 아이템 — 참여율 비례 분배</div>
-      <div class="card-body" style="margin-bottom:10px">기여도순 · 참여율 <strong>30% 이상</strong>인 길드원에게 비례 분배</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        <span class="tag tag-gray">찬핵</span>
-        <span class="tag tag-gray">생핵</span>
-        <span class="tag tag-gray">승급서</span>
-        <span class="tag tag-gray">제련석</span>
-        <span class="tag tag-gray">장신구강화석</span>
-        <span class="tag tag-gray">전설악세강화석</span>
-      </div>
-      <table class="gtable" style="margin-top:12px">
+      <div class="card-body">찬핵, 생핵, 전문가승급서 등은 <strong>참여율에 비례</strong>해서 자동 계산됩니다.</div>
+      <table class="gtable" style="margin-top:10px">
         <thead><tr><th>조건</th><th>분배</th></tr></thead>
         <tbody>
-          <tr><td><strong>참여율 30% 미만</strong></td><td style="color:var(--red)">분배 제외</td></tr>
+          <tr><td><strong>참여율 30% 미만</strong></td><td>분배 제외 (길드장 별도 처리)</td></tr>
           <tr><td><strong>참여율 30% 이상</strong></td><td>참여율 비례 자동 계산</td></tr>
         </tbody>
       </table>
     </div>
-
-    <!-- 고투력 악세 -->
-    <div class="card purple">
-      <div class="card-title">💎 고투력 악세 — 고투순 분배</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-        <span class="tag tag-purple">크란시아 목걸이</span>
-        <span class="tag tag-purple">검은가시 귀걸이</span>
-        <span class="tag tag-purple">검은오르의 목걸이</span>
-        <span class="tag tag-purple">검은오르의 귀걸이</span>
-        <span class="tag tag-purple">붉은태양의 목걸이</span>
-        <span class="tag tag-purple">붉은태양의 귀걸이</span>
-        <span class="tag tag-purple">붉은태양의 허리띠</span>
-        <span class="tag tag-purple">계승자의 목걸이</span>
-        <span class="tag tag-purple">계승자의 귀걸이</span>
-        <span class="tag tag-purple">계승자의 반지</span>
-        <span class="tag tag-purple">계승자의 팔찌</span>
-        <span class="tag tag-purple">계승자의 허리띠</span>
-      </div>
-      <div class="item-desc">참여율 높은 순서로 드롭다운에서 선택. 수량 소진 시 <span class="tag tag-red">품절</span></div>
-    </div>
-
-    <!-- 보스 기록템 -->
-    <div class="card" style="border-color:var(--border)">
-      <div class="card-title">📋 보스 기록템</div>
-      <div class="item-row">
-        <div class="item-name">보스 기록템</div>
-        <div class="item-qty">매주</div>
-        <div class="item-desc"><span class="tag tag-blue">투력순</span> 분배<br><span style="color:var(--red);font-size:12px">기존 등록자 수령 불가</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 다이아 분배 -->
-  <div class="section">
-    <div class="sec-title">💎 다이아 분배</div>
     <div class="card gold">
-      <div class="card-title">등급별 배율</div>
+      <div class="card-title">💎 다이아 분배 — 등급별 배율</div>
       <table class="gtable">
         <thead><tr><th>등급</th><th>조건</th><th>배율</th></tr></thead>
         <tbody>
@@ -252,39 +143,47 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     </div>
   </div>
 
-  <!-- 장비 기록 -->
   <div class="section">
     <div class="sec-title">🛡️ 장비 기록</div>
     <div class="card blue">
-      <div class="card-title">📝 본인이 직접 수정 가능한 항목</div>
+      <div class="card-title">📝 본인 수정 가능 항목</div>
       <div class="card-body">
-        장비 기록 탭에서 본인 항목 직접 수정 가능합니다.<br><br>
-        <strong>장비/스펙:</strong> 전문화 레벨, 장비기록포인트, 무기/보조장비/악세/망토 등급<br>
+        장비 기록 탭에서 <strong>본인 닉네임을 선택</strong>하면 아래 항목을 직접 수정할 수 있어요.<br><br>
+        <strong>장비/스펙:</strong> 전문화 레벨, 장비 레벨, 전설악세/망토 등급<br>
         <strong>보스 기록템:</strong> 각 보스별 기록템 수령 여부 (O 체크)<br>
         <strong>필수 장비:</strong> 12종 완료/필요 개수<br>
-        <strong>이동석:</strong> 3종 강화 수치
-      </div>
-      <div class="hl" style="margin-top:10px;background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.18)">
-        ⚠️ <strong>전투력은 직접 수정 불가.</strong> 디스코드에 전투력을 올려주시면 길드장이 업데이트합니다.
+        <strong>이동석:</strong> 3종 강화 수치<br>
+        <strong>직업/어빌:</strong> 히든/일반 직업 레벨, 어빌리티 보유 여부
       </div>
     </div>
+    <div class="card green">
+      <div class="card-title">⭐ 필수 장비 12종</div>
+      <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <div>• 크란시아 목걸이</div><div>• 검은가시 귀걸이</div>
+        <div>• 검은 오르의 목걸이</div><div>• 검은 오르의 귀걸이</div>
+        <div>• 붉은 태양의 목걸이</div><div>• 붉은 태양의 귀걸이</div>
+        <div>• 붉은 태양의 허리띠</div><div>• 계승자의 목걸이</div>
+        <div>• 계승자의 귀걸이</div><div>• 계승자의 반지</div>
+        <div>• 계승자의 팔찌</div><div>• 계승자의 허리띠</div>
+      </div>
+    </div>
+    <div class="hl-red hl">⚠️ <strong>전투력은 직접 수정 불가.</strong> 디스코드에 전투력을 올려주시면 길드장이 업데이트합니다.</div>
   </div>
 
-  <!-- FAQ -->
   <div class="section">
     <div class="sec-title">❓ 자주 묻는 질문</div>
     <div class="card">
       <div class="card-body">
-        <div style="margin-bottom:14px"><div style="color:var(--accent);font-weight:700;margin-bottom:4px">Q. 포인트에 소수점이 있어요</div><div>새벽 보너스(+20%) 또는 늦참(50%) 적용 시 소수점이 생길 수 있어요. 정상입니다.</div></div>
-        <div style="margin-bottom:14px"><div style="color:var(--accent);font-weight:700;margin-bottom:4px">Q. 아이템 신청 취소하고 싶어요</div><div>운영진에게 문의해주세요. 지급 전까지 취소 가능합니다.</div></div>
-        <div style="margin-bottom:14px"><div style="color:var(--accent);font-weight:700;margin-bottom:4px">Q. 보스 기록템 체크를 잘못 눌렀어요</div><div>같은 버튼을 다시 누르면 취소됩니다.</div></div>
-        <div><div style="color:var(--accent);font-weight:700;margin-bottom:4px">Q. 규정 관련 문의</div><div>운영진에게 개인 문의 바랍니다.</div></div>
+        <div style="margin-bottom:14px"><div style="color:var(--accent);font-weight:700;margin-bottom:5px">Q. 알림이 안 와요</div><div>브라우저 설정 → 사이트 설정 → 알림 허용으로 바꿔주세요. iOS는 홈 화면 추가 후 알림 작동합니다.</div></div>
+        <div style="margin-bottom:14px"><div style="color:var(--accent);font-weight:700;margin-bottom:5px">Q. 포인트에 소수점이 있어요</div><div>새벽 보너스(+20%) 또는 늦참(50%) 적용 시 소수점이 생길 수 있어요. 정상입니다.</div></div>
+        <div style="margin-bottom:14px"><div style="color:var(--accent);font-weight:700;margin-bottom:5px">Q. 아이템 신청 취소하고 싶어요</div><div>길드장에게 문의해주세요. 지급 전까지 취소 가능합니다.</div></div>
+        <div><div style="color:var(--accent);font-weight:700;margin-bottom:5px">Q. 보스 기록템 체크를 잘못 눌렀어요</div><div>같은 버튼을 다시 누르면 취소됩니다.</div></div>
       </div>
     </div>
   </div>
 
   <div class="bottom">
-    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">규정 관련 문의는 운영진에게 개인 문의 바랍니다</p>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">문의사항은 길드장에게 연락해주세요</p>
     <a href="index.html" class="enter-btn">⚔️ 길드 매니저 입장하기</a>
   </div>
 </div>

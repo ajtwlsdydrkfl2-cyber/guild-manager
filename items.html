@@ -77,6 +77,11 @@
   </div>
 </div>
 
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="common.js"></script>
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
@@ -85,6 +90,7 @@ let curTab='warehouse';
 
 window.addEventListener('load',()=>{
   sess=requireLogin(); if(!sess) return;
+  initFirebase();
   renderSidebar('items');
   members=getData('members',[]);
   bosses=getData('bosses',DEFAULT_BOSSES);
@@ -93,6 +99,13 @@ window.addEventListener('load',()=>{
   warehouseReqs=getData('wReqs',[]);
   qtyItems=getData('qItems',[]);
   renderWarehouse();
+
+  // Firebase 실시간 동기화
+  fbListen('members', d=>{if(d){members=Array.isArray(d)?d:Object.values(d);setData('members',members);}});
+  fbListen('attend', d=>{if(d){attend=d;setData('attend',attend);}});
+  fbListen('wItems', d=>{if(d){warehouseItems=Array.isArray(d)?d:Object.values(d);setData('wItems',warehouseItems);if(curTab==='warehouse')renderWarehouse();}});
+  fbListen('wReqs', d=>{if(d){warehouseReqs=Array.isArray(d)?d:Object.values(d);setData('wReqs',warehouseReqs);if(curTab==='warehouse')renderWarehouse();}else{warehouseReqs=[];if(curTab==='warehouse')renderWarehouse();}});
+  fbListen('qItems', d=>{if(d){qtyItems=Array.isArray(d)?d:Object.values(d);setData('qItems',qtyItems);if(curTab==='qty')renderQty();}});
 });
 
 function switchTab(tab,el){
@@ -239,7 +252,7 @@ function confirmGive(){
   if(req) req.done=true;
   const it=warehouseItems.find(x=>x.name===itemName);
   if(it) it.qty=Math.max(0,it.qty-1);
-  setData('wItems',warehouseItems); setData('wReqs',warehouseReqs);
+  setData('wItems',warehouseItems); fbSet('wItems',warehouseItems); setData('wReqs',warehouseReqs); fbSet('wReqs',warehouseReqs);
   closeModal('give'); showToast('지급 완료!','success'); renderWarehouse();
 }
 
