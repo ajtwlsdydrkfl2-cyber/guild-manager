@@ -158,19 +158,28 @@ function loadData() {
 
   // Firebase 실시간 동기화
   fbListen('members', data => {
-    if (data) { members = Array.isArray(data) ? data : Object.values(data); setData('members', members); }
-    else { members = []; }
-    if (curTab==='dash') renderDash();
+    if (data) {
+      const fbMembers = Array.isArray(data) ? data : Object.values(data);
+      // 로컬 데이터와 다를 때만 업데이트
+      if (JSON.stringify(fbMembers) !== JSON.stringify(members)) {
+        members = fbMembers;
+        setData('members', members);
+        if (curTab==='dash') renderDash();
+      }
+    }
   });
   fbListen('bosses', data => {
     if (data) { bosses = Array.isArray(data) ? data : Object.values(data); setData('bosses', bosses); }
     else { bosses = DEFAULT_BOSSES; }
   });
   fbListen('attend', data => {
-    if (data) { attend = data; setData('attend', attend); }
-    else { attend = {}; }
-    if (curTab==='dash') renderDash();
-    if (curTab==='boss') renderBoss();
+    const newAttend = data || {};
+    if (JSON.stringify(newAttend) !== JSON.stringify(attend)) {
+      attend = newAttend;
+      setData('attend', attend);
+      if (curTab==='dash') renderDash();
+      if (curTab==='boss') renderBoss();
+    }
   });
 }
 
