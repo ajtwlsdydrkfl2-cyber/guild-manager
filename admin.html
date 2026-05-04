@@ -353,7 +353,31 @@ function delHeroAcc(i){
 
 // ===== 데이터 관리 =====
 function renderDataSection(){
+  // 보스 로그 로드
+  const logs = getData('bossLogs',[]);
+  const logHtml = logs.length===0
+    ? '<p style="color:var(--text2);font-size:13px;padding:12px 0">기록 없음</p>'
+    : logs.slice(0,30).map(l=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(30,45,69,.4);font-size:13px">
+          <div>
+            <span style="color:${l.action==='추가'?'var(--green)':'var(--red)';};font-weight:700;margin-right:8px">${l.action==='추가'?'➕':'➖'} ${l.action}</span>
+            <span style="font-weight:600">${l.bossName}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;color:var(--accent2)">${l.by||'길드원'}</div>
+            <div style="font-size:11px;color:var(--text2)">${new Date(l.time).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+        </div>`).join('');
+
   return `
+    <div class="sec-title">📋 보스 회차 로그</div>
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-head">
+        <div class="card-title">회차 추가/삭제 기록 (최근 30개)</div>
+        <button class="btn btn-s btn-sm" onclick="fbGet('bossLogs',d=>{if(d){setData('bossLogs',Array.isArray(d)?d:Object.values(d));location.reload();}})">🔄 새로고침</button>
+      </div>
+      <div class="card-body">${logHtml}</div>
+    </div>
     <div class="sec-title">💾 데이터 관리</div>
     <div class="grid2">
       <div class="card">

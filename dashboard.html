@@ -340,7 +340,7 @@ function renderBoss() {
                   <th style="min-width:110px">
                     <div class="round-boss">${r.bn}</div>
                     <div class="round-time">${fmtDT(r.time)}${r.nightBonus?'<span class="night-mark"> 🌙</span>':''}</div>
-                    ${admin?`<button class="round-del" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>`:''}
+                    <button class="round-del" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>
                   </th>`).join('')}
               </tr></thead>
               <tbody>
@@ -378,7 +378,7 @@ function renderBoss() {
                 <div class="boss-round-name">⚔️ ${r.bn}${r.nightBonus?' 🌙':''}</div>
                 <div class="boss-round-time">${fmtDT(r.time)}</div>
               </div>
-              ${admin?`<button class="btn btn-d btn-sm" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>`:''}
+              <button class="btn btn-d btn-sm" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>
             </div>
             ${sortedMembers.map(m=>{
               const st=r.attendance?.[m.id]||'';
@@ -412,9 +412,11 @@ function addRound() {
   if(!attend[wk]) attend[wk]={};
   if(!attend[wk][bn]) attend[wk][bn]={};
   const rk=Date.now().toString();
-  attend[wk][bn][rk]={time:Date.now(),nightBonus:isNightBonus(),attendance:{}};
+  attend[wk][bn][rk]={time:Date.now(),nightBonus:isNightBonus(),attendance:{},addedBy:sess?.serverName||'길드원'};
   setData('attend',attend);
   fbSet('attend', attend);
+  // 로그 기록
+  addBossLog('추가', bn, rk);
   showToast(`${bn} 회차 추가됨`,'success');
   sendPush(`⚔️ ${bn} 출현!`,'보스 참여 체크를 해주세요');
   sendDiscord(bn);
@@ -443,7 +445,25 @@ function delRound(bn,rk) {
   const wk=getWeekKey();
   delete attend[wk]?.[bn]?.[rk];
   setData('attend',attend);
+  fbSet('attend',attend);
+  addBossLog('삭제', bn, rk);
   renderBoss();
+}
+
+// ===== 보스 로그 =====
+function addBossLog(action, bossName, rk) {
+  const logs = getData('bossLogs', []);
+  const sess = getSession();
+  logs.unshift({
+    action, bossName,
+    time: Date.now(),
+    by: sess?.serverName || '길드원',
+    rk
+  });
+  // 최근 100개만 보관
+  if (logs.length > 100) logs.pop();
+  setData('bossLogs', logs);
+  fbSet('bossLogs', logs);
 }
 
 // ===== 멤버 CRUD =====

@@ -176,15 +176,19 @@ function renderEquip() {
               const gradeCls=(v)=>v==='신화'?'myth':v==='전설'?'legend':v==='영웅'?'hero':v==='희귀'?'rare':'';
               const gradeCell=(fkey)=>{
                 const v=eq[fkey]||'';
-                if(canEdit) return `<select class="eq-sel ${gradeCls(v)}" style="color:${gradeColor2(v)};background:${gradeBg2(v)};border-color:${v?gradeColor2(v):'var(--border)'};font-weight:${v?'700':'400'}"
+                const enh=eq[fkey+'_enhance']||0;
+                const max=ENHANCE_MAX[fkey]||20;
+                const enhOpts=Array.from({length:max+1},(_,i)=>`<option value="${i}" ${parseInt(enh)===i?'selected':''}>+${i}</option>`).join('');
+                const enhSel=canEdit?`<select style="width:50px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--accent2);padding:3px 4px;font-size:11px;font-weight:700" onchange="saveEq(${m.id},'${fkey}_enhance',this.value,false)">${enhOpts}</select>`:`<span style="color:var(--accent2);font-weight:700;font-size:12px">+${enh}</span>`;
+                const gradeSel=canEdit?`<select class="eq-sel ${gradeCls(v)}" style="color:${gradeColor2(v)};background:${gradeBg2(v)};border-color:${v?gradeColor2(v):'var(--border)'};font-weight:${v?'700':'400'};width:60px"
                   onchange="const cm={신화:'myth',전설:'legend',영웅:'hero',희귀:'rare'};const cc={신화:'#ef4444',전설:'#eab308',영웅:'#a855f7',희귀:'#3b82f6'};const cb={신화:'rgba(239,68,68,.15)',전설:'rgba(234,179,8,.15)',영웅:'rgba(168,85,247,.15)',희귀:'rgba(59,130,246,.15)'};this.className='eq-sel '+(cm[this.value]||'');this.style.color=cc[this.value]||'var(--text2)';this.style.background=cb[this.value]||'var(--bg3)';this.style.borderColor=cc[this.value]||'var(--border)';this.style.fontWeight=this.value?'700':'400';saveEq(${m.id},'${fkey}',this.value,false)">
                   <option value="">-</option>
                   <option value="신화" ${v==='신화'?'selected':''}>신화</option>
                   <option value="전설" ${v==='전설'?'selected':''}>전설</option>
                   <option value="영웅" ${v==='영웅'?'selected':''}>영웅</option>
                   <option value="희귀" ${v==='희귀'?'selected':''}>희귀</option>
-                </select>`;
-                return v?`<span style="color:${gradeColor2(v)};font-weight:700;background:${gradeBg2(v)};padding:2px 8px;border-radius:5px">${v}</span>`:'-';
+                </select>`:`<span style="color:${gradeColor2(v)};font-weight:700;background:${gradeBg2(v)};padding:2px 8px;border-radius:5px">${v||'-'}</span>`;
+                return `<div style="display:flex;gap:4px;align-items:center;justify-content:center">${enhSel}${gradeSel}</div>`;
               };
               return `<tr>
                 <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
@@ -225,7 +229,10 @@ function renderEquipMobile(sorted, myId, admin) {
     const gear1Row=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 14px;border-bottom:1px solid rgba(30,45,69,.4)">
       ${gear1.map((k,i)=>`<div style="text-align:center">
         <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${gear1Labels[i]}</div>
-        ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+        <div style="display:flex;gap:4px;justify-content:center;align-items:center">
+          ${enhanceSelect(m.id,k,eq[k+'_enhance']||0,canEdit)}
+          ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+        </div>
       </div>`).join('')}
     </div>`;
 
@@ -238,13 +245,19 @@ function renderEquipMobile(sorted, myId, admin) {
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px 4px">
         ${acc1.map(([k,l])=>`<div style="text-align:center">
           <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${l}</div>
-          ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+          <div style="display:flex;gap:4px;justify-content:center;align-items:center">
+            ${enhanceSelect(m.id,k,eq[k+'_enhance']||0,canEdit)}
+            ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+          </div>
         </div>`).join('')}
       </div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:4px 14px 10px;border-bottom:1px solid rgba(30,45,69,.4)">
         ${acc2.map(([k,l])=>`<div style="text-align:center">
           <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${l}</div>
-          ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+          <div style="display:flex;gap:4px;justify-content:center;align-items:center">
+            ${enhanceSelect(m.id,k,eq[k+'_enhance']||0,canEdit)}
+            ${canEdit?gSel(m.id,k,eq[k]||''):gTxt(eq[k]||'')}
+          </div>
         </div>`).join('')}
       </div>`;
 
