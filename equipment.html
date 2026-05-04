@@ -89,6 +89,21 @@
 <script src="common.js"></script>
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
+const ENHANCE_MAX = {
+  weapon:16, subweapon:16, cloak:10,
+  acc_neck:20, acc_ear:20, acc_ring:20, acc_brace:20, acc_belt:20
+};
+
+function enhanceSelect(mid, field, val, canEdit) {
+  const max = ENHANCE_MAX[field] || 20;
+  const opts = Array.from({length:max+1},(_,i)=>`<option value="${i}" ${parseInt(val||0)===i?'selected':''}>+${i}</option>`).join('');
+  if(!canEdit) return `<span style="color:var(--accent2);font-weight:700;font-size:12px">+${parseInt(val)||0}</span>`;
+  return `<select class="mob-grade-sel" style="width:55px;color:var(--accent2);font-weight:700"
+    onchange="saveEq(${mid},'${field}_enhance',this.value,false)">
+    ${opts}
+  </select>`;
+}
+
 let sess, members=[], bosses=[], eqData={}, bossRec={}, reqData={}, stoneData={}, jobData={};
 let curTab='equip';
 
