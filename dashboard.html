@@ -159,9 +159,11 @@ function loadData() {
   // Firebase 실시간 동기화
   fbListen('members', data => {
     if (data) {
+      // 최근 5초 이내 로컬 저장이면 Firebase 업데이트 무시
+      const lastSave = parseInt(localStorage.getItem('gm_lastMemberSave')||'0');
+      if (Date.now() - lastSave < 5000) return;
       const fbMembers = Array.isArray(data) ? data : Object.values(data);
-      // 로컬 데이터와 다를 때만 업데이트
-      if (JSON.stringify(fbMembers) !== JSON.stringify(members)) {
+      if (fbMembers.length > 0) {
         members = fbMembers;
         setData('members', members);
         if (curTab==='dash') renderDash();
@@ -478,6 +480,7 @@ function saveMember() {
   }
   setData('members',members);
   fbSet('members', members);
+  localStorage.setItem('gm_lastMemberSave', Date.now().toString());
   closeModal('member');
   renderDash();
   showToast('저장됨!','success');
