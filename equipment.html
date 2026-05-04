@@ -340,12 +340,10 @@ function renderBossRec() {
   const sorted=[...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko'));
   const myId=getMyId(); const admin=isAdmin();
 
-  const mobileBossHtml = renderBossRecMobile(sorted, myId, admin);
   document.getElementById('content').innerHTML=`
     ${myBar()}
-    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">💡 O = 수령 완료. 본인 항목 직접 체크 가능.</div>
-    <div class="mobile-only" style="padding-bottom:120px">${mobileBossHtml}</div>
-    <div class="pc-only">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">💡 버튼 클릭 → 초록색 = 수령 완료. 본인 항목 직접 체크 가능.</div>
+    <div style="padding-bottom:100px">
       ${sorted.map((m,mi)=>{
         const rec=bossRec[m.id]||{};
         const canEdit=admin||myId===m.id;
@@ -355,71 +353,46 @@ function renderBossRec() {
             const done=!!rec[key];
             const label=r.replace('루쿠스의 ','');
             return canEdit
-              ?`<button onclick="toggleRec(${m.id},'${key}',this)"
-                  style="padding:5px 12px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'var(--green)':'var(--bg3)'};color:${done?'#000':'var(--text2)'};font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:nowrap"
+              ?`<button onclick="toggleRecTag(${m.id},'${key}',this)"
+                  style="padding:5px 10px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'var(--green)':'var(--bg3)'};color:${done?'#000':'var(--text2)'};font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:nowrap"
                 >${label}</button>`
-              :`<span style="padding:5px 12px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'var(--green)':'var(--bg3)'};color:${done?'#000':'var(--text2)'};font-size:12px;font-weight:700;display:inline-block;white-space:nowrap">${label}</span>`;
+              :`<span style="padding:5px 10px;border-radius:6px;border:1px solid ${done?'var(--green)':'var(--border)'};background:${done?'var(--green)':'var(--bg3)'};color:${done?'#000':'var(--text2)'};font-size:12px;font-weight:700;display:inline-block;white-space:nowrap">${label}</span>`;
           }).join('');
-          return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">
-            <span style="font-size:12px;font-weight:700;color:var(--accent2);min-width:90px;flex-shrink:0;white-space:nowrap">${b.name}</span>
-            <div style="display:flex;gap:5px">${btns}</div>
+          return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px;overflow:hidden">
+            <span style="font-size:11px;font-weight:700;color:var(--accent2);flex-shrink:0;white-space:nowrap;min-width:65px">${b.name}</span>
+            <div style="display:flex;gap:4px">${btns}</div>
           </div>`;
         }).join('');
-        return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden">
-          <div style="padding:11px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
+          <div style="padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
             <span style="color:var(--accent);font-weight:700">${mi+1}</span>
             <span style="font-weight:700;font-size:14px">${m.nick}</span>
             <span style="color:var(--text2);font-size:12px">${m.power.toLocaleString()}</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:10px">
             ${bossCards}
           </div>
         </div>`;
       }).join('')}
-    </div>
     </div>`;
 }
 
-function renderBossRecMobile(sorted, myId, admin) {
-  return sorted.map((m,mi)=>{
-    const rec=bossRec[m.id]||{};
-    const canEdit=admin||myId===m.id;
-    const bossCards=bosses.map(b=>{
-      const btns=b.records.map((r,ri)=>{
-        const key=`${b.name}_${ri}`;
-        const done=!!rec[key];
-        const short=r.replace('루쿠스의 ','').replace(/^.+의 /,'');
-        return canEdit
-          ?`<button class="rec-tag-btn ${done?'done':''}" onclick="toggleRec(${m.id},'${key}',this)">${short}</button>`
-          :`<span class="rec-tag-span" style="color:${done?'var(--green)':'var(--text2)'};border-color:${done?'var(--green)':'var(--border)'};background:${done?'rgba(34,197,94,.15)':'var(--bg2)'}">${short}</span>`;
-      }).join('');
-      return `<div class="boss-rec-card">
-        <div class="boss-rec-name">${b.name}</div>
-        <div class="boss-rec-btns">${btns}</div>
-      </div>`;
-    }).join('');
-    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
-      <div style="padding:11px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-        <span style="color:var(--accent);font-weight:700;font-size:13px">${mi+1}</span>
-        <span style="font-weight:700;font-size:14px">${m.nick}</span>
-        <span style="color:var(--text2);font-size:12px">${m.power.toLocaleString()}</span>
-      </div>
-      <div class="rec-grid-mobile">${bossCards}</div>
-    </div>`;
-  }).join('');
-}
+function renderBossRecMobile(sorted, myId, admin) { return ''; }
+
 
 function toggleRec(mid, key, btn) {
   if(!bossRec[mid]) bossRec[mid]={};
   bossRec[mid][key]=!bossRec[mid][key];
   const done=bossRec[mid][key];
-  // 버튼 즉시 색상 변경
   btn.style.border=`1px solid ${done?'var(--green)':'var(--border)'}`;
-  btn.style.background=done?'rgba(34,197,94,.15)':'var(--bg3)';
-  btn.style.color=done?'var(--green)':'var(--text2)';
-  btn.textContent=done?'O':'';
+  btn.style.background=done?'var(--green)':'var(--bg3)';
+  btn.style.color=done?'#000':'var(--text2)';
   setData('bossRec',bossRec);
   fbSet('bossRec', bossRec);
+}
+
+function toggleRecTag(mid, key, btn) {
+  toggleRec(mid, key, btn);
 }
 
 // ===== 필수 장비 =====
