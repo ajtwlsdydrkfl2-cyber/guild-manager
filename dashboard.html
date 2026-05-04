@@ -409,7 +409,6 @@ function openAddMember() {
   document.getElementById('memberModalTitle').textContent='👤 길드원 추가';
   document.getElementById('m-id').value='';
   ['m-nick','m-power','m-spec','m-itemlv'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('m-server').value='T';
   openModal('member');
 }
 
@@ -419,7 +418,6 @@ function openEditMember(id) {
   document.getElementById('m-id').value=id;
   document.getElementById('m-nick').value=m.nick;
   document.getElementById('m-power').value=m.power||'';
-  document.getElementById('m-server').value=m.server||'T';
   document.getElementById('m-spec').value=m.spec||'';
   document.getElementById('m-itemlv').value=m.itemLv||'';
   openModal('member');

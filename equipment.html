@@ -157,17 +157,19 @@ function renderEquip() {
                 {key:'acc_belt',label:'허리띠'},{key:'cloak',label:'망토'}
               ];
               const gradeColor2=(v)=>v==='신화'?'#ef4444':v==='전설'?'#eab308':v==='영웅'?'#a855f7':v==='희귀'?'#3b82f6':'var(--text2)';
+              const gradeBg2=(v)=>v==='신화'?'rgba(239,68,68,.15)':v==='전설'?'rgba(234,179,8,.15)':v==='영웅'?'rgba(168,85,247,.15)':v==='희귀'?'rgba(59,130,246,.15)':'var(--bg3)';
               const gradeCls=(v)=>v==='신화'?'myth':v==='전설'?'legend':v==='영웅'?'hero':v==='희귀'?'rare':'';
               const gradeCell=(fkey)=>{
                 const v=eq[fkey]||'';
-                if(canEdit) return `<select class="eq-sel ${gradeCls(v)}" onchange="saveEq(${m.id},'${fkey}',this.value,false);this.className='eq-sel '+(['신화','전설','영웅','희귀'].includes(this.value)?{신화:'myth',전설:'legend',영웅:'hero',희귀:'rare'}[this.value]:'')">
+                if(canEdit) return `<select class="eq-sel ${gradeCls(v)}" style="color:${gradeColor2(v)};background:${gradeBg2(v)};border-color:${v?gradeColor2(v):'var(--border)'};font-weight:${v?'700':'400'}"
+                  onchange="const cm={신화:'myth',전설:'legend',영웅:'hero',희귀:'rare'};const cc={신화:'#ef4444',전설:'#eab308',영웅:'#a855f7',희귀:'#3b82f6'};const cb={신화:'rgba(239,68,68,.15)',전설:'rgba(234,179,8,.15)',영웅:'rgba(168,85,247,.15)',희귀:'rgba(59,130,246,.15)'};this.className='eq-sel '+(cm[this.value]||'');this.style.color=cc[this.value]||'var(--text2)';this.style.background=cb[this.value]||'var(--bg3)';this.style.borderColor=cc[this.value]||'var(--border)';this.style.fontWeight=this.value?'700':'400';saveEq(${m.id},'${fkey}',this.value,false)">
                   <option value="">-</option>
                   <option value="신화" ${v==='신화'?'selected':''}>신화</option>
                   <option value="전설" ${v==='전설'?'selected':''}>전설</option>
                   <option value="영웅" ${v==='영웅'?'selected':''}>영웅</option>
                   <option value="희귀" ${v==='희귀'?'selected':''}>희귀</option>
                 </select>`;
-                return v?`<span style="color:${gradeColor2(v)};font-weight:600">${v}</span>`:'-';
+                return v?`<span style="color:${gradeColor2(v)};font-weight:700;background:${gradeBg2(v)};padding:2px 8px;border-radius:5px">${v}</span>`:'-';
               };
               return `<tr>
                 <td class="sc tl" style="left:0;font-weight:600">${m.nick}</td>
@@ -186,12 +188,14 @@ function renderEquip() {
 
 function renderEquipMobile(sorted, myId, admin) {
   const gc=(v)=>v==='신화'?'#ef4444':v==='전설'?'#eab308':v==='영웅'?'#a855f7':v==='희귀'?'#3b82f6':'var(--text2)';
-  const gSel=(mid,fk,v)=>`<select class="sel" style="font-size:12px;padding:4px 6px;width:70px" onchange="saveEq(${mid},'${fk}',this.value,false);renderEquip()">
+  const gBg=(v)=>v==='신화'?'rgba(239,68,68,.15)':v==='전설'?'rgba(234,179,8,.15)':v==='영웅'?'rgba(168,85,247,.15)':v==='희귀'?'rgba(59,130,246,.15)':'var(--bg3)';
+  const gSel=(mid,fk,v)=>`<select class="sel" style="font-size:12px;padding:4px 6px;width:70px;color:${gc(v)};background:${gBg(v)};border-color:${v?gc(v):'var(--border)'};font-weight:${v?'700':'400'}"
+    onchange="const c={신화:'#ef4444',전설:'#eab308',영웅:'#a855f7',희귀:'#3b82f6'};const bg={신화:'rgba(239,68,68,.15)',전설:'rgba(234,179,8,.15)',영웅:'rgba(168,85,247,.15)',희귀:'rgba(59,130,246,.15)'};this.style.color=c[this.value]||'var(--text2)';this.style.background=bg[this.value]||'var(--bg3)';this.style.borderColor=c[this.value]||'var(--border)';this.style.fontWeight=this.value?'700':'400';saveEq(${mid},'${fk}',this.value,false)">
     <option value="" ${!v?'selected':''}>-</option>
-    <option value="신화" ${v==='신화'?'selected':''} style="color:#ef4444">신화</option>
-    <option value="전설" ${v==='전설'?'selected':''} style="color:#eab308">전설</option>
-    <option value="영웅" ${v==='영웅'?'selected':''} style="color:#a855f7">영웅</option>
-    <option value="희귀" ${v==='희귀'?'selected':''} style="color:#3b82f6">희귀</option>
+    <option value="신화" ${v==='신화'?'selected':''}>신화</option>
+    <option value="전설" ${v==='전설'?'selected':''}>전설</option>
+    <option value="영웅" ${v==='영웅'?'selected':''}>영웅</option>
+    <option value="희귀" ${v==='희귀'?'selected':''}>희귀</option>
   </select>`;
   const gTxt=(v)=>`<span style="color:${gc(v)};font-weight:600">${v||'-'}</span>`;
 
