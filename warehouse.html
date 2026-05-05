@@ -245,7 +245,7 @@ function saveBulk() {
   const grade = document.getElementById('bulk-grade').value;
   if(!text) return;
 
-  const lines = text.split('\n').filter(l=>l.trim());
+  const lines = text.split(/[,\n]/).map(l=>l.trim()).filter(l=>l);
   let added = 0;
   lines.forEach(line => {
     line = line.trim(); if(!line) return;
