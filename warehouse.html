@@ -7,22 +7,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style id="commonStyle"></style>
 <style>
-.grade-myth{color:#ef4444;background:rgba(239,68,68,.12);border-color:#ef4444;}
-.grade-legend{color:#eab308;background:rgba(234,179,8,.12);border-color:#eab308;}
-.grade-hero{color:#a855f7;background:rgba(168,85,247,.12);border-color:#a855f7;}
-.grade-rare{color:#3b82f6;background:rgba(59,130,246,.12);border-color:#3b82f6;}
-.grade-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;}
-.cat-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;margin-top:16px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-.item-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid rgba(30,45,69,.4);}
-.item-row:last-child{border-bottom:none;}
-.item-name{font-size:13px;font-weight:600;}
-.item-qty{font-size:14px;font-weight:700;color:var(--accent);}
-.cat-icon{font-size:16px;margin-right:6px;}
-.empty-msg{text-align:center;padding:40px 20px;color:var(--text2);font-size:13px;}
-.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
-.filter-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
-.filter-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(240,165,0,.1);}
-@media(max-width:768px){.content{padding:14px 12px;}}
+.grade-section{margin-bottom:20px;}
+.grade-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px 10px 0 0;font-weight:700;font-size:14px;}
+.grade-body{border:1px solid;border-top:none;border-radius:0 0 10px 10px;padding:12px;}
+.grade-myth .grade-header{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
+.grade-myth .grade-body{border-color:rgba(239,68,68,.2);}
+.grade-legend .grade-header{background:rgba(234,179,8,.15);color:#eab308;border:1px solid rgba(234,179,8,.3);}
+.grade-legend .grade-body{border-color:rgba(234,179,8,.2);}
+.grade-hero .grade-header{background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.3);}
+.grade-hero .grade-body{border-color:rgba(168,85,247,.2);}
+.grade-rare .grade-header{background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid rgba(59,130,246,.3);}
+.grade-rare .grade-body{border-color:rgba(59,130,246,.2);}
+.grade-etc .grade-header{background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.2);}
+.grade-etc .grade-body{border-color:rgba(100,116,139,.15);}
+.item-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.item-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;background:var(--bg3);border:1px solid var(--border);}
+.item-chip .qty{font-size:12px;font-weight:700;color:var(--accent);margin-left:2px;}
+.empty-grade{color:var(--text2);font-size:13px;padding:4px 0;}
+@media(max-width:768px){.item-chip{font-size:12px;padding:5px 10px;}.content{padding-bottom:100px!important;}}
 </style>
 </head>
 <body>
@@ -47,28 +49,18 @@
     <div class="modal-title" id="itemModalTitle">📦 아이템 추가</div>
     <input type="hidden" id="item-id">
     <div class="fg">
-      <label>카테고리</label>
-      <select class="sel" id="item-cat" style="width:100%">
-        <option value="weapon">⚔️ 무기류</option>
-        <option value="armor">🛡️ 방어구류</option>
-        <option value="acc">💍 악세사리류</option>
-        <option value="cloak">🧣 망토류</option>
-        <option value="etc">📦 기타</option>
-      </select>
-    </div>
-    <div class="fg">
       <label>등급</label>
       <select class="sel" id="item-grade" style="width:100%">
         <option value="myth">🔴 신화</option>
         <option value="legend">🟡 전설</option>
         <option value="hero">🟣 영웅</option>
         <option value="rare">🔵 희귀</option>
-        <option value="">— 등급 없음</option>
+        <option value="etc">⚪ 등급 없음</option>
       </select>
     </div>
     <div class="fg"><label>아이템명</label><input class="inp" type="text" id="item-name" placeholder="예: 크란시아 목걸이"></div>
     <div class="fg"><label>수량</label><input class="inp" type="number" id="item-qty" value="1" min="0"></div>
-    <div class="fg"><label>메모 (선택)</label><input class="inp" type="text" id="item-memo" placeholder="예: +15강, 특이사항 등"></div>
+    <div class="fg"><label>메모 (선택)</label><input class="inp" type="text" id="item-memo" placeholder="예: +15강"></div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('item')">취소</button>
       <button class="btn btn-p" onclick="saveItem()">저장하기</button>
@@ -80,20 +72,10 @@
 <div class="modal-ov" id="modal-bulk">
   <div class="modal" style="max-width:520px">
     <div class="modal-title">📋 일괄 입력</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7">
       한 줄에 하나씩 입력하세요.<br>
-      형식: <span style="color:var(--accent)">아이템명 수량</span><br>
-      예: 전설 크란시아 목걸이 3
-    </div>
-    <div class="fg">
-      <label>카테고리</label>
-      <select class="sel" id="bulk-cat" style="width:100%">
-        <option value="weapon">⚔️ 무기류</option>
-        <option value="armor">🛡️ 방어구류</option>
-        <option value="acc">💍 악세사리류</option>
-        <option value="cloak">🧣 망토류</option>
-        <option value="etc">📦 기타</option>
-      </select>
+      형식: <span style="color:var(--accent)">아이템명 수량</span> (수량 없으면 1개로 등록)<br>
+      같은 이름은 자동으로 합산됩니다.
     </div>
     <div class="fg">
       <label>등급</label>
@@ -102,12 +84,12 @@
         <option value="legend">🟡 전설</option>
         <option value="hero">🟣 영웅</option>
         <option value="rare">🔵 희귀</option>
-        <option value="">— 등급 없음</option>
+        <option value="etc">⚪ 등급 없음</option>
       </select>
     </div>
     <div class="fg">
       <label>아이템 목록</label>
-      <textarea class="inp" id="bulk-text" rows="8" placeholder="전설 크란시아 목걸이 3&#10;영웅 무기 2&#10;희귀 망토 5" style="width:100%;resize:vertical;line-height:1.6"></textarea>
+      <textarea class="inp" id="bulk-text" rows="10" placeholder="엘 세라 귀걸이 2&#10;잿빛 여명 팔찌 2&#10;검은 가시 반지 1&#10;이니스 반지" style="width:100%;resize:vertical;line-height:1.8;font-size:13px"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('bulk')">취소</button>
@@ -123,26 +105,15 @@
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
 
-const CATS = {
-  weapon: {label:'무기류', icon:'⚔️'},
-  armor:  {label:'방어구류', icon:'🛡️'},
-  acc:    {label:'악세사리류', icon:'💍'},
-  cloak:  {label:'망토류', icon:'🧣'},
-  etc:    {label:'기타', icon:'📦'},
-};
-const CAT_ORDER = ['weapon','armor','acc','cloak','etc'];
-
-const GRADES = {
-  myth:   {label:'신화', cls:'grade-myth'},
-  legend: {label:'전설', cls:'grade-legend'},
-  hero:   {label:'영웅', cls:'grade-hero'},
-  rare:   {label:'희귀', cls:'grade-rare'},
-  '':     {label:'', cls:''},
-};
+const GRADES = [
+  {key:'myth',   label:'신화', icon:'🔴', cls:'grade-myth'},
+  {key:'legend', label:'전설', icon:'🟡', cls:'grade-legend'},
+  {key:'hero',   label:'영웅', icon:'🟣', cls:'grade-hero'},
+  {key:'rare',   label:'희귀', icon:'🔵', cls:'grade-rare'},
+  {key:'etc',    label:'기타', icon:'⚪', cls:'grade-etc'},
+];
 
 let warehouseItems = [];
-let filterCat = 'all';
-let filterGrade = 'all';
 
 window.addEventListener('load', () => {
   const sess = requireLogin(); if(!sess) return;
@@ -150,22 +121,17 @@ window.addEventListener('load', () => {
   watchServerName();
   renderSidebar('warehouse');
 
-  // 관리자 버튼
   if(isAdmin()) {
     document.getElementById('adminBtns').innerHTML = `
       <div style="display:flex;gap:6px">
         <button class="btn btn-s btn-sm" onclick="openModal('bulk')">📋 일괄입력</button>
         <button class="btn btn-p btn-sm" onclick="openAddItem()">+ 추가</button>
+        <button class="btn btn-d btn-sm" onclick="clearAll()">🗑️ 전체삭제</button>
       </div>`;
   }
 
-  // Firebase 실시간 로드
   fbListen('warehouseItems', data => {
-    if(data) {
-      warehouseItems = Array.isArray(data) ? data : Object.values(data);
-    } else {
-      warehouseItems = [];
-    }
+    warehouseItems = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
     setData('warehouseItems', warehouseItems);
     renderWarehouse();
   });
@@ -178,80 +144,44 @@ function renderWarehouse() {
   const admin = isAdmin();
   const total = warehouseItems.length;
 
-  // 필터 바
-  const filterHtml = `
-    <div class="filter-bar">
-      <button class="filter-btn ${filterCat==='all'?'on':''}" onclick="setFilter('cat','all')">전체</button>
-      ${CAT_ORDER.map(c=>`<button class="filter-btn ${filterCat===c?'on':''}" onclick="setFilter('cat','${c}')">${CATS[c].icon} ${CATS[c].label}</button>`).join('')}
-    </div>
-    <div class="filter-bar">
-      <button class="filter-btn ${filterGrade==='all'?'on':''}" onclick="setFilter('grade','all')">전체 등급</button>
-      ${Object.entries(GRADES).filter(([k])=>k!=='').map(([k,v])=>`<button class="filter-btn ${filterGrade===k?'on':''}" onclick="setFilter('grade','${k}')">${v.label}</button>`).join('')}
-    </div>`;
-
-  // 필터 적용
-  let filtered = warehouseItems;
-  if(filterCat!=='all') filtered = filtered.filter(i=>i.cat===filterCat);
-  if(filterGrade!=='all') filtered = filtered.filter(i=>i.grade===filterGrade);
-
-  if(filtered.length===0) {
-    document.getElementById('content').innerHTML = filterHtml + `
-      <div class="empty-msg">
-        <div style="font-size:36px;margin-bottom:10px">📦</div>
-        <div>${total===0?'등록된 아이템이 없습니다':'필터 조건에 맞는 아이템이 없습니다'}</div>
-        ${admin&&total===0?'<div style="margin-top:6px;font-size:12px">오른쪽 상단 + 추가 버튼을 눌러주세요</div>':''}
+  if(total === 0) {
+    document.getElementById('content').innerHTML = `
+      <div style="text-align:center;padding:60px 20px;color:var(--text2)">
+        <div style="font-size:40px;margin-bottom:12px">🏦</div>
+        <div style="font-size:15px;margin-bottom:6px">창고가 비어있습니다</div>
+        ${admin?'<div style="font-size:13px">오른쪽 상단 버튼으로 아이템을 추가해주세요</div>':''}
       </div>`;
     return;
   }
 
-  // 카테고리별 그룹
-  const grouped = {};
-  CAT_ORDER.forEach(c => { grouped[c] = []; });
-  filtered.forEach(item => {
-    const c = item.cat || 'etc';
-    if(!grouped[c]) grouped[c] = [];
-    grouped[c].push(item);
-  });
-
-  // 등급 순서
-  const gradeOrder = ['myth','legend','hero','rare',''];
-
-  let html = filterHtml;
-  CAT_ORDER.forEach(cat => {
-    const items = grouped[cat];
-    if(!items || items.length===0) return;
-
-    // 등급별 정렬
-    items.sort((a,b)=>gradeOrder.indexOf(a.grade||'')-gradeOrder.indexOf(b.grade||'')||a.name.localeCompare(b.name,'ko'));
+  let html = '';
+  GRADES.forEach(g => {
+    const items = warehouseItems
+      .filter(i=>(i.grade||'etc')===g.key)
+      .sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+    if(items.length===0) return;
 
     html += `
-      <div class="cat-title">${CATS[cat].icon} ${CATS[cat].label} <span style="color:var(--text2);font-weight:400">(${items.length}종)</span></div>
-      <div class="card" style="margin-bottom:14px">
-        ${items.map(item=>{
-          const g = GRADES[item.grade||''];
-          return `<div class="item-row">
-            <div style="display:flex;align-items:center;gap:8px">
-              ${item.grade?`<span class="grade-badge ${g.cls}">${g.label}</span>`:''}
-              <span class="item-name">${item.name}</span>
-              ${item.memo?`<span style="font-size:11px;color:var(--text2)">${item.memo}</span>`:''}
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="item-qty">× ${item.qty}개</span>
-              ${admin?`<button class="btn btn-s btn-sm" onclick="openEditItem(${item.id})">✏️</button>
-              <button class="btn btn-d btn-sm" onclick="delItem(${item.id})">🗑️</button>`:''}
-            </div>
-          </div>`;
-        }).join('')}
+      <div class="grade-section ${g.cls}">
+        <div class="grade-header">
+          ${g.icon} ${g.label}
+          <span style="font-size:12px;font-weight:400;opacity:.7">${items.length}종 / 총 ${items.reduce((s,i)=>s+i.qty,0)}개</span>
+        </div>
+        <div class="grade-body">
+          <div class="item-grid">
+            ${items.map(item=>`
+              <div class="item-chip">
+                <span>${item.name}${item.memo?` <span style="font-size:11px;color:var(--text2)">(${item.memo})</span>`:''}</span>
+                ${item.qty>1?`<span class="qty">×${item.qty}</span>`:''}
+                ${admin?`<button onclick="openEditItem(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:12px;padding:0 2px">✏️</button>
+                <button onclick="delItem(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px">✕</button>`:''}
+              </div>`).join('')}
+          </div>
+        </div>
       </div>`;
   });
 
   document.getElementById('content').innerHTML = html;
-}
-
-function setFilter(type, val) {
-  if(type==='cat') filterCat=val;
-  else filterGrade=val;
-  renderWarehouse();
 }
 
 function openAddItem() {
@@ -260,7 +190,6 @@ function openAddItem() {
   document.getElementById('item-name').value = '';
   document.getElementById('item-qty').value = '1';
   document.getElementById('item-memo').value = '';
-  document.getElementById('item-cat').value = 'acc';
   document.getElementById('item-grade').value = 'legend';
   openModal('item');
 }
@@ -272,8 +201,7 @@ function openEditItem(id) {
   document.getElementById('item-name').value = item.name;
   document.getElementById('item-qty').value = item.qty;
   document.getElementById('item-memo').value = item.memo||'';
-  document.getElementById('item-cat').value = item.cat||'etc';
-  document.getElementById('item-grade').value = item.grade||'';
+  document.getElementById('item-grade').value = item.grade||'etc';
   openModal('item');
 }
 
@@ -281,17 +209,21 @@ function saveItem() {
   const id = document.getElementById('item-id').value;
   const name = document.getElementById('item-name').value.trim();
   if(!name) { showToast('아이템명을 입력해주세요','error'); return; }
-  const qty = parseInt(document.getElementById('item-qty').value)||0;
-  const cat = document.getElementById('item-cat').value;
+  const qty = parseInt(document.getElementById('item-qty').value)||1;
   const grade = document.getElementById('item-grade').value;
   const memo = document.getElementById('item-memo').value.trim();
 
   if(id) {
     const item = warehouseItems.find(x=>x.id===parseInt(id)); if(!item) return;
-    Object.assign(item, {name, qty, cat, grade, memo});
+    Object.assign(item, {name, qty, grade, memo});
   } else {
-    const newId = Math.max(0,...warehouseItems.map(x=>x.id),0)+1;
-    warehouseItems.push({id:newId, name, qty, cat, grade, memo});
+    // 같은 이름+등급 있으면 합산
+    const existing = warehouseItems.find(x=>x.name===name&&x.grade===grade);
+    if(existing) { existing.qty+=qty; }
+    else {
+      const newId = Math.max(0,...warehouseItems.map(x=>x.id),0)+1;
+      warehouseItems.push({id:newId, name, qty, grade, memo});
+    }
   }
   saveWarehouse();
   closeModal('item');
@@ -306,30 +238,32 @@ function delItem(id) {
   showToast('삭제됨');
 }
 
+function clearAll() {
+  if(!confirm('창고 전체 삭제?')) return;
+  warehouseItems = [];
+  saveWarehouse();
+  showToast('전체 삭제됨');
+}
+
 function saveBulk() {
   const text = document.getElementById('bulk-text').value.trim();
-  const cat = document.getElementById('bulk-cat').value;
   const grade = document.getElementById('bulk-grade').value;
   if(!text) return;
 
   const lines = text.split('\n').filter(l=>l.trim());
   let added = 0;
   lines.forEach(line => {
-    line = line.trim();
-    if(!line) return;
-    // 마지막 숫자를 수량으로 파싱
+    line = line.trim(); if(!line) return;
     const match = line.match(/^(.+?)\s+(\d+)$/);
     let name, qty;
     if(match) { name=match[1].trim(); qty=parseInt(match[2]); }
     else { name=line; qty=1; }
     if(!name) return;
-
-    // 같은 이름 있으면 수량 합산
-    const existing = warehouseItems.find(x=>x.name===name&&x.cat===cat&&x.grade===grade);
+    const existing = warehouseItems.find(x=>x.name===name&&x.grade===grade);
     if(existing) { existing.qty+=qty; }
     else {
       const newId = Math.max(0,...warehouseItems.map(x=>x.id),0)+1;
-      warehouseItems.push({id:newId, name, qty, cat, grade, memo:''});
+      warehouseItems.push({id:newId, name, qty, grade, memo:''});
     }
     added++;
   });
