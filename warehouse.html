@@ -87,7 +87,10 @@
     </div>
     <div class="fg">
       <label>아이템 목록</label>
-      <textarea class="inp" id="bulk-text" rows="10" placeholder="엘 세라 귀걸이 2&#10;잿빛 여명 팔찌 2&#10;검은 가시 반지 1&#10;이니스 반지" style="width:100%;resize:vertical;line-height:1.8;font-size:13px"></textarea>
+      <textarea class="inp" id="bulk-text" rows="10" 
+        placeholder="엘 세라 귀걸이,잿빛 여명 팔찌,검은 가시 반지&#10;또는 줄바꿈으로 입력" 
+        style="width:100%;resize:vertical;line-height:1.8;font-size:13px"
+        onkeydown="event.stopPropagation()"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('bulk')">취소</button>
