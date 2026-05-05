@@ -527,6 +527,8 @@ function delMember(id) {
   if(!confirm(`"${m?.nick}" 삭제?`)) return;
   members=members.filter(x=>x.id!==id);
   setData('members',members);
+  fbSet('members',members);
+  localStorage.setItem('gm_lastMemberSave', Date.now().toString());
   renderDash();
   showToast('삭제됨');
 }
