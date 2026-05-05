@@ -55,7 +55,6 @@
         <option value="legend">🟡 전설</option>
         <option value="hero">🟣 영웅</option>
         <option value="rare">🔵 희귀</option>
-        <option value="etc">⚪ 등급 없음</option>
       </select>
     </div>
     <div class="fg"><label>아이템명</label><input class="inp" type="text" id="item-name" placeholder="예: 크란시아 목걸이"></div>
@@ -84,8 +83,7 @@
         <option value="legend">🟡 전설</option>
         <option value="hero">🟣 영웅</option>
         <option value="rare">🔵 희귀</option>
-        <option value="etc">⚪ 등급 없음</option>
-      </select>
+        </select>
     </div>
     <div class="fg">
       <label>아이템 목록</label>
@@ -110,7 +108,6 @@ const GRADES = [
   {key:'legend', label:'전설', icon:'🟡', cls:'grade-legend'},
   {key:'hero',   label:'영웅', icon:'🟣', cls:'grade-hero'},
   {key:'rare',   label:'희귀', icon:'🔵', cls:'grade-rare'},
-  {key:'etc',    label:'기타', icon:'⚪', cls:'grade-etc'},
 ];
 
 let warehouseItems = [];
@@ -201,7 +198,7 @@ function openEditItem(id) {
   document.getElementById('item-name').value = item.name;
   document.getElementById('item-qty').value = item.qty;
   document.getElementById('item-memo').value = item.memo||'';
-  document.getElementById('item-grade').value = item.grade||'etc';
+  document.getElementById('item-grade').value = item.grade||'legend';
   openModal('item');
 }
 
