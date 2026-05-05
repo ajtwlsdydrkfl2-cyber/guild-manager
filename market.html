@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>거래소 — 길드 매니저</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style id="commonStyle"></style>
+<style>
+.grade-myth{color:#ef4444;}
+.grade-legend{color:#eab308;}
+.grade-hero{color:#a855f7;}
+.grade-rare{color:#3b82f6;}
+.total-row{display:flex;justify-content:space-between;padding:8px 16px;font-size:14px;}
+.total-row.final{background:rgba(240,165,0,.07);border-top:2px solid var(--border);border-bottom:2px solid var(--border);padding:12px 16px;}
+@media(max-width:768px){
+  .hide-mobile{display:none;}
+  .content{padding-bottom:100px!important;}
+  table{font-size:12px;}
+  td,th{padding:7px 6px!important;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">💰 거래소 판매 내역</div>
+      </div>
+      <div id="adminBtns"></div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- 판매 등록 모달 -->
+<div class="modal-ov" id="modal-sell">
+  <div class="modal">
+    <div class="modal-title">💰 판매 등록</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px 12px;background:rgba(240,165,0,.06);border-radius:8px;border:1px solid rgba(240,165,0,.15)">
+      💡 창고 아이템 선택 → 판매가 입력 → 창고 자동 차감
+    </div>
+
+    <!-- 등급 필터 -->
+    <div class="fg">
+      <label>등급 선택</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-s btn-sm grade-filter on" data-grade="all" onclick="filterGrade('all',this)">전체</button>
+        <button class="btn btn-s btn-sm grade-filter" data-grade="myth" onclick="filterGrade('myth',this)" style="color:#ef4444;border-color:#ef4444">신화</button>
+        <button class="btn btn-s btn-sm grade-filter" data-grade="legend" onclick="filterGrade('legend',this)" style="color:#eab308;border-color:#eab308">전설</button>
+        <button class="btn btn-s btn-sm grade-filter" data-grade="hero" onclick="filterGrade('hero',this)" style="color:#a855f7;border-color:#a855f7">영웅</button>
+        <button class="btn btn-s btn-sm grade-filter" data-grade="rare" onclick="filterGrade('rare',this)" style="color:#3b82f6;border-color:#3b82f6">희귀</button>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label>아이템 선택</label>
+      <select class="sel" id="sell-item" style="width:100%">
+        <option value="">아이템 선택...</option>
+      </select>
+    </div>
+
+    <div class="fg">
+      <label>판매 금액 (다이아)</label>
+      <input class="inp" type="number" id="sell-price" placeholder="예: 50000" oninput="updateCalc()" style="width:100%">
+    </div>
+
+    <!-- 실시간 계산 -->
+    <div id="sellCalc" style="display:none;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+        <span style="color:var(--text2)">판매가</span>
+        <span id="c-sell" style="color:var(--accent);font-weight:700"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+        <span style="color:var(--text2)">세금 (13%)</span>
+        <span id="c-tax" style="color:var(--red)"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
+        <span style="font-weight:700">실수익</span>
+        <span id="c-profit" style="color:var(--green);font-weight:700"></span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('sell')">취소</button>
+      <button class="btn btn-p" onclick="saveSell()">판매 완료</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+
+const TAX = 0.13;
+const GRADE_LABELS = {myth:'신화', legend:'전설', hero:'영웅', rare:'희귀'};
+const GRADE_CLS = {myth:'grade-myth', legend:'grade-legend', hero:'grade-hero', rare:'grade-rare'};
+
+let salesHistory = [];
+let warehouseItems = [];
+let curGrade = 'all';
+
+window.addEventListener('load', () => {
+  const sess = requireLogin(); if(!sess) return;
+  initFirebase();
+  watchServerName();
+  renderSidebar('market');
+
+  if(isAdmin()) {
+    document.getElementById('adminBtns').innerHTML = `
+      <button class="btn btn-p btn-sm" onclick="openSell()">+ 판매 등록</button>`;
+  }
+
+  fbListen('salesHistory', data => {
+    salesHistory = data ? (Array.isArray(data)?data:Object.values(data)) : [];
+    setData('salesHistory', salesHistory);
+    renderMarket();
+  });
+
+  fbListen('warehouseItems', data => {
+    // 최근 5초 이내 로컬 저장이면 무시 (덮어쓰기 방지)
+    const lastSave = parseInt(localStorage.getItem('gm_lastWarehouseSave')||'0');
+    if (Date.now() - lastSave < 5000) return;
+    warehouseItems = data ? (Array.isArray(data)?data:Object.values(data)) : [];
+    setData('warehouseItems', warehouseItems);
+  });
+
+  salesHistory = getData('salesHistory', []);
+  warehouseItems = getData('warehouseItems', []);
+  renderMarket();
+});
+
+function renderMarket() {
+  const admin = isAdmin();
+  const sorted = [...salesHistory].sort((a,b)=>b.time-a.time);
+
+  const totalSell = salesHistory.reduce((s,i)=>s+i.price, 0);
+  const totalTax = Math.floor(totalSell * TAX);
+  const totalProfit = totalSell - totalTax;
+
+  document.getElementById('content').innerHTML = `
+    ${sorted.length===0 ? `
+      <div style="text-align:center;padding:60px 20px;color:var(--text2)">
+        <div style="font-size:40px;margin-bottom:12px">💰</div>
+        <div style="font-size:15px;margin-bottom:6px">판매 내역이 없습니다</div>
+        ${admin?'<div style="font-size:13px">오른쪽 상단 버튼으로 판매를 등록해주세요</div>':''}
+      </div>
+    ` : `
+    <div class="card" style="margin-bottom:14px">
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th class="tl">아이템명</th>
+              <th>판매가</th>
+              <th>세금(13%)</th>
+              <th>실수익</th>
+              <th class="hide-mobile">날짜</th>
+              ${admin?'<th></th>':''}
+            </tr>
+          </thead>
+          <tbody>
+            ${sorted.map(s=>{
+              const tax = Math.floor(s.price * TAX);
+              const profit = s.price - tax;
+              return `<tr>
+                <td class="tl">
+                  ${s.grade?`<span class="${GRADE_CLS[s.grade]}" style="font-size:11px;font-weight:700;margin-right:5px">${GRADE_LABELS[s.grade]}</span>`:''}
+                  <span style="font-weight:600">${s.name}</span>
+                </td>
+                <td style="color:var(--accent);font-weight:600">${s.price.toLocaleString()}</td>
+                <td style="color:var(--red)">${tax.toLocaleString()}</td>
+                <td style="color:var(--green);font-weight:700">${profit.toLocaleString()}</td>
+                <td class="hide-mobile" style="color:var(--text2);font-size:12px">${fmtDT(s.time)}</td>
+                ${admin?`<td><button onclick="delSell(${s.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px">✕</button></td>`:''}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 합계 -->
+      <div style="border-top:2px solid var(--border);margin-top:4px">
+        <div class="total-row">
+          <span style="font-weight:700;color:var(--text2)">총 판매금액</span>
+          <span style="font-weight:700;color:var(--accent);font-size:15px">${totalSell.toLocaleString()} 다이아</span>
+        </div>
+        <div class="total-row">
+          <span style="color:var(--text2)">총 세금 (13%)</span>
+          <span style="color:var(--red);font-weight:600">${totalTax.toLocaleString()} 다이아</span>
+        </div>
+        <div class="total-row final">
+          <span style="font-weight:700;font-size:15px">✅ 총 실수익</span>
+          <span style="font-weight:700;color:var(--green);font-size:18px">${totalProfit.toLocaleString()} 다이아</span>
+        </div>
+      </div>
+
+      ${admin?`
+      <div style="padding:14px 16px;display:flex;justify-content:flex-end">
+        <button class="btn btn-p" onclick="completeDist()" style="background:var(--green);font-size:14px;padding:10px 24px">
+          ✅ 분배완료 (내역 초기화)
+        </button>
+      </div>`:''}
+    </div>`}`;
+}
+
+function openSell() {
+  curGrade = 'all';
+  document.querySelectorAll('.grade-filter').forEach(b=>b.classList.remove('on'));
+  document.querySelector('.grade-filter[data-grade="all"]').classList.add('on');
+  loadItemList();
+  document.getElementById('sell-price').value = '';
+  document.getElementById('sellCalc').style.display = 'none';
+  openModal('sell');
+}
+
+function filterGrade(grade, btn) {
+  curGrade = grade;
+  document.querySelectorAll('.grade-filter').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  loadItemList();
+}
+
+function loadItemList() {
+  const sel = document.getElementById('sell-item');
+  sel.innerHTML = '<option value="">아이템 선택...</option>';
+  const filtered = warehouseItems
+    .filter(i => curGrade==='all' || i.grade===curGrade)
+    .filter(i => i.qty > 0)
+    .sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  filtered.forEach(item => {
+    const grade = GRADE_LABELS[item.grade]||'';
+    sel.innerHTML += `<option value="${item.id}">[${grade}] ${item.name}${item.qty>1?` ×${item.qty}`:''}</option>`;
+  });
+}
+
+function updateCalc() {
+  const price = parseInt(document.getElementById('sell-price').value)||0;
+  if(!price) { document.getElementById('sellCalc').style.display='none'; return; }
+  const tax = Math.floor(price * TAX);
+  const profit = price - tax;
+  document.getElementById('sellCalc').style.display = 'block';
+  document.getElementById('c-sell').textContent = price.toLocaleString() + ' 다이아';
+  document.getElementById('c-tax').textContent = '-' + tax.toLocaleString() + ' 다이아';
+  document.getElementById('c-profit').textContent = profit.toLocaleString() + ' 다이아';
+}
+
+function saveSell() {
+  const itemId = parseInt(document.getElementById('sell-item').value);
+  const price = parseInt(document.getElementById('sell-price').value);
+  if(!itemId) { showToast('아이템을 선택해주세요','error'); return; }
+  if(!price||price<=0) { showToast('판매 금액을 입력해주세요','error'); return; }
+
+  const item = warehouseItems.find(x=>x.id===itemId);
+  if(!item) { showToast('아이템을 찾을 수 없습니다','error'); return; }
+
+  // 판매 내역 추가
+  const newId = Math.max(0,...salesHistory.map(x=>x.id),0)+1;
+  salesHistory.push({id:newId, name:item.name, grade:item.grade, price, time:Date.now()});
+
+  // 창고 차감
+  if(item.qty > 1) item.qty -= 1;
+  else warehouseItems = warehouseItems.filter(x=>x.id!==itemId);
+
+  setData('salesHistory', salesHistory); fbSet('salesHistory', salesHistory);
+  setData('warehouseItems', warehouseItems); fbSet('warehouseItems', warehouseItems);
+  localStorage.setItem('gm_lastWarehouseSave', Date.now().toString());
+
+  closeModal('sell');
+  showToast(`${item.name} 판매 등록 완료!`, 'success');
+}
+
+function delSell(id) {
+  if(!confirm('이 판매 내역을 삭제하시겠습니까?')) return;
+  salesHistory = salesHistory.filter(x=>x.id!==id);
+  setData('salesHistory', salesHistory); fbSet('salesHistory', salesHistory);
+  showToast('삭제됨');
+}
+
+function completeDist() {
+  if(!confirm('분배완료 처리하고 판매 내역을 초기화하시겠습니까?')) return;
+  salesHistory = [];
+  setData('salesHistory', salesHistory); fbSet('salesHistory', salesHistory);
+  showToast('분배완료! 판매 내역이 초기화됐습니다', 'success');
+}
+
+function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
+function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+</script>
+</body>
+</html>
