@@ -284,6 +284,7 @@ function renderSidebar(activePage) {
     {id:'dashboard', label:'대시보드', icon:'🏠', href:'dashboard.html', oc:''},
     {id:'boss', label:'보스 포인트', icon:'⚔️', href:'#', oc:onDash?"switchTab('boss',document.querySelector('.tab:nth-child(2)'));closeSb();return false;":"location.href='dashboard.html?tab=boss';return false;"},
     {id:'equipment', label:'장비 기록', icon:'🛡️', href:'equipment.html', oc:''},
+    {id:'warehouse', label:'길드 창고', icon:'🏦', href:'warehouse.html', oc:''},
     {id:'items', label:'아이템 분배', icon:'📦', href:'items.html', oc:''},
     {id:'guide', label:'사용 설명서', icon:'📖', href:'guide.html', oc:''},
   ];

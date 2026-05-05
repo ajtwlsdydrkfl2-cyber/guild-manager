@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>길드 창고 — 길드 매니저</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style id="commonStyle"></style>
+<style>
+.grade-myth{color:#ef4444;background:rgba(239,68,68,.12);border-color:#ef4444;}
+.grade-legend{color:#eab308;background:rgba(234,179,8,.12);border-color:#eab308;}
+.grade-hero{color:#a855f7;background:rgba(168,85,247,.12);border-color:#a855f7;}
+.grade-rare{color:#3b82f6;background:rgba(59,130,246,.12);border-color:#3b82f6;}
+.grade-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;}
+.cat-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;margin-top:16px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.item-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid rgba(30,45,69,.4);}
+.item-row:last-child{border-bottom:none;}
+.item-name{font-size:13px;font-weight:600;}
+.item-qty{font-size:14px;font-weight:700;color:var(--accent);}
+.cat-icon{font-size:16px;margin-right:6px;}
+.empty-msg{text-align:center;padding:40px 20px;color:var(--text2);font-size:13px;}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.filter-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
+.filter-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(240,165,0,.1);}
+@media(max-width:768px){.content{padding:14px 12px;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">🏦 길드 창고</div>
+      </div>
+      <div id="adminBtns"></div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- 아이템 추가/수정 모달 -->
+<div class="modal-ov" id="modal-item">
+  <div class="modal">
+    <div class="modal-title" id="itemModalTitle">📦 아이템 추가</div>
+    <input type="hidden" id="item-id">
+    <div class="fg">
+      <label>카테고리</label>
+      <select class="sel" id="item-cat" style="width:100%">
+        <option value="weapon">⚔️ 무기류</option>
+        <option value="armor">🛡️ 방어구류</option>
+        <option value="acc">💍 악세사리류</option>
+        <option value="cloak">🧣 망토류</option>
+        <option value="etc">📦 기타</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>등급</label>
+      <select class="sel" id="item-grade" style="width:100%">
+        <option value="myth">🔴 신화</option>
+        <option value="legend">🟡 전설</option>
+        <option value="hero">🟣 영웅</option>
+        <option value="rare">🔵 희귀</option>
+        <option value="">— 등급 없음</option>
+      </select>
+    </div>
+    <div class="fg"><label>아이템명</label><input class="inp" type="text" id="item-name" placeholder="예: 크란시아 목걸이"></div>
+    <div class="fg"><label>수량</label><input class="inp" type="number" id="item-qty" value="1" min="0"></div>
+    <div class="fg"><label>메모 (선택)</label><input class="inp" type="text" id="item-memo" placeholder="예: +15강, 특이사항 등"></div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('item')">취소</button>
+      <button class="btn btn-p" onclick="saveItem()">저장하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 일괄입력 모달 -->
+<div class="modal-ov" id="modal-bulk">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">📋 일괄 입력</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">
+      한 줄에 하나씩 입력하세요.<br>
+      형식: <span style="color:var(--accent)">아이템명 수량</span><br>
+      예: 전설 크란시아 목걸이 3
+    </div>
+    <div class="fg">
+      <label>카테고리</label>
+      <select class="sel" id="bulk-cat" style="width:100%">
+        <option value="weapon">⚔️ 무기류</option>
+        <option value="armor">🛡️ 방어구류</option>
+        <option value="acc">💍 악세사리류</option>
+        <option value="cloak">🧣 망토류</option>
+        <option value="etc">📦 기타</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>등급</label>
+      <select class="sel" id="bulk-grade" style="width:100%">
+        <option value="myth">🔴 신화</option>
+        <option value="legend">🟡 전설</option>
+        <option value="hero">🟣 영웅</option>
+        <option value="rare">🔵 희귀</option>
+        <option value="">— 등급 없음</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>아이템 목록</label>
+      <textarea class="inp" id="bulk-text" rows="8" placeholder="전설 크란시아 목걸이 3&#10;영웅 무기 2&#10;희귀 망토 5" style="width:100%;resize:vertical;line-height:1.6"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('bulk')">취소</button>
+      <button class="btn btn-p" onclick="saveBulk()">일괄 등록</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+
+const CATS = {
+  weapon: {label:'무기류', icon:'⚔️'},
+  armor:  {label:'방어구류', icon:'🛡️'},
+  acc:    {label:'악세사리류', icon:'💍'},
+  cloak:  {label:'망토류', icon:'🧣'},
+  etc:    {label:'기타', icon:'📦'},
+};
+const CAT_ORDER = ['weapon','armor','acc','cloak','etc'];
+
+const GRADES = {
+  myth:   {label:'신화', cls:'grade-myth'},
+  legend: {label:'전설', cls:'grade-legend'},
+  hero:   {label:'영웅', cls:'grade-hero'},
+  rare:   {label:'희귀', cls:'grade-rare'},
+  '':     {label:'', cls:''},
+};
+
+let warehouseItems = [];
+let filterCat = 'all';
+let filterGrade = 'all';
+
+window.addEventListener('load', () => {
+  const sess = requireLogin(); if(!sess) return;
+  initFirebase();
+  watchServerName();
+  renderSidebar('warehouse');
+
+  // 관리자 버튼
+  if(isAdmin()) {
+    document.getElementById('adminBtns').innerHTML = `
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-s btn-sm" onclick="openModal('bulk')">📋 일괄입력</button>
+        <button class="btn btn-p btn-sm" onclick="openAddItem()">+ 추가</button>
+      </div>`;
+  }
+
+  // Firebase 실시간 로드
+  fbListen('warehouseItems', data => {
+    if(data) {
+      warehouseItems = Array.isArray(data) ? data : Object.values(data);
+    } else {
+      warehouseItems = [];
+    }
+    setData('warehouseItems', warehouseItems);
+    renderWarehouse();
+  });
+
+  warehouseItems = getData('warehouseItems', []);
+  renderWarehouse();
+});
+
+function renderWarehouse() {
+  const admin = isAdmin();
+  const total = warehouseItems.length;
+
+  // 필터 바
+  const filterHtml = `
+    <div class="filter-bar">
+      <button class="filter-btn ${filterCat==='all'?'on':''}" onclick="setFilter('cat','all')">전체</button>
+      ${CAT_ORDER.map(c=>`<button class="filter-btn ${filterCat===c?'on':''}" onclick="setFilter('cat','${c}')">${CATS[c].icon} ${CATS[c].label}</button>`).join('')}
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn ${filterGrade==='all'?'on':''}" onclick="setFilter('grade','all')">전체 등급</button>
+      ${Object.entries(GRADES).filter(([k])=>k!=='').map(([k,v])=>`<button class="filter-btn ${filterGrade===k?'on':''}" onclick="setFilter('grade','${k}')">${v.label}</button>`).join('')}
+    </div>`;
+
+  // 필터 적용
+  let filtered = warehouseItems;
+  if(filterCat!=='all') filtered = filtered.filter(i=>i.cat===filterCat);
+  if(filterGrade!=='all') filtered = filtered.filter(i=>i.grade===filterGrade);
+
+  if(filtered.length===0) {
+    document.getElementById('content').innerHTML = filterHtml + `
+      <div class="empty-msg">
+        <div style="font-size:36px;margin-bottom:10px">📦</div>
+        <div>${total===0?'등록된 아이템이 없습니다':'필터 조건에 맞는 아이템이 없습니다'}</div>
+        ${admin&&total===0?'<div style="margin-top:6px;font-size:12px">오른쪽 상단 + 추가 버튼을 눌러주세요</div>':''}
+      </div>`;
+    return;
+  }
+
+  // 카테고리별 그룹
+  const grouped = {};
+  CAT_ORDER.forEach(c => { grouped[c] = []; });
+  filtered.forEach(item => {
+    const c = item.cat || 'etc';
+    if(!grouped[c]) grouped[c] = [];
+    grouped[c].push(item);
+  });
+
+  // 등급 순서
+  const gradeOrder = ['myth','legend','hero','rare',''];
+
+  let html = filterHtml;
+  CAT_ORDER.forEach(cat => {
+    const items = grouped[cat];
+    if(!items || items.length===0) return;
+
+    // 등급별 정렬
+    items.sort((a,b)=>gradeOrder.indexOf(a.grade||'')-gradeOrder.indexOf(b.grade||'')||a.name.localeCompare(b.name,'ko'));
+
+    html += `
+      <div class="cat-title">${CATS[cat].icon} ${CATS[cat].label} <span style="color:var(--text2);font-weight:400">(${items.length}종)</span></div>
+      <div class="card" style="margin-bottom:14px">
+        ${items.map(item=>{
+          const g = GRADES[item.grade||''];
+          return `<div class="item-row">
+            <div style="display:flex;align-items:center;gap:8px">
+              ${item.grade?`<span class="grade-badge ${g.cls}">${g.label}</span>`:''}
+              <span class="item-name">${item.name}</span>
+              ${item.memo?`<span style="font-size:11px;color:var(--text2)">${item.memo}</span>`:''}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="item-qty">× ${item.qty}개</span>
+              ${admin?`<button class="btn btn-s btn-sm" onclick="openEditItem(${item.id})">✏️</button>
+              <button class="btn btn-d btn-sm" onclick="delItem(${item.id})">🗑️</button>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  });
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function setFilter(type, val) {
+  if(type==='cat') filterCat=val;
+  else filterGrade=val;
+  renderWarehouse();
+}
+
+function openAddItem() {
+  document.getElementById('itemModalTitle').textContent = '📦 아이템 추가';
+  document.getElementById('item-id').value = '';
+  document.getElementById('item-name').value = '';
+  document.getElementById('item-qty').value = '1';
+  document.getElementById('item-memo').value = '';
+  document.getElementById('item-cat').value = 'acc';
+  document.getElementById('item-grade').value = 'legend';
+  openModal('item');
+}
+
+function openEditItem(id) {
+  const item = warehouseItems.find(x=>x.id===id); if(!item) return;
+  document.getElementById('itemModalTitle').textContent = '✏️ 아이템 수정';
+  document.getElementById('item-id').value = id;
+  document.getElementById('item-name').value = item.name;
+  document.getElementById('item-qty').value = item.qty;
+  document.getElementById('item-memo').value = item.memo||'';
+  document.getElementById('item-cat').value = item.cat||'etc';
+  document.getElementById('item-grade').value = item.grade||'';
+  openModal('item');
+}
+
+function saveItem() {
+  const id = document.getElementById('item-id').value;
+  const name = document.getElementById('item-name').value.trim();
+  if(!name) { showToast('아이템명을 입력해주세요','error'); return; }
+  const qty = parseInt(document.getElementById('item-qty').value)||0;
+  const cat = document.getElementById('item-cat').value;
+  const grade = document.getElementById('item-grade').value;
+  const memo = document.getElementById('item-memo').value.trim();
+
+  if(id) {
+    const item = warehouseItems.find(x=>x.id===parseInt(id)); if(!item) return;
+    Object.assign(item, {name, qty, cat, grade, memo});
+  } else {
+    const newId = Math.max(0,...warehouseItems.map(x=>x.id),0)+1;
+    warehouseItems.push({id:newId, name, qty, cat, grade, memo});
+  }
+  saveWarehouse();
+  closeModal('item');
+  showToast('저장됨!','success');
+}
+
+function delItem(id) {
+  const item = warehouseItems.find(x=>x.id===id);
+  if(!confirm(`"${item?.name}" 삭제?`)) return;
+  warehouseItems = warehouseItems.filter(x=>x.id!==id);
+  saveWarehouse();
+  showToast('삭제됨');
+}
+
+function saveBulk() {
+  const text = document.getElementById('bulk-text').value.trim();
+  const cat = document.getElementById('bulk-cat').value;
+  const grade = document.getElementById('bulk-grade').value;
+  if(!text) return;
+
+  const lines = text.split('\n').filter(l=>l.trim());
+  let added = 0;
+  lines.forEach(line => {
+    line = line.trim();
+    if(!line) return;
+    // 마지막 숫자를 수량으로 파싱
+    const match = line.match(/^(.+?)\s+(\d+)$/);
+    let name, qty;
+    if(match) { name=match[1].trim(); qty=parseInt(match[2]); }
+    else { name=line; qty=1; }
+    if(!name) return;
+
+    // 같은 이름 있으면 수량 합산
+    const existing = warehouseItems.find(x=>x.name===name&&x.cat===cat&&x.grade===grade);
+    if(existing) { existing.qty+=qty; }
+    else {
+      const newId = Math.max(0,...warehouseItems.map(x=>x.id),0)+1;
+      warehouseItems.push({id:newId, name, qty, cat, grade, memo:''});
+    }
+    added++;
+  });
+
+  saveWarehouse();
+  closeModal('bulk');
+  showToast(`${added}개 아이템 등록됨!`,'success');
+}
+
+function saveWarehouse() {
+  setData('warehouseItems', warehouseItems);
+  fbSet('warehouseItems', warehouseItems);
+  renderWarehouse();
+}
+
+function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
+function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+</script>
+</body>
+</html>
