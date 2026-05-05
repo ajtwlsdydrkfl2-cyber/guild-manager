@@ -142,7 +142,7 @@ function renderMarket() {
   const sorted = [...salesHistory].sort((a,b)=>b.time-a.time);
 
   const totalSell = salesHistory.reduce((s,i)=>s+i.price, 0);
-  const totalTax = Math.floor(totalSell * TAX);
+  const totalTax = Math.ceil(totalSell * TAX);
   const totalProfit = totalSell - totalTax;
 
   document.getElementById('content').innerHTML = `
@@ -168,7 +168,7 @@ function renderMarket() {
           </thead>
           <tbody>
             ${sorted.map(s=>{
-              const tax = Math.floor(s.price * TAX);
+              const tax = Math.ceil(s.price * TAX);
               const profit = s.price - tax;
               return `<tr>
                 <td class="tl">
@@ -244,7 +244,7 @@ function loadItemList() {
 function updateCalc() {
   const price = parseInt(document.getElementById('sell-price').value)||0;
   if(!price) { document.getElementById('sellCalc').style.display='none'; return; }
-  const tax = Math.floor(price * TAX);
+  const tax = Math.ceil(price * TAX);
   const profit = price - tax;
   document.getElementById('sellCalc').style.display = 'block';
   document.getElementById('c-sell').textContent = price.toLocaleString() + ' 다이아';
