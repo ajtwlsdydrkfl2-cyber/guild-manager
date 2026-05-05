@@ -141,31 +141,25 @@ function renderWarehouse() {
   const admin = isAdmin();
   const total = warehouseItems.length;
 
-  if(total === 0) {
-    document.getElementById('content').innerHTML = `
-      <div style="text-align:center;padding:60px 20px;color:var(--text2)">
-        <div style="font-size:40px;margin-bottom:12px">🏦</div>
-        <div style="font-size:15px;margin-bottom:6px">창고가 비어있습니다</div>
-        ${admin?'<div style="font-size:13px">오른쪽 상단 버튼으로 아이템을 추가해주세요</div>':''}
-      </div>`;
-    return;
-  }
+  // 2x2 그리드로 항상 표시
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
 
-  let html = '';
   GRADES.forEach(g => {
     const items = warehouseItems
-      .filter(i=>(i.grade||'etc')===g.key)
+      .filter(i=>(i.grade||'myth')===g.key)
       .sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-    if(items.length===0) return;
 
-    html += `
-      <div class="grade-section ${g.cls}">
-        <div class="grade-header">
-          ${g.icon} ${g.label}
-          <span style="font-size:12px;font-weight:400;opacity:.7">${items.length}종 / 총 ${items.reduce((s,i)=>s+i.qty,0)}개</span>
-        </div>
-        <div class="grade-body">
-          <div class="item-grid">
+    const totalQty = items.reduce((s,i)=>s+i.qty,0);
+
+    html += `<div class="grade-section ${g.cls}">
+      <div class="grade-header">
+        ${g.icon} ${g.label}
+        <span style="font-size:12px;font-weight:400;opacity:.7">${items.length}종 / ${totalQty}개</span>
+      </div>
+      <div class="grade-body" style="min-height:80px">
+        ${items.length===0
+          ?`<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0">비어있음</div>`
+          :`<div class="item-grid">
             ${items.map(item=>`
               <div class="item-chip">
                 <span>${item.name}${item.memo?` <span style="font-size:11px;color:var(--text2)">(${item.memo})</span>`:''}</span>
@@ -173,11 +167,12 @@ function renderWarehouse() {
                 ${admin?`<button onclick="openEditItem(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:12px;padding:0 2px">✏️</button>
                 <button onclick="delItem(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px">✕</button>`:''}
               </div>`).join('')}
-          </div>
-        </div>
-      </div>`;
+          </div>`}
+      </div>
+    </div>`;
   });
 
+  html += '</div>';
   document.getElementById('content').innerHTML = html;
 }
 
