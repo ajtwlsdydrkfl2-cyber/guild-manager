@@ -88,6 +88,9 @@
       <div class="tab" onclick="switchTab('boss',this)">⚔️ 보스 포인트</div>
       <div class="tab" onclick="switchTab('history',this)">📊 주간 기록</div>
     </div>
+    <div style="background:rgba(239,68,68,.1);border-bottom:1px solid rgba(239,68,68,.25);padding:7px 20px;font-size:12px;color:#f87171;display:flex;align-items:center;gap:6px;flex-shrink:0">
+      ⚠️ 보스 회차 추가 후 <strong style="color:#ef4444">1시간 뒤 자동 잠금</strong> · 참여 변경 내역은 로그에 기록됩니다
+    </div>
     <div class="content" id="content"></div>
   </div>
 </div>
@@ -355,7 +358,7 @@ function renderBoss() {
                 ${rounds.map(r=>`
                   <th style="min-width:110px">
                     <div class="round-boss">${r.bn}</div>
-                    <div class="round-time">${fmtDT(r.time)}${r.nightBonus?'<span class="night-mark"> 🌙</span>':''}</div>
+                    <div class="round-time">${fmtDT(r.time)}${r.nightBonus?'<span class="night-mark"> 🌙</span>':''}${isLocked(r.rk)?'<span style="color:var(--red);margin-left:4px">🔒</span>':''}</div>
                     <button class="round-del" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>
                   </th>`).join('')}
               </tr></thead>
@@ -392,7 +395,7 @@ function renderBoss() {
             <div class="boss-round-title">
               <div>
                 <div class="boss-round-name">⚔️ ${r.bn}${r.nightBonus?' 🌙':''}</div>
-                <div class="boss-round-time">${fmtDT(r.time)}</div>
+                <div class="boss-round-time">${fmtDT(r.time)}${r.nightBonus?' 🌙':''}${isLocked(r.rk)?' 🔒':''}</div>
               </div>
               <button class="btn btn-d btn-sm" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>
             </div>
@@ -405,12 +408,14 @@ function renderBoss() {
                   <span class="member-att-pts">${pts.toFixed(1)}pt</span>
                 </div>
                 <div class="att-btns">
-                  <button class="att-btn att-btn-join ${st==='참여'?'on':''}"
-                    onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'참여',this)">참</button>
-                  <button class="att-btn att-btn-late ${st==='늦참'?'on':''}"
-                    onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'늦참',this)">늦</button>
-                  <button class="att-btn att-btn-miss ${st==='미참'?'on':''}"
-                    onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'미참',this)">미</button>
+                  ${isLocked(r.rk)&&!isAdmin()
+                    ?`<span style="color:var(--red);font-size:12px">🔒 잠김</span>`
+                    :`<button class="att-btn att-btn-join ${st==='참여'?'on':''}"
+                        onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'참여',this)">참</button>
+                      <button class="att-btn att-btn-late ${st==='늦참'?'on':''}"
+                        onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'늦참',this)">늦</button>
+                      <button class="att-btn att-btn-miss ${st==='미참'?'on':''}"
+                        onclick="setAttMobile('${r.bn}','${r.rk}',${m.id},'미참',this)">미</button>`}
                 </div>
               </div>`;
             }).join('')}
@@ -428,7 +433,10 @@ function addRound() {
   if(!attend[wk]) attend[wk]={};
   if(!attend[wk][bn]) attend[wk][bn]={};
   const rk=Date.now().toString();
-  attend[wk][bn][rk]={time:Date.now(),nightBonus:isNightBonus(),attendance:{},addedBy:sess?.serverName||'길드원'};
+  // 모든 길드원 미참으로 기본 설정
+  const defaultAtt = {};
+  members.forEach(m => { defaultAtt[m.id] = '미참'; });
+  attend[wk][bn][rk]={time:Date.now(),nightBonus:isNightBonus(),attendance:defaultAtt,addedBy:sess?.serverName||'길드원'};
   setData('attend',attend);
   fbSet('attend', attend);
   // 로그 기록
@@ -440,7 +448,12 @@ function addRound() {
   setTimeout(()=>document.getElementById('content').scrollTop=0,50);
 }
 
+function isLocked(rk) {
+  return Date.now() - parseInt(rk) > 3600000; // 1시간
+}
+
 function setAtt(bn,rk,mid,st) {
+  if(isLocked(rk) && !isAdmin()) { showToast('1시간이 지나 잠금됐습니다','error'); return; }
   const wk=getWeekKey();
   if(!attend[wk]?.[bn]?.[rk]) return;
   if(!attend[wk][bn][rk].attendance) attend[wk][bn][rk].attendance={};
@@ -544,6 +557,7 @@ function closeSb(){document.getElementById('sidebar').classList.remove('open');d
 
 // ===== 모바일 참여 체크 =====
 function setAttMobile(bn, rk, mid, newSt, btn) {
+  if(isLocked(rk) && !isAdmin()) { showToast('1시간이 지나 잠금됐습니다','error'); return; }
   const wk=getWeekKey();
   if(!attend[wk]?.[bn]?.[rk]) return;
   if(!attend[wk][bn][rk].attendance) attend[wk][bn][rk].attendance={};
