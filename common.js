@@ -287,6 +287,7 @@ function renderSidebar(activePage) {
     {id:'warehouse', label:'길드 창고', icon:'🏦', href:'warehouse.html', oc:''},
     {id:'market', label:'거래소 내역', icon:'💰', href:'market.html', oc:''},
     {id:'items', label:'아이템 분배', icon:'📦', href:'items.html', oc:''},
+    {id:'game', label:'길드 게임', icon:'🎮', href:'game.html', oc:''},
     {id:'guide', label:'사용 설명서', icon:'📖', href:'guide.html', oc:''},
   ];
   if (admin) pages.push({id:'admin', label:'관리자', icon:'⚙️', href:'admin.html', oc:''});

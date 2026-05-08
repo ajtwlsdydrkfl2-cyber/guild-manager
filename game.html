@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>게임 — 길드 매니저</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style id="commonStyle"></style>
+<style>
+.game-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.game-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s;}
+.game-card:hover{transform:translateY(-2px);border-color:var(--accent);}
+.game-card.wide{grid-column:1/-1;}
+.game-header{padding:16px;text-align:center;position:relative;}
+.game-icon{font-size:36px;display:block;margin-bottom:6px;}
+.game-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+.game-prize{font-size:12px;color:var(--accent);margin-bottom:4px;}
+.game-leader{font-size:11px;color:var(--accent2);}
+.game-btn{display:block;width:100%;padding:10px;background:var(--accent);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
+.game-btn:hover{background:#fbbf24;}
+.game-btn.done{background:var(--bg3);color:var(--text2);cursor:default;}
+.game-btn.no-prize{background:var(--border);color:var(--text2);cursor:default;}
+
+/* 게임 화면 */
+.game-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:100;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.game-screen.open{display:flex;}
+.game-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;}
+.game-screen-title{font-size:20px;font-weight:700;margin-bottom:6px;}
+.game-screen-prize{font-size:14px;color:var(--accent);margin-bottom:24px;}
+
+/* 룰렛 */
+.roulette-wrap{position:relative;margin-bottom:24px;}
+.roulette-canvas{border-radius:50%;border:4px solid var(--accent);box-shadow:0 0 30px rgba(240,165,0,.3);}
+.roulette-arrow{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;}
+
+/* 슬롯 */
+.slot-display{font-size:72px;font-weight:900;color:var(--accent);font-family:'Black Han Sans',sans-serif;margin-bottom:24px;letter-spacing:8px;min-width:200px;text-align:center;background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:16px 24px;}
+
+/* 공 튀기기 */
+.ball-canvas{border:2px solid var(--border);border-radius:12px;background:var(--bg2);}
+
+/* 카드 */
+.card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:24px;}
+.play-card{width:52px;height:72px;border-radius:8px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;font-size:24px;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--text2);}
+.play-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+.play-card.flipped{background:var(--bg3);cursor:default;}
+.play-card.win{background:rgba(240,165,0,.2);border-color:var(--accent);color:var(--accent);}
+.play-card.lose{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red);}
+
+/* 타이머 */
+.timer-display{font-size:56px;font-weight:900;color:var(--accent);font-family:'Black Han Sans',sans-serif;margin-bottom:24px;letter-spacing:4px;}
+.timer-stop-btn{font-size:18px;padding:16px 48px;border-radius:12px;background:var(--red);color:#fff;border:none;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:700;transition:all .15s;}
+.timer-stop-btn:hover{background:#dc2626;}
+
+/* 결과 */
+.result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;}
+.result-overlay.open{display:flex;}
+.result-box{background:var(--bg2);border:2px solid var(--accent);border-radius:20px;padding:36px;text-align:center;max-width:400px;width:90%;}
+.result-icon{font-size:60px;margin-bottom:12px;}
+.result-name{font-size:24px;font-weight:700;color:var(--accent);margin-bottom:8px;}
+.result-prize{font-size:16px;color:var(--accent2);margin-bottom:20px;}
+
+/* 점수판 */
+.score-board{width:100%;max-width:340px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;max-height:180px;overflow-y:auto;}
+.score-row{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-bottom:1px solid rgba(30,45,69,.4);font-size:13px;}
+
+@media(max-width:768px){
+  .game-grid{grid-template-columns:1fr;}
+  .game-card.wide{grid-column:auto;}
+  .card-grid{grid-template-columns:repeat(4,1fr);}
+  .play-card{width:44px;height:62px;}
+  .roulette-canvas{width:260px!important;height:260px!important;}
+  .content{padding-bottom:100px!important;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">🎮 길드 게임</div>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- 게임 화면들 -->
+<div class="game-screen" id="screen-roulette">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🎡 룰렛</div>
+  <div class="game-screen-prize" id="roulette-prize-label"></div>
+  <div class="roulette-wrap">
+    <div class="roulette-arrow">▼</div>
+    <canvas class="roulette-canvas" id="roulette-canvas" width="300" height="300"></canvas>
+  </div>
+  <div class="score-board" id="roulette-scores"></div>
+  <button class="btn btn-p" id="roulette-btn" onclick="spinRoulette()" style="font-size:16px;padding:14px 40px">🎡 돌리기!</button>
+  <div id="roulette-remain" style="margin-top:10px;font-size:12px;color:var(--text2)"></div>
+</div>
+
+<div class="game-screen" id="screen-slot">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🎰 슬롯머신</div>
+  <div class="game-screen-prize" id="slot-prize-label"></div>
+  <div class="slot-display" id="slot-display">7 7 7</div>
+  <div class="score-board" id="slot-scores"></div>
+  <button class="btn btn-p" id="slot-btn" onclick="startSlot()" style="font-size:16px;padding:14px 40px">🎰 시작!</button>
+</div>
+
+<div class="game-screen" id="screen-ball">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">⚽ 공 튀기기</div>
+  <div class="game-screen-prize" id="ball-prize-label"></div>
+  <canvas class="ball-canvas" id="ball-canvas" width="320" height="240"></canvas>
+  <div style="margin:10px 0;font-size:13px;color:var(--text2)">공을 클릭해서 튕기세요! <span id="ball-timer" style="color:var(--accent);font-weight:700"></span></div>
+  <div id="ball-score-display" style="font-size:24px;font-weight:700;color:var(--accent);margin-bottom:8px">0점</div>
+  <div class="score-board" id="ball-scores"></div>
+  <button class="btn btn-p" id="ball-btn" onclick="startBall()" style="font-size:16px;padding:14px 40px">⚽ 시작!</button>
+</div>
+
+<div class="game-screen" id="screen-card">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🃏 카드 뽑기</div>
+  <div class="game-screen-prize" id="card-prize-label"></div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:16px">카드를 선택하세요! 당첨 카드는 1장입니다.</div>
+  <div class="card-grid" id="card-grid"></div>
+  <div id="card-remain" style="font-size:12px;color:var(--text2)"></div>
+</div>
+
+<div class="game-screen" id="screen-timer">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">⏱ 10초 챌린지</div>
+  <div class="game-screen-prize" id="timer-prize-label"></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:16px">목표 시간에 최대한 근접하게 STOP을 누르세요!</div>
+  <div style="font-size:14px;color:var(--accent2);margin-bottom:8px">목표: <span id="timer-target" style="font-weight:700;color:var(--accent)"></span>초</div>
+  <div class="timer-display" id="timer-display">00:00:00</div>
+  <div class="score-board" id="timer-scores"></div>
+  <button class="timer-stop-btn" id="timer-btn" onclick="timerAction()">▶ 시작</button>
+  <div id="timer-result" style="margin-top:12px;font-size:14px;font-weight:700;color:var(--accent2)"></div>
+</div>
+
+<!-- 결과 오버레이 -->
+<div class="result-overlay" id="result-overlay">
+  <div class="result-box">
+    <div class="result-icon" id="result-icon">🎉</div>
+    <div id="result-title" style="font-size:16px;color:var(--text2);margin-bottom:8px"></div>
+    <div class="result-name" id="result-name"></div>
+    <div class="result-prize" id="result-prize-text"></div>
+    <button class="btn btn-p" onclick="closeResult()" style="width:100%">확인</button>
+  </div>
+</div>
+
+<!-- 상품 설정 모달 -->
+<div class="modal-ov" id="modal-prize">
+  <div class="modal">
+    <div class="modal-title">🎁 상품 설정</div>
+    <input type="hidden" id="prize-game">
+    <div class="fg">
+      <label>창고에서 선택</label>
+      <select class="sel" id="prize-item" style="width:100%">
+        <option value="">창고 아이템 선택...</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>또는 직접 입력</label>
+      <input class="inp" type="text" id="prize-custom" placeholder="예: 다이아 5000개" style="width:100%">
+    </div>
+    <div id="timer-target-wrap" style="display:none">
+      <div class="fg">
+        <label>목표 시간 (초)</label>
+        <input class="inp" type="number" id="prize-target" value="10" min="1" max="60" style="width:100%">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('prize')">취소</button>
+      <button class="btn btn-p" onclick="savePrize()">설정하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 닉네임 선택 모달 -->
+<div class="modal-ov" id="modal-nick">
+  <div class="modal">
+    <div class="modal-title">👤 본인 닉네임 선택</div>
+    <div class="fg">
+      <select class="sel" id="nick-select" style="width:100%">
+        <option value="">선택하세요</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('nick')">취소</button>
+      <button class="btn btn-p" onclick="confirmNick()">확인</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+
+const GAMES = {
+  roulette: {name:'룰렛', icon:'🎡'},
+  slot:     {name:'슬롯머신', icon:'🎰'},
+  ball:     {name:'공 튀기기', icon:'⚽'},
+  card:     {name:'카드 뽑기', icon:'🃏'},
+  timer:    {name:'10초 챌린지', icon:'⏱'},
+};
+
+let gameData = {};
+let members = [];
+let warehouseItems = [];
+let myNick = sessionStorage.getItem('gm_gameNick') || '';
+let pendingGame = '';
+let currentGame = '';
+
+// 룰렛
+let rouletteSpinning = false;
+let rouletteAngle = 0;
+let rouletteAnimId = null;
+
+// 슬롯
+let slotRunning = false;
+let slotInterval = null;
+let slotPhase = 0;
+
+// 공
+let ballAnimId = null;
+let balls = [];
+let ballScore = 0;
+let ballRunning = false;
+let ballTimeLeft = 15;
+let ballTimerInterval = null;
+
+// 타이머
+let timerRunning = false;
+let timerStart = 0;
+let timerAnimId = null;
+let timerTarget = 10;
+
+window.addEventListener('load', () => {
+  const sess = requireLogin(); if(!sess) return;
+  initFirebase();
+  watchServerName();
+  renderSidebar('game');
+  members = getData('members', []);
+  warehouseItems = getData('warehouseItems', []);
+
+  fbListen('gameData', data => {
+    gameData = data || {};
+    renderGames();
+  });
+  fbListen('warehouseItems', data => {
+    warehouseItems = data ? (Array.isArray(data)?data:Object.values(data)) : [];
+  });
+  fbListen('members', data => {
+    if(data) members = Array.isArray(data)?data:Object.values(data);
+  });
+
+  gameData = getData('gameData', {});
+  renderGames();
+});
+
+function saveGameData() {
+  setData('gameData', gameData);
+  fbSet('gameData', gameData);
+}
+
+function renderGames() {
+  const admin = isAdmin();
+  const gd = gameData;
+
+  const gameCard = (key, wide=false) => {
+    const g = GAMES[key];
+    const d = gd[key] || {};
+    const prize = d.prize || '';
+    const scores = d.scores || {};
+    const scoreArr = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    const leader = scoreArr[0];
+    const myDone = myNick && scores[myNick] !== undefined;
+    const cardPlays = d.cardPlays || {};
+    const myCardDone = myNick && cardPlays[myNick];
+
+    let leaderText = '';
+    if(key==='card') {
+      const remain = 20 - Object.keys(cardPlays).length;
+      leaderText = `남은 카드: ${remain}/20`;
+      if(d.carryOver > 1) leaderText += ` · 이월 ${d.carryOver}배`;
+    } else if(key==='timer') {
+      if(leader) leaderText = `🥇 ${leader[0]} — ${leader[1].toFixed(3)}초`;
+    } else {
+      if(leader) leaderText = `🥇 ${leader[0]} — ${leader[1]}점`;
+    }
+
+    const btnText = !prize ? '상품 미설정' : (key==='card'?myCardDone:myDone) ? '✓ 완료' : '▶ 플레이';
+    const btnClass = !prize ? 'no-prize' : (key==='card'?myCardDone:myDone) ? 'done' : '';
+    const canPlay = prize && !(key==='card'?myCardDone:myDone);
+
+    return `<div class="game-card${wide?' wide':''}" onclick="${canPlay?`selectNickThenPlay('${key}')`:''}" style="${!canPlay?'cursor:default':''}">
+      <div class="game-header">
+        <span class="game-icon">${g.icon}</span>
+        <div class="game-title">${g.name}</div>
+        <div class="game-prize">${prize?`🎁 ${prize}`:'상품 없음'}</div>
+        <div class="game-leader">${leaderText}</div>
+        ${admin?`<button class="btn btn-s btn-sm" style="margin-top:8px;font-size:11px" onclick="event.stopPropagation();openPrize('${key}')">⚙️ 상품설정</button>
+        <button class="btn btn-d btn-sm" style="margin-top:4px;font-size:11px" onclick="event.stopPropagation();resetGame('${key}')">🔄 초기화</button>`:''}
+      </div>
+      <button class="game-btn ${btnClass}" onclick="event.stopPropagation();${canPlay?`selectNickThenPlay('${key}')`:''}">${btnText}</button>
+    </div>`;
+  };
+
+  document.getElementById('content').innerHTML = `
+    <div class="game-grid">
+      ${gameCard('roulette')}
+      ${gameCard('slot')}
+      ${gameCard('ball')}
+      ${gameCard('card')}
+      ${gameCard('timer', true)}
+    </div>`;
+}
+
+// ===== 닉네임 선택 =====
+function selectNickThenPlay(gameKey) {
+  pendingGame = gameKey;
+  if(myNick) { startGame(gameKey); return; }
+  const sel = document.getElementById('nick-select');
+  sel.innerHTML = '<option value="">선택하세요</option>';
+  [...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko')).forEach(m=>{
+    sel.innerHTML += `<option value="${m.nick}">${m.nick}</option>`;
+  });
+  openModal('nick');
+}
+
+function confirmNick() {
+  const v = document.getElementById('nick-select').value;
+  if(!v) { showToast('닉네임을 선택해주세요','error'); return; }
+  myNick = v;
+  sessionStorage.setItem('gm_gameNick', v);
+  closeModal('nick');
+  startGame(pendingGame);
+}
+
+// ===== 게임 시작 =====
+function startGame(key) {
+  currentGame = key;
+  const d = gameData[key] || {};
+  document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('open'));
+  document.getElementById(`screen-${key}`).classList.add('open');
+
+  if(key==='roulette') initRoulette(d);
+  else if(key==='slot') initSlot(d);
+  else if(key==='ball') initBall(d);
+  else if(key==='card') initCard(d);
+  else if(key==='timer') initTimer(d);
+}
+
+function closeGame() {
+  document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('open'));
+  if(rouletteAnimId) { cancelAnimationFrame(rouletteAnimId); rouletteAnimId=null; }
+  if(ballAnimId) { cancelAnimationFrame(ballAnimId); ballAnimId=null; }
+  if(ballTimerInterval) { clearInterval(ballTimerInterval); ballTimerInterval=null; }
+  if(slotInterval) { clearInterval(slotInterval); slotInterval=null; }
+  if(timerAnimId) { cancelAnimationFrame(timerAnimId); timerAnimId=null; }
+  renderGames();
+}
+
+// ===== 룰렛 =====
+function initRoulette(d) {
+  document.getElementById('roulette-prize-label').textContent = `🎁 ${d.prize||''}`;
+  drawRoulette(0);
+  updateScoreBoard('roulette-scores', d.scores||{}, false);
+  document.getElementById('roulette-btn').textContent = '🎡 돌리기!';
+  document.getElementById('roulette-btn').disabled = false;
+}
+
+function drawRoulette(angle) {
+  const canvas = document.getElementById('roulette-canvas');
+  const ctx = canvas.getContext('2d');
+  const cx = canvas.width/2, cy = canvas.height/2, r = cx-10;
+  const scores = [100,20,50,10,80,30,70,5,60,40,90,15];
+  const colors = ['#f0a500','#ef4444','#14b8a6','#3b82f6','#a855f7','#22c55e','#f0a500','#64748b','#14b8a6','#ef4444','#a855f7','#22c55e'];
+  const n = scores.length;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  scores.forEach((s,i)=>{
+    const start = angle + (i/n)*Math.PI*2;
+    const end = angle + ((i+1)/n)*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);
+    ctx.fillStyle=colors[i]; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);
+    ctx.strokeStyle='#0e1520'; ctx.lineWidth=2; ctx.stroke();
+    ctx.save(); ctx.translate(cx,cy);
+    ctx.rotate(start+(end-start)/2);
+    ctx.textAlign='right'; ctx.fillStyle='#fff';
+    ctx.font='bold 13px Noto Sans KR'; ctx.fillText(s+'점', r-8, 5);
+    ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,18,0,Math.PI*2);
+  ctx.fillStyle='#0e1520'; ctx.fill();
+  ctx.strokeStyle=colors[0]; ctx.lineWidth=3; ctx.stroke();
+}
+
+function spinRoulette() {
+  if(rouletteSpinning) return;
+  rouletteSpinning = true;
+  document.getElementById('roulette-btn').textContent = '돌아가는 중...';
+  document.getElementById('roulette-btn').disabled = true;
+
+  const scores = [100,20,50,10,80,30,70,5,60,40,90,15];
+  const totalRot = (Math.random()*4+6)*Math.PI*2;
+  const duration = 4000;
+  const start = performance.now();
+  const startAngle = rouletteAngle;
+
+  function animate(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed/duration, 1);
+    const ease = 1-Math.pow(1-progress, 4);
+    rouletteAngle = startAngle + totalRot * ease;
+    drawRoulette(rouletteAngle);
+    if(progress < 1) { rouletteAnimId = requestAnimationFrame(animate); }
+    else {
+      rouletteSpinning = false;
+      // 결과 계산
+      const n = scores.length;
+      const normalized = (((-rouletteAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2));
+      const idx = Math.floor(normalized / (Math.PI*2/n)) % n;
+      const myScore = scores[idx];
+
+      // 저장
+      if(!gameData['roulette']) gameData['roulette']={};
+      if(!gameData['roulette'].scores) gameData['roulette'].scores={};
+      const prev = gameData['roulette'].scores[myNick]||0;
+      gameData['roulette'].scores[myNick] = prev + myScore;
+      saveGameData();
+
+      showToast(`${myScore}점 획득!`, 'success');
+      updateScoreBoard('roulette-scores', gameData['roulette'].scores, false);
+      document.getElementById('roulette-btn').textContent = '✓ 완료';
+
+      // 1위 확인
+      checkLeader('roulette');
+    }
+  }
+  rouletteAnimId = requestAnimationFrame(animate);
+}
+
+// ===== 슬롯 =====
+function initSlot(d) {
+  document.getElementById('slot-prize-label').textContent = `🎁 ${d.prize||''}`;
+  document.getElementById('slot-display').textContent = '7 7 7';
+  document.getElementById('slot-btn').textContent = '🎰 시작!';
+  document.getElementById('slot-btn').onclick = startSlot;
+  slotPhase = 0;
+  updateScoreBoard('slot-scores', d.scores||{}, false);
+}
+
+function startSlot() {
+  if(slotRunning) {
+    stopSlot(); return;
+  }
+  slotRunning = true;
+  document.getElementById('slot-btn').textContent = '🛑 STOP!';
+  const nums = '0123456789';
+  slotInterval = setInterval(()=>{
+    const r = ()=>nums[Math.floor(Math.random()*nums.length)];
+    document.getElementById('slot-display').textContent = `${r()} ${r()} ${r()}`;
+  }, 60);
+}
+
+function stopSlot() {
+  clearInterval(slotInterval); slotInterval=null; slotRunning=false;
+  const display = document.getElementById('slot-display').textContent;
+  const digits = display.split(' ').map(Number);
+  let score = digits.reduce((s,d)=>s+d,0)*10;
+  if(digits[0]===digits[1]&&digits[1]===digits[2]) score=digits[0]===7?1000:500;
+  else if(digits[0]===digits[1]||digits[1]===digits[2]||digits[0]===digits[2]) score+=100;
+
+  if(!gameData['slot']) gameData['slot']={};
+  if(!gameData['slot'].scores) gameData['slot'].scores={};
+  gameData['slot'].scores[myNick] = score;
+  saveGameData();
+  showToast(`${score}점 획득!`, 'success');
+  updateScoreBoard('slot-scores', gameData['slot'].scores, false);
+  document.getElementById('slot-btn').textContent = '✓ 완료';
+  document.getElementById('slot-btn').onclick = null;
+  checkLeader('slot');
+}
+
+// ===== 공 튀기기 =====
+function initBall(d) {
+  document.getElementById('ball-prize-label').textContent = `🎁 ${d.prize||''}`;
+  ballScore = 0;
+  ballRunning = false;
+  document.getElementById('ball-score-display').textContent = '0점';
+  document.getElementById('ball-timer').textContent = '';
+  document.getElementById('ball-btn').textContent = '⚽ 시작!';
+  updateScoreBoard('ball-scores', d.scores||{}, false);
+  const canvas = document.getElementById('ball-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='var(--bg3)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#64748b';
+  ctx.font='14px Noto Sans KR';
+  ctx.textAlign='center';
+  ctx.fillText('시작 버튼을 눌러주세요', canvas.width/2, canvas.height/2);
+}
+
+function startBall() {
+  const canvas = document.getElementById('ball-canvas');
+  const ctx = canvas.getContext('2d');
+  ballRunning = true;
+  ballScore = 0;
+  ballTimeLeft = 15;
+  document.getElementById('ball-btn').style.display='none';
+
+  // 공 생성
+  balls = Array.from({length:8},()=>({
+    x: Math.random()*280+20,
+    y: Math.random()*200+20,
+    vx: (Math.random()-0.5)*4,
+    vy: (Math.random()-0.5)*4,
+    r: 20,
+    color: `hsl(${Math.random()*360},70%,60%)`
+  }));
+
+  canvas.onclick = (e)=>{
+    if(!ballRunning) return;
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
+    const my=(e.clientY-rect.top)*(canvas.height/rect.height);
+    balls.forEach(b=>{
+      const d=Math.hypot(mx-b.x,my-b.y);
+      if(d<b.r+10){ ballScore+=10; document.getElementById('ball-score-display').textContent=ballScore+'점'; }
+    });
+  };
+
+  ballTimerInterval = setInterval(()=>{
+    ballTimeLeft--;
+    document.getElementById('ball-timer').textContent = `${ballTimeLeft}초`;
+    if(ballTimeLeft<=0){
+      clearInterval(ballTimerInterval); ballTimerInterval=null;
+      ballRunning=false;
+      cancelAnimationFrame(ballAnimId);
+      if(!gameData['ball']) gameData['ball']={};
+      if(!gameData['ball'].scores) gameData['ball'].scores={};
+      gameData['ball'].scores[myNick]=ballScore;
+      saveGameData();
+      showToast(`${ballScore}점 획득!`,'success');
+      updateScoreBoard('ball-scores',gameData['ball'].scores,false);
+      document.getElementById('ball-btn').style.display='block';
+      document.getElementById('ball-btn').textContent='✓ 완료';
+      document.getElementById('ball-btn').onclick=null;
+      checkLeader('ball');
+    }
+  },1000);
+
+  function animBall(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#0e1520'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    balls.forEach(b=>{
+      b.x+=b.vx; b.y+=b.vy;
+      if(b.x<b.r||b.x>canvas.width-b.r) b.vx*=-1;
+      if(b.y<b.r||b.y>canvas.height-b.r) b.vy*=-1;
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.fillStyle=b.color; ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('⚽',b.x,b.y);
+    });
+    if(ballRunning) ballAnimId=requestAnimationFrame(animBall);
+  }
+  animBall();
+}
+
+// ===== 카드 뽑기 =====
+function initCard(d) {
+  document.getElementById('card-prize-label').textContent = `🎁 ${d.prize||''}${d.carryOver>1?` (이월 ${d.carryOver}배)`:''}`;
+  const cardPlays = d.cardPlays || {};
+  const winIdx = d.winCard !== undefined ? d.winCard : Math.floor(Math.random()*20);
+  if(d.winCard === undefined) {
+    if(!gameData['card']) gameData['card']={};
+    gameData['card'].winCard = winIdx;
+    saveGameData();
+  }
+
+  const myDone = cardPlays[myNick];
+  const grid = document.getElementById('card-grid');
+  grid.innerHTML = '';
+  for(let i=0;i<20;i++){
+    const played = Object.values(cardPlays).includes(i);
+    const isWin = cardPlays[myNick]?.idx===i || Object.values(cardPlays).find(v=>v.idx===i&&v.win);
+    const btn = document.createElement('button');
+    btn.className = `play-card${played?(isWin?' win':' lose'):''}`;
+    btn.textContent = played?(isWin?'🎉':'💀'):'🃏';
+    if(!played && !myDone) {
+      btn.onclick = ()=>flipCard(i, winIdx, d);
+    } else {
+      btn.disabled = true;
+    }
+    grid.appendChild(btn);
+  }
+  const remain = 20 - Object.keys(cardPlays).length;
+  document.getElementById('card-remain').textContent = `남은 카드: ${remain}/20`;
+}
+
+function flipCard(idx, winIdx, d) {
+  const isWin = idx === winIdx;
+  if(!gameData['card']) gameData['card']={};
+  if(!gameData['card'].cardPlays) gameData['card'].cardPlays={};
+  gameData['card'].cardPlays[myNick] = {idx, win:isWin};
+
+  if(isWin) {
+    const carryOver = d.carryOver||1;
+    const prizeText = carryOver>1 ? `${d.prize} × ${carryOver}개` : d.prize;
+    showResult('🎉', `${myNick}님 당첨!`, prizeText);
+    gameData['card'].winCard = -1; // 당첨 완료
+  } else {
+    showToast('꽝! 다음 기회에...', 'error');
+    // 20장 다 뽑으면 이월
+    const plays = Object.keys(gameData['card'].cardPlays).length;
+    if(plays >= 20) {
+      gameData['card'].carryOver = (d.carryOver||1)+1;
+      gameData['card'].cardPlays = {};
+      gameData['card'].winCard = Math.floor(Math.random()*20);
+      showToast('20장 모두 꽝! 상품이 이월됩니다!', 'error');
+    }
+  }
+  saveGameData();
+  initCard(gameData['card']);
+}
+
+// ===== 타이머 =====
+function initTimer(d) {
+  timerTarget = d.timerTarget || 10;
+  document.getElementById('timer-prize-label').textContent = `🎁 ${d.prize||''}`;
+  document.getElementById('timer-target').textContent = timerTarget;
+  document.getElementById('timer-display').textContent = '00:00:00';
+  document.getElementById('timer-btn').textContent = '▶ 시작';
+  document.getElementById('timer-result').textContent = '';
+  timerRunning = false;
+  updateScoreBoard('timer-scores', d.scores||{}, true);
+}
+
+function timerAction() {
+  if(!timerRunning) {
+    timerRunning = true;
+    timerStart = performance.now();
+    document.getElementById('timer-btn').textContent = '🛑 STOP!';
+    document.getElementById('timer-btn').style.background='var(--red)';
+    function updateTimer() {
+      if(!timerRunning) return;
+      const elapsed = (performance.now()-timerStart)/1000;
+      const s = Math.floor(elapsed);
+      const ms = Math.floor((elapsed-s)*100);
+      const cs = Math.floor((elapsed-s)*1000)%10;
+      document.getElementById('timer-display').textContent =
+        `${String(s).padStart(2,'0')}:${String(ms).padStart(2,'0')}:${cs}`;
+      timerAnimId = requestAnimationFrame(updateTimer);
+    }
+    updateTimer();
+  } else {
+    timerRunning = false;
+    cancelAnimationFrame(timerAnimId);
+    const elapsed = (performance.now()-timerStart)/1000;
+    const diff = Math.abs(elapsed-timerTarget);
+    document.getElementById('timer-btn').textContent = '✓ 완료';
+    document.getElementById('timer-btn').disabled = true;
+    document.getElementById('timer-result').textContent = `기록: ${elapsed.toFixed(3)}초 (차이: ${diff.toFixed(3)}초)`;
+
+    if(!gameData['timer']) gameData['timer']={};
+    if(!gameData['timer'].scores) gameData['timer'].scores={};
+    gameData['timer'].scores[myNick] = diff;
+    saveGameData();
+    showToast(`기록: ${elapsed.toFixed(3)}초!`, 'success');
+    updateScoreBoard('timer-scores', gameData['timer'].scores, true);
+    checkLeader('timer');
+  }
+}
+
+// ===== 공통 =====
+function updateScoreBoard(elId, scores, lowerBetter) {
+  const el = document.getElementById(elId); if(!el) return;
+  const arr = Object.entries(scores).sort((a,b)=>lowerBetter?a[1]-b[1]:b[1]-a[1]);
+  if(arr.length===0) { el.innerHTML='<div class="score-row" style="color:var(--text2)">아직 기록 없음</div>'; return; }
+  el.innerHTML = arr.map(([nick,score],i)=>`
+    <div class="score-row">
+      <span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}위`} ${nick}</span>
+      <span style="color:var(--accent);font-weight:700">${lowerBetter?score.toFixed(3)+'초':score+'점'}</span>
+    </div>`).join('');
+}
+
+function checkLeader(gameKey) {
+  const d = gameData[gameKey]||{};
+  const scores = d.scores||{};
+  const lowerBetter = gameKey==='timer';
+  const arr = Object.entries(scores).sort((a,b)=>lowerBetter?a[1]-b[1]:b[1]-a[1]);
+  if(arr.length===0) return;
+  const [leader] = arr[0];
+  if(leader===myNick) showToast('🥇 현재 1위!', 'success');
+}
+
+function showResult(icon, title, prize) {
+  document.getElementById('result-icon').textContent = icon;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-name').textContent = '';
+  document.getElementById('result-prize-text').textContent = `🎁 ${prize}`;
+  document.getElementById('result-overlay').classList.add('open');
+}
+
+function closeResult() {
+  document.getElementById('result-overlay').classList.remove('open');
+}
+
+// ===== 상품 설정 =====
+function openPrize(gameKey) {
+  document.getElementById('prize-game').value = gameKey;
+  document.getElementById('prize-custom').value = gameData[gameKey]?.prize||'';
+  document.getElementById('timer-target-wrap').style.display = gameKey==='timer'?'block':'none';
+  if(gameKey==='timer') document.getElementById('prize-target').value = gameData[gameKey]?.timerTarget||10;
+
+  const sel = document.getElementById('prize-item');
+  sel.innerHTML = '<option value="">창고 아이템 선택...</option>';
+  warehouseItems.filter(i=>i.qty>0).sort((a,b)=>a.name.localeCompare(b.name,'ko')).forEach(item=>{
+    const g = {myth:'신화',legend:'전설',hero:'영웅',rare:'희귀'}[item.grade]||'';
+    sel.innerHTML += `<option value="${item.id}">[${g}] ${item.name}</option>`;
+  });
+  openModal('prize');
+}
+
+function savePrize() {
+  const key = document.getElementById('prize-game').value;
+  const itemId = parseInt(document.getElementById('prize-item').value);
+  const custom = document.getElementById('prize-custom').value.trim();
+  let prize = '';
+
+  if(itemId) {
+    const item = warehouseItems.find(x=>x.id===itemId);
+    if(item) prize = `[${({myth:'신화',legend:'전설',hero:'영웅',rare:'희귀'}[item.grade]||'')}] ${item.name}`;
+  } else if(custom) {
+    prize = custom;
+  }
+
+  if(!prize) { showToast('상품을 선택하거나 입력해주세요','error'); return; }
+
+  if(!gameData[key]) gameData[key]={};
+  gameData[key].prize = prize;
+  gameData[key].scores = {};
+  if(key==='card') {
+    gameData[key].cardPlays = {};
+    gameData[key].winCard = Math.floor(Math.random()*20);
+    gameData[key].carryOver = gameData[key].carryOver||1;
+  }
+  if(key==='timer') {
+    gameData[key].timerTarget = parseInt(document.getElementById('prize-target').value)||10;
+  }
+
+  saveGameData();
+  closeModal('prize');
+  showToast('상품 설정 완료!', 'success');
+}
+
+function resetGame(key) {
+  if(!confirm(`${GAMES[key].name} 초기화?`)) return;
+  gameData[key] = {};
+  saveGameData();
+  showToast('초기화됨');
+}
+
+function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
+function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+</script>
+</body>
+</html>
