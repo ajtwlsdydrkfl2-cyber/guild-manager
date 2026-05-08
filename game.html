@@ -282,35 +282,42 @@ function renderGames() {
     const d = gd[key] || {};
     const prize = d.prize || '';
     const scores = d.scores || {};
-    const scoreArr = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-    const leader = scoreArr[0];
+    const lowerBetter = key==='timer';
+    const scoreArr = Object.entries(scores).sort((a,b)=>lowerBetter?a[1]-b[1]:b[1]-a[1]);
     const myDone = myNick && scores[myNick] !== undefined;
     const cardPlays = d.cardPlays || {};
     const myCardDone = myNick && cardPlays[myNick];
 
-    let leaderText = '';
+    // 점수판 HTML
+    let scoreBoardHtml = '';
     if(key==='card') {
       const remain = 20 - Object.keys(cardPlays).length;
-      leaderText = `남은 카드: ${remain}/20`;
-      if(d.carryOver > 1) leaderText += ` · 이월 ${d.carryOver}배`;
-    } else if(key==='timer') {
-      if(leader) leaderText = `🥇 ${leader[0]} — ${leader[1].toFixed(3)}초`;
-    } else {
-      if(leader) leaderText = `🥇 ${leader[0]} — ${leader[1]}점`;
+      const carryText = d.carryOver>1?` · 이월 ${d.carryOver}배`:'';
+      scoreBoardHtml = `<div style="font-size:11px;color:var(--text2);padding:4px 0">남은 카드: ${remain}/20${carryText}</div>`;
+    } else if(scoreArr.length > 0) {
+      scoreBoardHtml = `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
+        ${scoreArr.map(([nick,score],i)=>`
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;${nick===myNick?'color:var(--accent)':''}">
+            <span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${nick}</span>
+            <span style="font-weight:700">${lowerBetter?score.toFixed(3)+'초':score+'점'}</span>
+          </div>`).join('')}
+      </div>`;
     }
 
     const btnText = !prize ? '상품 미설정' : (key==='card'?myCardDone:myDone) ? '✓ 완료' : '▶ 플레이';
     const btnClass = !prize ? 'no-prize' : (key==='card'?myCardDone:myDone) ? 'done' : '';
     const canPlay = prize && !(key==='card'?myCardDone:myDone);
 
-    return `<div class="game-card${wide?' wide':''}" onclick="${canPlay?`selectNickThenPlay('${key}')`:''}" style="${!canPlay?'cursor:default':''}">
+    return `<div class="game-card${wide?' wide':''}" style="${!canPlay?'cursor:default':''}">
       <div class="game-header">
         <span class="game-icon">${g.icon}</span>
         <div class="game-title">${g.name}</div>
         <div class="game-prize">${prize?`🎁 ${prize}`:'상품 없음'}</div>
-        <div class="game-leader">${leaderText}</div>
-        ${admin?`<button class="btn btn-s btn-sm" style="margin-top:8px;font-size:11px" onclick="event.stopPropagation();openPrize('${key}')">⚙️ 상품설정</button>
-        <button class="btn btn-d btn-sm" style="margin-top:4px;font-size:11px" onclick="event.stopPropagation();resetGame('${key}')">🔄 초기화</button>`:''}
+        ${scoreBoardHtml}
+        ${admin?`<div style="display:flex;gap:4px;justify-content:center;margin-top:8px">
+          <button class="btn btn-s btn-sm" style="font-size:11px" onclick="event.stopPropagation();openPrize('${key}')">⚙️ 상품설정</button>
+          <button class="btn btn-d btn-sm" style="font-size:11px" onclick="event.stopPropagation();resetGame('${key}')">🔄 초기화</button>
+        </div>`:''}
       </div>
       <button class="game-btn ${btnClass}" onclick="event.stopPropagation();${canPlay?`selectNickThenPlay('${key}')`:''}">${btnText}</button>
     </div>`;
