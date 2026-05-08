@@ -359,7 +359,7 @@ function renderBoss() {
                   <th style="min-width:110px">
                     <div class="round-boss">${r.bn}</div>
                     <div class="round-time">${fmtDT(r.time)}${r.nightBonus?'<span class="night-mark"> 🌙</span>':''}${isLocked(r.rk)?'<span style="color:var(--red);margin-left:4px">🔒</span>':''}</div>
-                    <button class="round-del" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>
+                    ${admin?`<button class="round-del" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>`:''}
                   </th>`).join('')}
               </tr></thead>
               <tbody>
@@ -397,7 +397,7 @@ function renderBoss() {
                 <div class="boss-round-name">⚔️ ${r.bn}${r.nightBonus?' 🌙':''}</div>
                 <div class="boss-round-time">${fmtDT(r.time)}${r.nightBonus?' 🌙':''}${isLocked(r.rk)?' 🔒':''}</div>
               </div>
-              <button class="btn btn-d btn-sm" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>
+              ${admin?`<button class="btn btn-d btn-sm" onclick="delRound('${r.bn}','${r.rk}')">✕ 삭제</button>`:''}
             </div>
             ${sortedMembers.map(m=>{
               const st=r.attendance?.[m.id]||'';
@@ -462,7 +462,12 @@ function setAtt(bn,rk,mid,st) {
   if(st==='') delete attend[wk][bn][rk].attendance[mid];
   else attend[wk][bn][rk].attendance[mid]=st;
   setData('attend',attend);
-  fbSet('attend',attend);
+  // 해당 길드원 참여값만 업데이트 (전체 덮어쓰기 방지)
+  if(firebaseDB) {
+    const path=`servers/server${getSession()?.serverId}/${getWeekKey()}/${bn}/${rk}/attendance/${mid}`;
+    if(st==='') firebaseDB.ref(`servers/server${getSession()?.serverId}/attend/${wk}/${bn}/${rk}/attendance/${mid}`).remove();
+    else firebaseDB.ref(`servers/server${getSession()?.serverId}/attend/${wk}/${bn}/${rk}/attendance/${mid}`).set(st);
+  }
   // 포인트 셀 업데이트
   const pts=calcPoints(mid);
   const rows=document.querySelectorAll('#bossTable tbody tr');
@@ -568,7 +573,9 @@ function setAttMobile(bn, rk, mid, newSt, btn) {
   if(curSt===newSt) {
     delete attend[wk][bn][rk].attendance[mid];
     setData('attend',attend);
-    fbSet('attend',attend);
+    if(firebaseDB) {
+      firebaseDB.ref(`servers/server${getSession()?.serverId}/attend/${wk}/${bn}/${rk}/attendance/${mid}`).remove();
+    }
     renderBoss();
     return;
   }
