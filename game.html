@@ -217,7 +217,7 @@ const GAMES = {
 let gameData = {};
 let members = [];
 let warehouseItems = [];
-let myNick = sessionStorage.getItem('gm_gameNick') || '';
+let myNick = localStorage.getItem('gm_gameNick') || '';
 let pendingGame = '';
 let currentGame = '';
 
@@ -287,6 +287,7 @@ function renderGames() {
     const myDone = myNick && scores[myNick] !== undefined;
     const cardPlays = d.cardPlays || {};
     const myCardDone = myNick && cardPlays[myNick];
+    // 관리자도 본인 닉네임으로 한번만 플레이 가능
 
     // 점수판 HTML
     let scoreBoardHtml = '';
@@ -349,7 +350,7 @@ function confirmNick() {
   const v = document.getElementById('nick-select').value;
   if(!v) { showToast('닉네임을 선택해주세요','error'); return; }
   myNick = v;
-  sessionStorage.setItem('gm_gameNick', v);
+  localStorage.setItem('gm_gameNick', v);
   closeModal('nick');
   startGame(pendingGame);
 }
