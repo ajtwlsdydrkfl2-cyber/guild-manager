@@ -378,6 +378,7 @@ function initRoulette(d) {
   updateScoreBoard('roulette-scores', d.scores||{}, false);
   document.getElementById('roulette-btn').textContent = '🎡 돌리기!';
   document.getElementById('roulette-btn').disabled = false;
+  document.getElementById('roulette-btn').onclick = spinRoulette;
 }
 
 function drawRoulette(angle) {
@@ -469,6 +470,8 @@ function startSlot() {
   }
   slotRunning = true;
   document.getElementById('slot-btn').textContent = '🛑 STOP!';
+  document.getElementById('slot-btn').style.background='var(--red)';
+  document.getElementById('slot-btn').style.color='#fff';
   const nums = '0123456789';
   slotInterval = setInterval(()=>{
     const r = ()=>nums[Math.floor(Math.random()*nums.length)];
@@ -490,8 +493,10 @@ function stopSlot() {
   saveGameData();
   showToast(`${score}점 획득!`, 'success');
   updateScoreBoard('slot-scores', gameData['slot'].scores, false);
-  document.getElementById('slot-btn').textContent = '✓ 완료';
-  document.getElementById('slot-btn').onclick = null;
+  document.getElementById('slot-btn').textContent = '✓ 완료 (닫기)';
+  document.getElementById('slot-btn').style.background='var(--accent2)';
+  document.getElementById('slot-btn').style.color='#000';
+  document.getElementById('slot-btn').onclick = closeGame;
   checkLeader('slot');
 }
 
@@ -538,10 +543,25 @@ function startBall() {
     const rect=canvas.getBoundingClientRect();
     const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
     const my=(e.clientY-rect.top)*(canvas.height/rect.height);
-    balls.forEach(b=>{
+    let hit = false;
+    balls = balls.filter(b=>{
       const d=Math.hypot(mx-b.x,my-b.y);
-      if(d<b.r+10){ ballScore+=10; document.getElementById('ball-score-display').textContent=ballScore+'점'; }
+      if(d<b.r+5 && !hit){ hit=true; return false; }
+      return true;
     });
+    if(hit){
+      ballScore+=10;
+      document.getElementById('ball-score-display').textContent=ballScore+'점';
+      // 새 공 추가
+      balls.push({
+        x: Math.random()*(canvas.width-40)+20,
+        y: Math.random()*(canvas.height-40)+20,
+        vx: (Math.random()-0.5)*6,
+        vy: (Math.random()-0.5)*6,
+        r: 18,
+        color: `hsl(${Math.random()*360},70%,60%)`
+      });
+    }
   };
 
   ballTimerInterval = setInterval(()=>{
@@ -558,8 +578,8 @@ function startBall() {
       showToast(`${ballScore}점 획득!`,'success');
       updateScoreBoard('ball-scores',gameData['ball'].scores,false);
       document.getElementById('ball-btn').style.display='block';
-      document.getElementById('ball-btn').textContent='✓ 완료';
-      document.getElementById('ball-btn').onclick=null;
+      document.getElementById('ball-btn').textContent='✓ 완료 (닫기)';
+      document.getElementById('ball-btn').onclick=closeGame;
       checkLeader('ball');
     }
   },1000);
@@ -597,15 +617,23 @@ function initCard(d) {
   const grid = document.getElementById('card-grid');
   grid.innerHTML = '';
   for(let i=0;i<20;i++){
-    const played = Object.values(cardPlays).includes(i);
-    const isWin = cardPlays[myNick]?.idx===i || Object.values(cardPlays).find(v=>v.idx===i&&v.win);
+    const playEntry = Object.values(cardPlays).find(v=>v.idx===i);
+    const played = !!playEntry;
+    const isWin = played && playEntry.win;
     const btn = document.createElement('button');
     btn.className = `play-card${played?(isWin?' win':' lose'):''}`;
-    btn.textContent = played?(isWin?'🎉':'💀'):'🃏';
+    if(played) {
+      btn.textContent = isWin?'🎉':'💀';
+      btn.title = isWin?'당첨!':'꽝';
+      btn.style.fontSize='22px';
+    } else {
+      btn.textContent = '🃏';
+    }
     if(!played && !myDone) {
       btn.onclick = ()=>flipCard(i, winIdx, d);
     } else {
       btn.disabled = true;
+      btn.style.opacity = played?'1':'0.4';
     }
     grid.appendChild(btn);
   }
@@ -673,8 +701,10 @@ function timerAction() {
     cancelAnimationFrame(timerAnimId);
     const elapsed = (performance.now()-timerStart)/1000;
     const diff = Math.abs(elapsed-timerTarget);
-    document.getElementById('timer-btn').textContent = '✓ 완료';
-    document.getElementById('timer-btn').disabled = true;
+    document.getElementById('timer-btn').textContent = '✓ 완료 (닫기)';
+    document.getElementById('timer-btn').disabled = false;
+    document.getElementById('timer-btn').onclick = closeGame;
+    document.getElementById('timer-btn').style.background='var(--accent2)';
     document.getElementById('timer-result').textContent = `기록: ${elapsed.toFixed(3)}초 (차이: ${diff.toFixed(3)}초)`;
 
     if(!gameData['timer']) gameData['timer']={};
