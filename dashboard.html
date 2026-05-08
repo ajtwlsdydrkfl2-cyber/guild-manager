@@ -449,7 +449,9 @@ function addRound() {
 }
 
 function isLocked(rk) {
-  return Date.now() - parseInt(rk) > 3600000; // 1시간
+  const ts = parseInt(rk);
+  if(!ts || isNaN(ts) || ts < 1000000000000) return false; // 타임스탬프 아니면 잠금 안함
+  return Date.now() - ts > 3600000; // 1시간
 }
 
 function setAtt(bn,rk,mid,st) {
