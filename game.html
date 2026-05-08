@@ -503,7 +503,7 @@ function stopSlot() {
   document.getElementById('slot-btn').textContent = '✓ 완료 (닫기)';
   document.getElementById('slot-btn').style.background='var(--accent2)';
   document.getElementById('slot-btn').style.color='#000';
-  document.getElementById('slot-btn').onclick = closeGame;
+  document.getElementById('slot-btn').setAttribute('onclick','closeGame()');
   checkLeader('slot');
 }
 
@@ -586,7 +586,7 @@ function startBall() {
       updateScoreBoard('ball-scores',gameData['ball'].scores,false);
       document.getElementById('ball-btn').style.display='block';
       document.getElementById('ball-btn').textContent='✓ 완료 (닫기)';
-      document.getElementById('ball-btn').onclick=closeGame;
+      document.getElementById('ball-btn').setAttribute('onclick','closeGame()');
       checkLeader('ball');
     }
   },1000);
@@ -710,7 +710,7 @@ function timerAction() {
     const diff = Math.abs(elapsed-timerTarget);
     document.getElementById('timer-btn').textContent = '✓ 완료 (닫기)';
     document.getElementById('timer-btn').disabled = false;
-    document.getElementById('timer-btn').onclick = closeGame;
+    document.getElementById('timer-btn').setAttribute('onclick','closeGame()');
     document.getElementById('timer-btn').style.background='var(--accent2)';
     document.getElementById('timer-result').textContent = `기록: ${elapsed.toFixed(3)}초 (차이: ${diff.toFixed(3)}초)`;
 
