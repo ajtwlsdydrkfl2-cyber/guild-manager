@@ -10,35 +10,31 @@
 body,html{height:100%;overflow:hidden;}
 .board-wrap{display:flex;flex-direction:column;height:100vh;}
 .board-topbar{padding:8px 16px;background:rgba(8,12,20,.97);border-bottom:1px solid rgba(240,165,0,.25);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.board-body{flex:1;display:flex;overflow:hidden;}
-
-/* 왼쪽: 플레이어 위치 */
-.board-left{width:160px;background:rgba(8,12,20,.97);border-right:1px solid rgba(240,165,0,.15);overflow-y:auto;padding:10px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;}
-.player-pos-card{background:rgba(20,32,50,.7);border:1px solid rgba(30,45,69,.8);border-radius:8px;padding:8px;cursor:pointer;}
-.player-pos-card.me{border-color:rgba(240,165,0,.5);background:rgba(240,165,0,.06);}
-.player-pos-card:hover{border-color:rgba(240,165,0,.3);}
-
-/* 오른쪽: 보드 메인 */
-.board-main{flex:1;overflow-y:auto;padding:14px 16px;padding-bottom:100px;}
+.board-body{flex:1;overflow-y:auto;padding:12px 14px;padding-bottom:110px;}
 
 /* 칸 카드 */
-.tile-card{display:flex;align-items:center;gap:12px;background:rgba(14,21,32,.9);border:2px solid rgba(30,45,69,.8);border-radius:12px;padding:12px;margin-bottom:8px;transition:all .2s;position:relative;}
+.tile-card{display:flex;align-items:center;gap:12px;background:rgba(14,21,32,.9);border:2px solid rgba(30,45,69,.8);border-radius:12px;padding:12px;margin-bottom:8px;position:relative;transition:all .2s;}
 .tile-card.active{border-color:#f0a500;background:rgba(240,165,0,.08);box-shadow:0 0 20px rgba(240,165,0,.2);}
-.tile-card.passed{opacity:.6;}
-.tile-num{font-family:'Black Han Sans',sans-serif;font-size:20px;color:#64748b;min-width:32px;text-align:center;}
+.tile-card.passed{opacity:.55;}
+.tile-num{font-family:'Black Han Sans',sans-serif;font-size:20px;color:#64748b;min-width:30px;text-align:center;}
 .tile-card.active .tile-num{color:#f0a500;}
 .tile-img-wrap{width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;border:1px solid rgba(30,45,69,.8);display:flex;align-items:center;justify-content:center;background:rgba(8,12,20,.8);}
 .tile-img-wrap img{width:100%;height:100%;object-fit:cover;}
 .tile-icon-big{font-size:32px;}
 .tile-info{flex:1;min-width:0;}
-.tile-name{font-size:15px;font-weight:700;margin-bottom:3px;}
+.tile-name{font-size:15px;font-weight:700;margin-bottom:2px;}
 .tile-desc{font-size:11px;color:#64748b;line-height:1.4;}
-.tile-reward{font-size:11px;color:#14b8a6;margin-top:4px;font-weight:600;}
-.tile-type-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;}
+.tile-reward{font-size:11px;color:#14b8a6;margin-top:3px;font-weight:600;}
+.tile-type-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:5px;vertical-align:middle;}
+
+/* 말 표시 */
+.pieces-on-tile{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+.piece-badge{font-size:18px;line-height:1;cursor:default;}
+.active-marker{position:absolute;top:8px;right:10px;font-size:11px;color:#f0a500;font-weight:700;}
 
 /* 타입별 색상 */
-.type-start{border-color:#22c55e !important;} .type-start .tile-num{color:#22c55e;}
-.type-boss .tile-name{color:#e2e8f0;}
+.type-start{border-color:#22c55e !important;background:rgba(34,197,94,.05) !important;}
+.type-start .tile-num{color:#22c55e;}
 .type-card{border-color:#f0a500 !important;background:rgba(240,165,0,.05) !important;}
 .type-card .tile-name{color:#f0a500;}
 .type-reward{border-color:#14b8a6 !important;background:rgba(20,184,166,.05) !important;}
@@ -47,51 +43,47 @@ body,html{height:100%;overflow:hidden;}
 .type-move .tile-name{color:#3b82f6;}
 .type-trap{border-color:#ef4444 !important;background:rgba(239,68,68,.05) !important;}
 .type-trap .tile-name{color:#ef4444;}
-.type-gold{border-color:#eab308 !important;}
-.type-gold .tile-name{color:#eab308;}
-
-/* 현재 위치 말들 */
-.pieces-on-tile{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;align-items:flex-end;}
-.piece-badge{font-size:16px;line-height:1;}
+.type-boss .tile-name{color:#e2e8f0;}
 
 /* 최종 보스 */
-.final-boss-card{background:linear-gradient(135deg,rgba(88,28,135,.3),rgba(8,12,20,.9));border:2px solid #a855f7;border-radius:16px;padding:20px;margin-top:10px;margin-bottom:8px;display:flex;align-items:center;gap:16px;}
-.final-boss-img{width:100px;height:100px;object-fit:cover;border-radius:12px;border:2px solid #f0a500;flex-shrink:0;}
-.final-boss-info{flex:1;}
-.final-boss-name{font-family:'Black Han Sans',sans-serif;font-size:22px;color:#f0a500;margin-bottom:4px;}
-.final-hp-bar{height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;margin:6px 0;}
-.final-hp-fill{height:100%;background:linear-gradient(90deg,#ef4444,#f0a500);border-radius:4px;transition:width .3s;}
+.final-boss-section{background:linear-gradient(135deg,rgba(88,28,135,.25),rgba(8,12,20,.95));border:2px solid #a855f7;border-radius:16px;padding:20px;margin:10px 0;}
+.final-boss-img-big{width:100%;max-height:280px;object-fit:cover;border-radius:12px;border:2px solid #f0a500;margin-bottom:12px;display:block;}
+.final-boss-name{font-family:'Black Han Sans',sans-serif;font-size:24px;color:#f0a500;margin-bottom:4px;}
+.final-hp-bar{height:10px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden;margin:6px 0;}
+.final-hp-fill{height:100%;background:linear-gradient(90deg,#ef4444,#f0a500);border-radius:5px;transition:width .3s;}
 
-/* 랭킹 */
-.dmg-ranking{background:rgba(8,12,20,.9);border:1px solid rgba(30,45,69,.8);border-radius:12px;padding:14px;margin-bottom:8px;}
+/* 플레이어 목록 (하단) */
+.player-list-section{background:rgba(14,21,32,.9);border:1px solid rgba(30,45,69,.8);border-radius:12px;padding:14px;margin-bottom:10px;}
+.player-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(30,45,69,.3);font-size:12px;}
+.player-row:last-child{border-bottom:none;}
+
+/* 데미지 랭킹 */
+.rank-section{background:rgba(14,21,32,.9);border:1px solid rgba(30,45,69,.8);border-radius:12px;padding:14px;margin-bottom:10px;}
 .rank-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(30,45,69,.3);font-size:12px;}
 .rank-row:last-child{border-bottom:none;}
 
-/* 하단 고정 주사위 바 */
-.dice-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,12,20,.97);border-top:2px solid rgba(240,165,0,.3);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;z-index:50;box-shadow:0 -4px 20px rgba(0,0,0,.5);}
-.dice-display{display:flex;gap:10px;align-items:center;}
-.die{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#1a2a40,#0e1520);border:2px solid #f0a500;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#f0a500;font-family:'Black Han Sans',sans-serif;box-shadow:0 0 10px rgba(240,165,0,.2);}
-.roll-btn{padding:10px 28px;border-radius:10px;background:linear-gradient(180deg,#a855f7,#5b21b6);color:#fff3bf;font-size:15px;font-weight:700;border:2px solid #f5d879;cursor:pointer;font-family:'Noto Sans KR',sans-serif;box-shadow:0 4px 12px rgba(168,85,247,.35);transition:all .15s;}
+/* 하단 주사위 바 */
+.dice-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,12,20,.97);border-top:2px solid rgba(240,165,0,.3);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;z-index:50;box-shadow:0 -4px 20px rgba(0,0,0,.5);}
+.dice-display{display:flex;gap:8px;align-items:center;}
+.die{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#1a2a40,#0e1520);border:2px solid #f0a500;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#f0a500;font-family:'Black Han Sans',sans-serif;}
+.roll-btn{padding:10px 24px;border-radius:10px;background:linear-gradient(180deg,#a855f7,#5b21b6);color:#fff3bf;font-size:14px;font-weight:700;border:2px solid #f5d879;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
 .roll-btn:hover{filter:brightness(1.2);}
 .roll-btn:disabled{opacity:.5;cursor:default;}
-.dice-remain-txt{font-size:12px;color:#64748b;text-align:center;margin-top:3px;}
 
 /* 팝업 */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:100;}
 .overlay.open{display:flex;}
 .pop-box{background:#0a0f1a;border:2px solid #f0a500;border-radius:16px;padding:24px;text-align:center;width:min(320px,88vw);}
 
-/* 최종 보스 공격 화면 */
-.final-screen{position:fixed;inset:0;background:rgba(0,0,0,.96);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:150;padding:20px;}
+/* 최종 보스 공격 팝업 */
+.final-screen{position:fixed;inset:0;background:rgba(0,0,0,.96);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:150;padding:20px;overflow-y:auto;}
 .final-screen.open{display:flex;}
-.final-atk-img{width:160px;height:160px;object-fit:cover;border-radius:14px;border:3px solid #f0a500;box-shadow:0 0 40px rgba(240,165,0,.4);margin-bottom:12px;}
-.final-die{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#1a2a40,#0e1520);border:3px solid #f0a500;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#f0a500;font-family:'Black Han Sans',sans-serif;}
+.final-atk-img{width:180px;height:180px;object-fit:cover;border-radius:14px;border:3px solid #f0a500;box-shadow:0 0 40px rgba(240,165,0,.4);margin-bottom:12px;}
+.final-die{width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,#1a2a40,#0e1520);border:3px solid #f0a500;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#f0a500;font-family:'Black Han Sans',sans-serif;}
 
 /* 토스트 */
-.b-toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);background:rgba(5,9,18,.97);border:2px solid #f0a500;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;color:#f0a500;z-index:300;transition:transform .3s;white-space:nowrap;box-shadow:0 6px 25px rgba(240,165,0,.2);}
+.b-toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);background:rgba(5,9,18,.97);border:2px solid #f0a500;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;color:#f0a500;z-index:300;transition:transform .3s;white-space:nowrap;max-width:90vw;text-align:center;}
 .b-toast.show{transform:translateX(-50%) translateY(0);}
-
-@media(max-width:600px){.board-left{width:120px;} .tile-img-wrap{width:56px;height:56px;} .tile-name{font-size:13px;}}
 </style>
 </head>
 <body>
@@ -103,39 +95,32 @@ body,html{height:100%;overflow:hidden;}
       <div class="board-topbar">
         <div style="display:flex;align-items:center;gap:10px">
           <button class="ham" onclick="toggleSb()">☰</button>
-          <span style="font-family:'Black Han Sans',sans-serif;font-size:16px;color:#f0a500">🎲 로드나인마블</span>
-          <span id="seasonTimer" style="font-size:11px;color:#64748b"></span>
+          <span style="font-family:'Black Han Sans',sans-serif;font-size:15px;color:#f0a500">🎲 로드나인마블</span>
+          <span id="seasonTimer" style="font-size:10px;color:#64748b"></span>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span id="myInfo" style="font-size:12px;color:#14b8a6"></span>
-          <button class="btn btn-s btn-sm" onclick="openNickModal()">👤 캐릭터</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span id="myInfo" style="font-size:11px;color:#14b8a6"></span>
+          <button class="btn btn-s btn-sm" onclick="openNickModal()">👤</button>
           <span id="adminBtn"></span>
         </div>
       </div>
-      <div class="board-body">
-        <!-- 왼쪽: 플레이어 위치 -->
-        <div class="board-left" id="playerList">
-          <div style="font-size:9px;font-weight:700;color:rgba(240,165,0,.5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">플레이어</div>
-        </div>
-        <!-- 오른쪽: 보드 -->
-        <div class="board-main" id="boardMain"></div>
-      </div>
+      <div class="board-body" id="boardBody"></div>
     </div>
   </div>
 </div>
 
 <!-- 하단 주사위 바 -->
-<div class="dice-bar" id="diceBar">
+<div class="dice-bar">
   <div>
     <div class="dice-display">
       <div class="die" id="die1">?</div>
       <div class="die" id="die2">?</div>
     </div>
-    <div class="dice-remain-txt" id="diceRemain">남은 주사위: 3회</div>
+    <div style="font-size:10px;color:#64748b;text-align:center;margin-top:2px" id="diceRemain">남은 주사위: 3회</div>
   </div>
   <button class="roll-btn" id="rollBtn" onclick="rollDice()">🎲 주사위 굴리기</button>
   <div style="text-align:right">
-    <div style="font-size:12px;color:#64748b">내 순위</div>
+    <div style="font-size:10px;color:#64748b">내 순위</div>
     <div style="font-size:18px;font-weight:700;color:#f0a500" id="myRank">—</div>
   </div>
 </div>
@@ -150,19 +135,33 @@ body,html{height:100%;overflow:hidden;}
   </div>
 </div>
 
+<!-- 방어 팝업 -->
+<div class="overlay" id="blockOverlay">
+  <div class="pop-box">
+    <div style="font-size:56px;margin-bottom:10px">🛡️</div>
+    <div style="font-size:18px;font-weight:700;color:#ef4444;margin-bottom:8px">보스 방어!</div>
+    <div style="font-size:13px;color:#94a3b8;margin-bottom:18px">셀페리온이 공격을 막아냈습니다!<br>데미지가 적용되지 않았습니다.</div>
+    <button class="btn btn-p" onclick="closeModal('blockOverlay')" style="width:100%">확인</button>
+  </div>
+</div>
+
 <!-- 최종 보스 공격 화면 -->
 <div class="final-screen" id="finalScreen">
   <button onclick="closeFinal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer">✕</button>
   <img class="final-atk-img" src="final_boss.png">
-  <div style="font-family:'Black Han Sans',sans-serif;font-size:22px;color:#f0a500;margin-bottom:8px">최종 보스 셀페리온</div>
-  <div style="width:360px;height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;margin-bottom:4px"><div class="final-hp-fill" id="finalHpFill" style="width:100%;height:100%"></div></div>
-  <div style="font-size:12px;color:#64748b;margin-bottom:16px" id="finalDmgText">누적 데미지: 0</div>
-  <div style="display:flex;gap:14px;margin-bottom:14px">
+  <div style="font-family:'Black Han Sans',sans-serif;font-size:20px;color:#f0a500;margin-bottom:6px">최종 보스 셀페리온</div>
+  <div style="width:min(360px,85vw);height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;margin-bottom:4px">
+    <div class="final-hp-fill" id="finalHpFill" style="width:100%;height:100%"></div>
+  </div>
+  <div style="font-size:12px;color:#64748b;margin-bottom:14px" id="finalDmgText">누적 데미지: 0</div>
+  <div style="display:flex;gap:14px;margin-bottom:8px;align-items:center">
     <div class="final-die" id="finalDie1">?</div>
+    <div style="font-size:20px;color:#64748b">×</div>
     <div class="final-die" id="finalDie2">?</div>
   </div>
-  <div style="font-size:36px;font-weight:900;color:#ef4444;text-shadow:0 0 20px rgba(239,68,68,.7);margin-bottom:10px;display:none" id="finalDmgAnim"></div>
-  <div style="background:#080c14;border:1px solid rgba(30,45,69,.8);border-radius:10px;padding:12px;width:300px;margin-bottom:14px">
+  <div style="font-size:11px;color:#64748b;margin-bottom:12px">두 주사위 숫자를 곱한 값 × 10,000 데미지</div>
+  <div style="font-size:36px;font-weight:900;color:#ef4444;text-shadow:0 0 20px rgba(239,68,68,.7);min-height:44px;margin-bottom:10px" id="finalDmgAnim"></div>
+  <div style="background:#080c14;border:1px solid rgba(30,45,69,.8);border-radius:10px;padding:12px;width:min(300px,85vw);margin-bottom:14px">
     <div style="font-size:12px;font-weight:700;color:#f0a500;margin-bottom:8px">🏆 데미지 랭킹</div>
     <div id="finalRanking"></div>
   </div>
@@ -173,9 +172,9 @@ body,html{height:100%;overflow:hidden;}
 <div class="modal-ov" id="modal-admin">
   <div class="modal" style="max-width:480px">
     <div class="modal-title">⚙️ 로드나인마블 관리자</div>
-    <div style="font-size:11px;color:#64748b;margin-bottom:8px">보스/보상 칸 아이템 설정</div>
-    <div id="tileSettings" style="max-height:300px;overflow-y:auto"></div>
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <div style="font-size:11px;color:#64748b;margin-bottom:8px">칸별 보상 아이템 설정</div>
+    <div id="tileSettings" style="max-height:320px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn btn-d btn-sm" onclick="if(confirm('전체 초기화?'))resetBoard()">🔄 전체 초기화</button>
       <button class="btn btn-d btn-sm" onclick="if(confirm('데미지 초기화?'))resetDamage()">💥 데미지 초기화</button>
     </div>
@@ -205,44 +204,42 @@ body,html{height:100%;overflow:hidden;}
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
 
+// ===== 타일 정의 (강화석/제작재료/골드 제거) =====
 const TILE_DEFS = [
   {type:'start',  name:'START',        icon:'🏁', desc:'시작 지점! 한 바퀴 완주 시 최종 보스 공격 가능!'},
-  {type:'boss',   name:'베나투스',     img:'boss_00.png', desc:'마수형 · 권장 전투력 120,000'},
+  {type:'boss',   name:'베나투스',     img:'boss_00.png', desc:''},
   {type:'card',   name:'특수카드',     icon:'❓', desc:'특수 효과가 발동되는 칸입니다'},
-  {type:'boss',   name:'클레멘티스',   img:'boss_01.png', desc:'마수형 · 권장 전투력 150,000'},
-  {type:'reward', name:'보급상자',     icon:'🎁', desc:'아이템을 획득할 수 있습니다'},
-  {type:'boss',   name:'레이디달리아', img:'boss_02.png', desc:'마법형 · 권장 전투력 180,000'},
+  {type:'boss',   name:'클레멘티스',   img:'boss_01.png', desc:''},
+  {type:'reward', name:'보급상자',     icon:'🎁', desc:'아이템을 획득합니다'},
+  {type:'boss',   name:'레이디달리아', img:'boss_02.png', desc:''},
   {type:'move',   name:'앞으로 3칸',   icon:'➜', desc:'앞으로 3칸 이동합니다'},
-  {type:'boss',   name:'아쿨레우스',   img:'boss_03.png', desc:'마수형 · 권장 전투력 210,000'},
-  {type:'reward', name:'강화석',       icon:'💎', desc:'장비 강화에 필요한 강화석을 획득합니다'},
+  {type:'boss',   name:'아쿨레우스',   img:'boss_03.png', desc:''},
   {type:'card',   name:'추가 주사위',  icon:'🎲', desc:'주사위를 한 번 더 굴릴 수 있습니다'},
-  {type:'boss',   name:'밀라베',       img:'boss_05.png', desc:'마법형 · 권장 전투력 230,000'},
+  {type:'boss',   name:'밀라베',       img:'boss_05.png', desc:''},
   {type:'trap',   name:'함정',         icon:'⚠️', desc:'위험! 뒤로 3칸 이동합니다'},
-  {type:'boss',   name:'세크레타',     img:'boss_06.png', desc:'투기형 · 권장 전투력 250,000'},
+  {type:'boss',   name:'세크레타',     img:'boss_06.png', desc:''},
   {type:'card',   name:'특수카드',     icon:'❓', desc:'특수 효과가 발동되는 칸입니다'},
-  {type:'boss',   name:'카테나',       img:'boss_07.png', desc:'사술형 · 권장 전투력 270,000'},
+  {type:'boss',   name:'카테나',       img:'boss_07.png', desc:''},
   {type:'trap',   name:'위험지대',     icon:'☠️', desc:'저주! 다음 주사위 이동칸이 절반이 됩니다'},
-  {type:'boss',   name:'링고르',       img:'boss_08.png', desc:'마수형 · 권장 전투력 290,000'},
-  {type:'reward', name:'회복물약',     icon:'✚', desc:'회복물약을 획득합니다'},
-  {type:'boss',   name:'알시',         img:'boss_09.png', desc:'마법형 · 권장 전투력 300,000'},
-  {type:'card',   name:'약점 공격',    icon:'⚔️', desc:'최종 보스에게 추가 데미지 50,000!'},
-  {type:'boss',   name:'네바',         img:'boss_10.png', desc:'마수형 · 권장 전투력 310,000'},
-  {type:'reward', name:'보급상자',     icon:'🎁', desc:'아이템을 획득할 수 있습니다'},
-  {type:'boss',   name:'루쿠스',       img:'boss_11.png', desc:'기계형 · 권장 전투력 320,000'},
+  {type:'boss',   name:'링고르',       img:'boss_08.png', desc:''},
+  {type:'reward', name:'보급상자',     icon:'🎁', desc:'아이템을 획득합니다'},
+  {type:'boss',   name:'알시',         img:'boss_09.png', desc:''},
+  {type:'card',   name:'약점 공격',    icon:'⚔️', desc:'최종 보스에게 추가 데미지!'},
+  {type:'boss',   name:'네바',         img:'boss_10.png', desc:''},
+  {type:'reward', name:'보급상자',     icon:'🎁', desc:'아이템을 획득합니다'},
+  {type:'boss',   name:'루쿠스',       img:'boss_11.png', desc:''},
   {type:'move',   name:'앞으로 2칸',   icon:'➜', desc:'앞으로 2칸 이동합니다'},
   {type:'trap',   name:'뒤로 2칸',     icon:'↶', desc:'뒤로 2칸 이동합니다'},
-  {type:'reward', name:'제작재료',     icon:'◇', desc:'제작재료를 획득합니다'},
-  {type:'gold',   name:'골드 획득',    icon:'⭐', desc:'골드를 획득합니다'},
-  {type:'boss',   name:'아멘티스',     img:'boss_04.png', desc:'빙결형 · 권장 전투력 330,000'},
+  {type:'boss',   name:'아멘티스',     img:'boss_04.png', desc:''},
 ];
 
 const N = TILE_DEFS.length;
-const TYPE_LABEL = {start:'시작',boss:'보스',card:'이벤트',reward:'보상',move:'이동',trap:'함정',gold:'골드'};
+const TYPE_LABEL = {start:'시작',boss:'보스',card:'이벤트',reward:'보상',move:'이동',trap:'함정'};
 const EMOJIS=['🐱','🐶','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦆','🦉','🦋'];
-const BOSS_HP=999999999;
+const BOSS_HP = 99999999999; // 절대 안 죽음
 
 const EVENT_CARDS=[
-  {icon:'⚔️',title:'보스 추가 공격',desc:'최종 보스에게 추가 데미지 50,000!',type:'extra_dmg',value:50000},
+  {icon:'⚔️',title:'보스 추가 공격',desc:'최종 보스에게 추가 데미지 500,000!',type:'extra_dmg',value:500000},
   {icon:'💥',title:'공격력 2배',desc:'다음 최종 보스 공격 데미지 2배!',type:'double_atk'},
   {icon:'🎲',title:'주사위 추가',desc:'오늘 주사위 1회 추가!',type:'extra_dice'},
   {icon:'🛡️',title:'방어권',desc:'강탈/교환 1회 거부 가능!',type:'shield'},
@@ -259,15 +256,12 @@ let cardCb=null;
 window.addEventListener('load',()=>{
   const sess=requireLogin(); if(!sess) return;
   initFirebase(); watchServerName(); renderSidebar('board');
-  if(isAdmin()) document.getElementById('adminBtn').innerHTML=`<button class="btn btn-s btn-sm" onclick="openAdmin()">⚙️ 관리</button>`;
+  if(isAdmin()) document.getElementById('adminBtn').innerHTML=`<button class="btn btn-s btn-sm" onclick="openAdmin()">⚙️</button>`;
   members=getData('members',[]);
   fbListen('members',d=>{if(d) members=Array.isArray(d)?d:Object.values(d);});
-  fbListen('boardData',d=>{
-    boardData=d||{};
-    renderBoard(); renderPlayerList(); updateMyUI();
-  });
+  fbListen('boardData',d=>{ boardData=d||{}; renderBoard(); updateMyUI(); });
   boardData=getData('boardData',{});
-  renderBoard(); renderPlayerList();
+  renderBoard();
   if(!myNick) setTimeout(openNickModal,400);
   else updateMyUI();
   updateTimer(); setInterval(updateTimer,1000);
@@ -275,11 +269,13 @@ window.addEventListener('load',()=>{
 
 // ===== 보드 렌더 =====
 function renderBoard() {
-  const myPos = boardData[myNick]?.pos ?? -1;
+  const myPos = myNick ? (boardData[myNick]?.pos ?? -1) : -1;
   const tileItems = boardData.tileItems||{};
+  const totalDmg = boardData._totalDmg||0;
+  const myPd = boardData[myNick]||{};
 
-  // 각 칸에 있는 플레이어들
-  const piecesOnTile = {};
+  // 각 칸 플레이어
+  const piecesOnTile={};
   Object.entries(boardData).filter(([k])=>k!=='_totalDmg'&&k!=='tileItems').forEach(([nick,pd])=>{
     if(!pd||pd.pos===undefined) return;
     const idx=pd.pos%N;
@@ -287,61 +283,72 @@ function renderBoard() {
     piecesOnTile[idx].push({nick,emoji:pd.emoji||'🐱'});
   });
 
-  const totalDmg = boardData._totalDmg||0;
-  const myPd = boardData[myNick]||{};
-  const myLaps = Math.floor((myPd.pos||0)/N);
-
-  let html = '';
+  let html='';
 
   TILE_DEFS.forEach((t,i)=>{
-    const isActive = myNick && (myPos%N)===i && myPos>=0;
-    const isPassed = myNick && myPos>i;
-    const reward = tileItems[i]||'';
-    const pieces = piecesOnTile[i]||[];
-    const typeLbl = TYPE_LABEL[t.type]||'';
+    const isActive=myNick&&myPos>=0&&(myPos%N)===i;
+    const isPassed=myNick&&myPos>i&&!isActive;
+    const reward=tileItems[i]||'';
+    const pieces=piecesOnTile[i]||[];
+    const badgeColor={start:'#22c55e',boss:'#a855f7',card:'#f0a500',reward:'#14b8a6',move:'#3b82f6',trap:'#ef4444'}[t.type]||'#64748b';
+    const imgHtml=t.img?`<img src="${t.img}" onerror="this.parentElement.innerHTML='<span class=tile-icon-big>${t.icon||'👾'}</span>'">`:`<span class="tile-icon-big">${t.icon}</span>`;
 
-    const imgHtml = t.img
-      ? `<img src="${t.img}" onerror="this.parentElement.innerHTML='<span class=tile-icon-big>${t.icon||'👾'}</span>'">`
-      : `<span class="tile-icon-big">${t.icon}</span>`;
-
-    const badgeColor = {start:'#22c55e',boss:'#a855f7',card:'#f0a500',reward:'#14b8a6',move:'#3b82f6',trap:'#ef4444',gold:'#eab308'}[t.type]||'#64748b';
-
-    html += `<div class="tile-card type-${t.type}${isActive?' active':''}${isPassed&&!isActive?' passed':''}">
+    html+=`<div class="tile-card type-${t.type}${isActive?' active':''}${isPassed?' passed':''}">
       <div class="tile-num">${String(i+1).padStart(2,'0')}</div>
       <div class="tile-img-wrap">${imgHtml}</div>
       <div class="tile-info">
-        <div class="tile-name">
-          ${t.name}
-          <span class="tile-type-badge" style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}44">${typeLbl}</span>
-          ${isActive?`<span style="font-size:11px;color:#f0a500;margin-left:4px">← 현재 위치</span>`:''}
+        <div class="tile-name">${t.name}
+          <span class="tile-type-badge" style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}44">${TYPE_LABEL[t.type]||''}</span>
+          ${isActive?'<span style="font-size:10px;color:#f0a500;margin-left:4px">← 내 위치</span>':''}
         </div>
-        <div class="tile-desc">${t.desc}</div>
-        ${reward?`<div class="tile-reward">🎁 보상: ${reward}</div>`:''}
+        ${t.desc?`<div class="tile-desc">${t.desc}</div>`:''}
+        ${reward?`<div class="tile-reward">🎁 ${reward}</div>`:''}
+        ${pieces.length>0?`<div class="pieces-on-tile">${pieces.map(p=>`<span class="piece-badge" title="${p.nick}">${p.emoji}</span>`).join('')}</div>`:''}
       </div>
-      ${pieces.length>0?`<div class="pieces-on-tile">${pieces.map(p=>`<span class="piece-badge" title="${p.nick}">${p.emoji}</span>`).join('')}</div>`:''}
     </div>`;
   });
 
   // 최종 보스
-  const dmgPct = Math.max(0,100-totalDmg/BOSS_HP*100);
-  const rankings = Object.entries(boardData).filter(([k,v])=>k!=='_totalDmg'&&k!=='tileItems'&&v?.dmg>0).sort((a,b)=>b[1].dmg-a[1].dmg);
-
-  html += `<div class="final-boss-card">
-    <img class="final-boss-img" src="final_boss.png">
-    <div class="final-boss-info">
-      <div class="final-boss-name">⚔️ 최종 보스 셀페리온</div>
-      <div style="font-size:12px;color:#94a3b8;margin-bottom:6px">번개의 울음, 피어나는 폭풍 · 매우 강력한 보스!</div>
-      <div class="final-hp-bar"><div class="final-hp-fill" id="mainHpFill" style="width:${dmgPct}%"></div></div>
-      <div style="font-size:11px;color:#64748b;margin-bottom:8px">누적 데미지: ${totalDmg.toLocaleString()}</div>
-      ${myPd.completed
-        ?`<button class="roll-btn" onclick="openFinalBoss()" style="font-size:13px;padding:8px 20px">⚔️ 보스 공격!</button>`
-        :`<div style="font-size:11px;color:#64748b">한 바퀴 완주 후 공격 가능</div>`}
-    </div>
+  const dmgPct=Math.max(1, 100-totalDmg/BOSS_HP*100); // 절대 0 안됨
+  html+=`<div class="final-boss-section">
+    <img class="final-boss-img-big" src="final_boss.png">
+    <div class="final-boss-name">⚔️ 최종 보스 셀페리온</div>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:6px">번개의 울음, 피어나는 폭풍</div>
+    <div class="final-hp-bar"><div class="final-hp-fill" id="mainHpFill" style="width:${dmgPct}%"></div></div>
+    <div style="font-size:11px;color:#64748b;margin:4px 0">누적 데미지: ${totalDmg.toLocaleString()}</div>
+    ${myPd.completed
+      ?`<button class="roll-btn" onclick="openFinalBoss()" style="font-size:13px;padding:8px 20px;margin-top:8px">⚔️ 보스 공격!</button>`
+      :`<div style="font-size:11px;color:#64748b;margin-top:8px">⚠️ 한 바퀴 완주 후 공격 가능</div>`}
   </div>`;
 
+  // 플레이어 현황
+  const players=Object.entries(boardData).filter(([k])=>k!=='_totalDmg'&&k!=='tileItems'&&boardData[k]?.pos!==undefined).sort((a,b)=>(b[1].pos||0)-(a[1].pos||0));
+  if(players.length>0){
+    html+=`<div class="player-list-section">
+      <div style="font-size:12px;font-weight:700;color:#f0a500;margin-bottom:10px">👥 플레이어 현황</div>
+      ${players.map(([nick,pd])=>{
+        const tile=TILE_DEFS[(pd.pos||0)%N];
+        const laps=Math.floor((pd.pos||0)/N);
+        const items=Object.entries(pd.items||{}).map(([k,v])=>`${k}×${v}`).join(' ');
+        return `<div class="player-row">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:18px">${pd.emoji||'🐱'}</span>
+            <div>
+              <div style="font-weight:700;font-size:12px">${nick}${nick===myNick?' (나)':''} ${pd.completed?'✅':''} ${pd.shield>0?'🛡️':''}</div>
+              <div style="font-size:10px;color:#64748b">${laps>0?laps+'바퀴+':''} ${(pd.pos||0)%N+1}칸 · ${tile?.name||''}</div>
+              ${items?`<div style="font-size:10px;color:#f0a500">${items}</div>`:''}
+            </div>
+          </div>
+          ${pd.dmg>0?`<div style="color:#ef4444;font-weight:700;font-size:12px">💥 ${(pd.dmg||0).toLocaleString()}</div>`:''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
   // 데미지 랭킹
-  if(rankings.length>0) {
-    html += `<div class="dmg-ranking">
+  const rankings=players.filter(([,v])=>v.dmg>0).sort((a,b)=>b[1].dmg-a[1].dmg);
+  if(rankings.length>0){
+    html+=`<div class="rank-section">
       <div style="font-size:12px;font-weight:700;color:#f0a500;margin-bottom:8px">🏆 데미지 랭킹</div>
       ${rankings.map(([nick,pd],i)=>`<div class="rank-row" style="${nick===myNick?'color:#f0a500;font-weight:700':''}">
         <span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${pd.emoji||''} ${nick}</span>
@@ -350,49 +357,19 @@ function renderBoard() {
     </div>`;
   }
 
-  document.getElementById('boardMain').innerHTML = html;
+  document.getElementById('boardBody').innerHTML=html;
 
-  // 현재 위치로 스크롤
-  if(myNick && myPos>=0) {
+  // 내 위치로 스크롤
+  if(myNick&&myPos>=0){
     setTimeout(()=>{
-      const activeEl = document.querySelector('.tile-card.active');
-      if(activeEl) activeEl.scrollIntoView({behavior:'smooth',block:'center'});
+      const el=document.querySelector('.tile-card.active');
+      if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
     },300);
   }
 }
 
-// ===== 왼쪽 플레이어 목록 =====
-function renderPlayerList() {
-  const players = Object.entries(boardData).filter(([k])=>k!=='_totalDmg'&&k!=='tileItems').sort((a,b)=>(b[1].pos||0)-(a[1].pos||0));
-  const el = document.getElementById('playerList');
-  el.innerHTML = `<div style="font-size:9px;font-weight:700;color:rgba(240,165,0,.5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">플레이어</div>`;
-  el.innerHTML += players.map(([nick,pd])=>{
-    const tileIdx=(pd.pos||0)%N;
-    const tile=TILE_DEFS[tileIdx];
-    const laps=Math.floor((pd.pos||0)/N);
-    const items=Object.entries(pd.items||{}).map(([k,v])=>`${k}×${v}`);
-    return `<div class="player-pos-card${nick===myNick?' me':''}" onclick="scrollToTile(${tileIdx})">
-      <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
-        <span style="font-size:18px">${pd.emoji||'🐱'}</span>
-        <div style="min-width:0">
-          <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nick}${nick===myNick?' (나)':''}</div>
-          <div style="font-size:9px;color:#64748b">${laps>0?laps+'바퀴+':''} ${tileIdx+1}칸${pd.completed?' ✅':''}</div>
-        </div>
-      </div>
-      <div style="font-size:9px;color:#a855f7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tile?.name||''}</div>
-      ${pd.dmg>0?`<div style="font-size:9px;color:#ef4444">💥 ${(pd.dmg||0).toLocaleString()}</div>`:''}
-      ${items.length>0?`<div style="font-size:9px;color:#f0a500;margin-top:2px">${items.slice(0,2).join(' ')}</div>`:''}
-    </div>`;
-  }).join('') || '<div style="color:#64748b;font-size:11px">참여자 없음</div>';
-}
-
-function scrollToTile(idx) {
-  const tiles = document.querySelectorAll('.tile-card');
-  if(tiles[idx]) tiles[idx].scrollIntoView({behavior:'smooth',block:'center'});
-}
-
 // ===== UI =====
-function updateMyUI() {
+function updateMyUI(){
   if(!myNick) return;
   const today=new Date().toDateString();
   const pd=boardData[myNick]||{};
@@ -400,14 +377,13 @@ function updateMyUI() {
   document.getElementById('diceRemain').textContent=`남은 주사위: ${r}회`;
   document.getElementById('rollBtn').disabled=r<=0;
   document.getElementById('myInfo').textContent=`${myEmoji} ${myNick}`;
-  // 내 순위
-  const rankings=Object.entries(boardData).filter(([k,v])=>k!=='_totalDmg'&&k!=='tileItems'&&v?.pos!==undefined).sort((a,b)=>(b[1].pos||0)-(a[1].pos||0));
-  const myRankIdx=rankings.findIndex(([n])=>n===myNick);
-  document.getElementById('myRank').textContent=myRankIdx>=0?`${myRankIdx+1}위`:'—';
+  const ranked=Object.entries(boardData).filter(([k,v])=>k!=='_totalDmg'&&k!=='tileItems'&&v?.pos!==undefined).sort((a,b)=>(b[1].pos||0)-(a[1].pos||0));
+  const idx=ranked.findIndex(([n])=>n===myNick);
+  document.getElementById('myRank').textContent=idx>=0?`${idx+1}위`:'—';
 }
 
 // ===== 주사위 =====
-function rollDice() {
+function rollDice(){
   if(!myNick){openNickModal();return;}
   const today=new Date().toDateString();
   const pd=boardData[myNick]||{};
@@ -430,7 +406,7 @@ function rollDice() {
   },70);
 }
 
-function doMove(move,d1,d2) {
+function doMove(move,d1,d2){
   const today=new Date().toDateString();
   const pd=boardData[myNick]||{pos:0,items:{},dmg:0,completed:false,emoji:myEmoji,rollsLeft:3};
   const r=pd.lastRollDate===today?(pd.rollsLeft??3):3;
@@ -443,8 +419,9 @@ function doMove(move,d1,d2) {
   const tile=TILE_DEFS[tileIdx];
   const newLaps=Math.floor(pd.pos/N);
   showToast(`🎲 ${d1}+${d2}=${move} → ${tile.name} 도착!`);
+
   const tileItem=(boardData.tileItems||{})[tileIdx];
-  if((tile.type==='boss'||tile.type==='reward'||tile.type==='gold')&&tileItem){
+  if((tile.type==='boss'||tile.type==='reward')&&tileItem){
     if(!pd.items) pd.items={};
     pd.items[tileItem]=(pd.items[tileItem]||0)+1;
     setTimeout(()=>showToast(`🎁 ${tileItem} 획득!`),1000);
@@ -453,16 +430,17 @@ function doMove(move,d1,d2) {
   if(tile.type==='move'&&tile.name.includes('앞')){const n=parseInt(tile.name.match(/\d+/)?.[0]||2);pd.pos+=n;setTimeout(()=>showToast(`➜ ${n}칸 추가!`),1200);}
   if(tile.type==='trap'){
     if(tile.name.includes('뒤')){const n=parseInt(tile.name.match(/\d+/)?.[0]||2);pd.pos=Math.max(0,pd.pos-n);setTimeout(()=>showToast(`↶ ${n}칸 뒤로!`),1200);}
-    else{pd.cursed=true;setTimeout(()=>showToast('☠️ 저주!'),1200);}
+    else{pd.cursed=true;setTimeout(()=>showToast('☠️ 저주! 다음 주사위 절반!'),1200);}
   }
-  if(newLaps>prevLaps){pd.completed=true;setTimeout(()=>{showToast('🎉 한 바퀴 완주! 최종 보스 공격 가능!');},1800);}
+  if(newLaps>prevLaps){pd.completed=true;setTimeout(()=>showToast('🎉 한 바퀴 완주! 최종 보스 공격 가능!'),1800);}
+
   if(!boardData[myNick]) boardData[myNick]={};
   Object.assign(boardData[myNick],pd);
   saveBoardData(); updateMyUI();
 }
 
 // ===== 이벤트 카드 =====
-function triggerCard(pd) {
+function triggerCard(pd){
   const card=EVENT_CARDS[Math.floor(Math.random()*EVENT_CARDS.length)];
   document.getElementById('cardIcon').textContent=card.icon;
   document.getElementById('cardTitle').textContent=card.title;
@@ -480,10 +458,14 @@ function closeCard(){document.getElementById('cardOverlay').classList.remove('op
 
 // ===== 최종 보스 =====
 function openFinalBoss(){
+  // 완주 체크
+  if(!boardData[myNick]?.completed){showToast('한 바퀴 완주 후 공격 가능해요!');return;}
   updateFinalRanking();
   const total=boardData._totalDmg||0;
-  document.getElementById('finalHpFill').style.width=Math.max(0,100-total/BOSS_HP*100)+'%';
+  document.getElementById('finalHpFill').style.width=Math.max(1,100-total/BOSS_HP*100)+'%';
   document.getElementById('finalDmgText').textContent='누적 데미지: '+total.toLocaleString();
+  document.getElementById('finalDmgAnim').textContent='';
+  document.getElementById('finalRollBtn').disabled=false;
   document.getElementById('finalScreen').classList.add('open');
 }
 function closeFinal(){document.getElementById('finalScreen').classList.remove('open');}
@@ -493,6 +475,7 @@ function finalAttack(){
   if(!pd?.completed){showToast('한 바퀴 완주 후 공격 가능해요!');return;}
   const btn=document.getElementById('finalRollBtn');
   btn.disabled=true;
+  document.getElementById('finalDmgAnim').textContent='';
   let cnt=0;
   const iv=setInterval(()=>{
     document.getElementById('finalDie1').textContent=Math.floor(Math.random()*6)+1;
@@ -502,12 +485,27 @@ function finalAttack(){
       const d1=Math.floor(Math.random()*6)+1,d2=Math.floor(Math.random()*6)+1;
       document.getElementById('finalDie1').textContent=d1;
       document.getElementById('finalDie2').textContent=d2;
-      let dmg=(d1+d2)*10000;
+
+      // 10% 방어 확률
+      if(Math.random()<0.1){
+        document.getElementById('finalDmgAnim').textContent='🛡️ BLOCKED!';
+        document.getElementById('finalDmgAnim').style.color='#3b82f6';
+        setTimeout(()=>{
+          document.getElementById('blockOverlay').classList.add('open');
+          btn.disabled=false;
+        },800);
+        return;
+      }
+
+      // 데미지 = d1 × d2 × 10000
+      let dmg=d1*d2*10000;
       if(pd.doubleAtk){dmg*=2;boardData[myNick].doubleAtk=false;}
       addFinalDmg(dmg);
+
       const el=document.getElementById('finalDmgAnim');
-      el.style.display='block';el.textContent=dmg.toLocaleString()+' DAMAGE!';
-      setTimeout(()=>{el.style.display='none';btn.disabled=false;},2000);
+      el.style.color='#ef4444';
+      el.textContent=dmg.toLocaleString()+' DAMAGE!';
+      setTimeout(()=>{ btn.disabled=false; },2000);
       updateFinalRanking();
     }
   },75);
@@ -519,11 +517,14 @@ function addFinalDmg(dmg){
   const total=Object.entries(boardData).filter(([k])=>k!=='_totalDmg'&&k!=='tileItems').reduce((s,[,p])=>s+(p.dmg||0),0);
   boardData._totalDmg=total;
   saveBoardData();
-  const pct=Math.max(0,100-total/BOSS_HP*100);
-  document.getElementById('finalHpFill').style.width=pct+'%';
-  document.getElementById('finalDmgText').textContent='누적 데미지: '+total.toLocaleString();
-  const mhp=document.getElementById('mainHpFill');
-  if(mhp) mhp.style.width=pct+'%';
+  // HP 절대 0 안됨
+  const pct=Math.max(1,100-total/BOSS_HP*100);
+  const f=document.getElementById('finalHpFill');
+  const m=document.getElementById('mainHpFill');
+  if(f) f.style.width=pct+'%';
+  if(m) m.style.width=pct+'%';
+  const ft=document.getElementById('finalDmgText');
+  if(ft) ft.textContent='누적 데미지: '+total.toLocaleString();
 }
 
 function updateFinalRanking(){
@@ -540,7 +541,7 @@ function updateTimer(){
   const now=new Date(),d=7-now.getDay(),target=new Date(now);
   target.setDate(now.getDate()+(d===7?0:d));target.setHours(23,59,0,0);
   const diff=target-now,days=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
-  document.getElementById('seasonTimer').textContent=`시즌 종료 ${days}일 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  document.getElementById('seasonTimer').textContent=`종료 ${days}일 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 // ===== 닉네임 =====
@@ -558,31 +559,30 @@ function confirmNick(){
   else{const used=Object.values(boardData).map(p=>p.emoji).filter(Boolean);const avail=EMOJIS.filter(e=>!used.includes(e));myEmoji=avail.length>0?avail[Math.floor(Math.random()*avail.length)]:EMOJIS[Math.floor(Math.random()*EMOJIS.length)];}
   localStorage.setItem('gm_boardEmoji',myEmoji);
   if(!boardData[nick]){boardData[nick]={pos:0,emoji:myEmoji,items:{},dmg:0,completed:false,rollsLeft:3,lastRollDate:''};saveBoardData();}
-  closeModal('nick');updateMyUI();renderBoard();renderPlayerList();
+  closeModal('nick');updateMyUI();renderBoard();
   showToast(`${myEmoji} ${nick}님 환영합니다!`);
 }
 
 // ===== 관리자 =====
 function openAdmin(){
   const tileItems=boardData.tileItems||{};
-  document.getElementById('tileSettings').innerHTML=TILE_DEFS.map((t,i)=>{
-    if(!['boss','reward','gold'].includes(t.type)) return '';
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-      <span style="font-size:11px;color:#14b8a6;min-width:90px">${String(i+1).padStart(2,'0')} ${t.name}</span>
-      <input class="inp" type="text" value="${tileItems[i]||''}" placeholder="아이템명 (예: 찬핵 3개)" id="ti_${i}" style="flex:1;padding:4px 8px;font-size:11px">
-    </div>`;
-  }).join('');
+  document.getElementById('tileSettings').innerHTML=TILE_DEFS.map((t,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <span style="font-size:11px;min-width:100px;color:${t.type==='boss'?'#a855f7':t.type==='reward'?'#14b8a6':'#64748b'}">${String(i+1).padStart(2,'0')} ${t.name}</span>
+      <input class="inp" type="text" value="${tileItems[i]||''}" placeholder="보상 아이템" id="ti_${i}" style="flex:1;padding:4px 8px;font-size:11px">
+    </div>`).join('');
   openModal('admin');
 }
 function saveTileSettings(){if(!boardData.tileItems)boardData.tileItems={};TILE_DEFS.forEach((_,i)=>{const el=document.getElementById(`ti_${i}`);if(el)boardData.tileItems[i]=el.value.trim();});saveBoardData();closeModal('admin');showToast('저장됐어요!');}
 function resetBoard(){const ti=boardData.tileItems;boardData={tileItems:ti};saveBoardData();myNick='';myEmoji='';localStorage.removeItem('gm_boardNick');localStorage.removeItem('gm_boardEmoji');location.reload();}
 function resetDamage(){Object.keys(boardData).forEach(k=>{if(k!=='_totalDmg'&&k!=='tileItems'&&boardData[k])boardData[k].dmg=0;});boardData._totalDmg=0;saveBoardData();showToast('데미지 초기화!');}
-function saveBoardData(){setData('boardData',boardData);fbSet('boardData',boardData);renderBoard();renderPlayerList();}
+function saveBoardData(){setData('boardData',boardData);fbSet('boardData',boardData);renderBoard();updateMyUI();}
 
 function showToast(msg){const el=document.getElementById('bToast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2500);}
-function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
-function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
+function openModal(n){const el=document.getElementById('modal-'+n)||document.getElementById(n);if(el)el.classList.add('open');}
+function closeModal(n){const el=document.getElementById('modal-'+n)||document.getElementById(n);if(el)el.classList.remove('open');}
 document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+document.getElementById('blockOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('blockOverlay'))document.getElementById('blockOverlay').classList.remove('open');});
 function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
 function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
 </script>
