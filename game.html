@@ -209,9 +209,8 @@ document.getElementById('commonStyle').textContent = COMMON_CSS;
 const GAMES = {
   roulette: {name:'룰렛', icon:'🎡'},
   slot:     {name:'슬롯머신', icon:'🎰'},
-  ball:     {name:'공 튀기기', icon:'⚽'},
-  card:     {name:'카드 뽑기', icon:'🃏'},
   timer:    {name:'10초 챌린지', icon:'⏱'},
+  card:     {name:'카드 뽑기', icon:'🃏'},
 };
 
 let gameData = {};
@@ -328,9 +327,8 @@ function renderGames() {
     <div class="game-grid">
       ${gameCard('roulette')}
       ${gameCard('slot')}
-      ${gameCard('ball')}
-      ${gameCard('card')}
-      ${gameCard('timer', true)}
+      ${gameCard('timer')}
+      ${gameCard('card', true)}
     </div>`;
 }
 
