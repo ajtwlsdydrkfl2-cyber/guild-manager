@@ -3,167 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>길드 레이드 보드 — 길드 매니저</title>
+<title>로드나인마블 — 길드 매니저</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style id="commonStyle"></style>
 <style>
-/* ===== 보드 게임 전용 스타일 ===== */
-.board-wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;}
-.board-topbar{padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.board-body{flex:1;display:flex;overflow:hidden;}
-.board-left{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
-.board-right{width:280px;background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;padding:12px;flex-shrink:0;}
+body,html{height:100%;overflow:hidden;}
+.board-wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.board-topbar{
+  padding:8px 16px;background:rgba(14,21,32,.95);border-bottom:1px solid rgba(240,165,0,.2);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10;
+}
+.board-body{flex:1;display:flex;overflow:hidden;position:relative;}
 
-/* 보드판 */
+/* 보드 스테이지 - 전체화면 */
+.stage-wrap{flex:1;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;}
 .board-stage{
   position:relative;
-  width:700px;height:480px;
   background:url('board_bg.png') center/cover no-repeat;
-  border-radius:16px;border:2px solid rgba(240,165,0,.4);
-  box-shadow:0 0 40px rgba(240,165,0,.2);
-  flex-shrink:0;margin:0 auto;
+  border:2px solid rgba(240,165,0,.3);
+  box-shadow:0 0 40px rgba(240,165,0,.15);
 }
 
-/* 칸 */
+/* 타일 */
 .tile{
-  position:absolute;width:72px;height:72px;border-radius:10px;
+  position:absolute;border-radius:8px;border:2px solid;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  cursor:default;border:2px solid;transition:all .2s;overflow:hidden;
+  overflow:hidden;cursor:default;transition:transform .15s;
 }
-.tile:hover{transform:scale(1.08);z-index:10;}
-.tile-img{width:100%;height:100%;object-fit:cover;border-radius:8px;}
+.tile:hover{transform:scale(1.06);z-index:15;}
+.tile img{width:100%;height:100%;object-fit:cover;}
 .tile-label{
   position:absolute;bottom:0;left:0;right:0;
-  background:rgba(0,0,0,.75);font-size:8px;font-weight:700;
-  text-align:center;padding:1px 2px;color:#fff;
+  background:rgba(0,0,0,.8);font-size:7px;font-weight:700;
+  text-align:center;padding:1px;color:#fff;line-height:1.2;
 }
-.tile-num{
-  position:absolute;top:2px;left:4px;font-size:9px;
-  font-weight:700;color:rgba(255,255,255,.8);
-}
+.tile-num{position:absolute;top:2px;left:3px;font-size:8px;font-weight:700;color:rgba(255,255,255,.9);}
+.tile-icon{font-size:22px;}
 
-/* 칸 타입별 색상 */
-.tile-start{border-color:#22c55e;box-shadow:0 0 12px rgba(34,197,94,.5);}
+.tile-start{border-color:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.4);}
 .tile-boss{border-color:#a855f7;}
-.tile-card{border-color:#f0a500;background:rgba(240,165,0,.15);}
+.tile-card{border-color:#f0a500;background:rgba(240,165,0,.2);}
 .tile-reward{border-color:#14b8a6;background:rgba(20,184,166,.15);}
 .tile-move{border-color:#3b82f6;background:rgba(59,130,246,.15);}
 .tile-gold{border-color:#eab308;background:rgba(234,179,8,.15);}
 .tile-trap{border-color:#ef4444;background:rgba(239,68,68,.15);}
 
-/* 말 (플레이어) */
-.piece{
-  position:absolute;width:28px;height:28px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;z-index:20;
-  border:2px solid rgba(255,255,255,.8);
-  box-shadow:0 0 10px rgba(255,255,255,.5);
-  transition:left .5s ease,top .5s ease;
-  background:rgba(0,0,0,.5);
-}
-
-/* 중앙 보스 영역 */
-.center-boss{
-  position:absolute;left:165px;top:85px;
-  width:370px;height:310px;
+/* 중앙 */
+.center-area{
+  position:absolute;
+  background:rgba(5,8,20,.8);border-radius:16px;
+  border:1px solid rgba(240,165,0,.15);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.6);border-radius:16px;
-  border:1px solid rgba(240,165,0,.2);
+  padding:10px;
 }
-.boss-img{width:120px;height:120px;object-fit:cover;border-radius:12px;border:2px solid rgba(240,165,0,.4);margin-bottom:8px;}
-.boss-name{font-family:'Black Han Sans',sans-serif;font-size:16px;color:#f0a500;margin-bottom:4px;}
-.boss-hp-bar{width:200px;height:10px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden;margin-bottom:4px;}
-.boss-hp-fill{height:100%;background:linear-gradient(90deg,#ef4444,#f0a500);border-radius:5px;transition:width .3s;}
-.boss-hp-text{font-size:11px;color:var(--text2);margin-bottom:10px;}
-.dice-area{display:flex;gap:12px;align-items:center;}
+.final-img{object-fit:cover;border-radius:10px;border:2px solid rgba(240,165,0,.3);}
+.boss-title{font-family:'Black Han Sans',sans-serif;color:#f0a500;text-align:center;}
+.hp-bar-wrap{background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden;}
+.hp-bar-fill{height:100%;background:linear-gradient(90deg,#ef4444,#f0a500);border-radius:5px;transition:width .3s;}
+.dice-row{display:flex;gap:8px;align-items:center;}
 .die{
-  width:52px;height:52px;border-radius:10px;
-  background:linear-gradient(135deg,#1a2a40,#0e1520);
-  border:2px solid var(--accent);
-  display:flex;align-items:center;justify-content:center;
-  font-size:28px;font-weight:900;color:var(--accent);
-  font-family:'Black Han Sans',sans-serif;
-  box-shadow:0 0 15px rgba(240,165,0,.3);
+  border-radius:8px;background:linear-gradient(135deg,#1a2a40,#0e1520);
+  border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:var(--accent);font-family:'Black Han Sans',sans-serif;
+  box-shadow:0 0 12px rgba(240,165,0,.3);
 }
 .roll-btn{
-  padding:8px 20px;border-radius:10px;
+  border-radius:8px;
   background:linear-gradient(180deg,#a855f7,#5b21b6);
-  color:#fff3bf;font-size:14px;font-weight:700;
-  border:2px solid #f5d879;cursor:pointer;
+  color:#fff3bf;font-weight:700;border:2px solid #f5d879;cursor:pointer;
   font-family:'Noto Sans KR',sans-serif;
-  box-shadow:0 4px 15px rgba(168,85,247,.4);
+  box-shadow:0 4px 12px rgba(168,85,247,.4);
   transition:all .15s;
 }
-.roll-btn:hover{filter:brightness(1.2);transform:translateY(-1px);}
-.roll-btn:disabled{opacity:.5;cursor:default;transform:none;}
-.dice-remain{font-size:11px;color:var(--text2);text-align:center;margin-top:4px;}
+.roll-btn:hover{filter:brightness(1.2);}
+.roll-btn:disabled{opacity:.5;cursor:default;}
 
-/* 플레이어 패널 */
-.player-card{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:10px;padding:10px;margin-bottom:8px;
+/* 말 */
+.piece{
+  position:absolute;border-radius:50%;z-index:20;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid rgba(255,255,255,.8);
+  box-shadow:0 0 10px rgba(255,255,255,.4);
+  transition:left .5s ease,top .5s ease;
+  background:rgba(0,0,0,.6);pointer-events:none;
 }
-.player-card.me{border-color:var(--accent);}
-.player-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-.player-emoji{font-size:22px;}
-.player-name{font-size:13px;font-weight:700;}
-.player-pos{font-size:11px;color:var(--text2);}
-.player-items{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
-.player-item{font-size:10px;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.2);border-radius:4px;padding:2px 5px;color:var(--accent);}
-.player-dmg{font-size:11px;color:var(--red);font-weight:700;}
-.completed-badge{font-size:10px;background:rgba(34,197,94,.15);border:1px solid var(--green);border-radius:4px;padding:1px 5px;color:var(--green);}
 
-/* 이벤트 카드 팝업 */
-.card-popup{
-  position:fixed;inset:0;background:rgba(0,0,0,.85);
-  display:none;align-items:center;justify-content:center;z-index:100;
+/* 우측 패널 */
+.board-right{
+  width:240px;background:rgba(14,21,32,.95);border-left:1px solid rgba(240,165,0,.15);
+  overflow-y:auto;padding:10px;flex-shrink:0;
+  display:flex;flex-direction:column;gap:10px;
 }
-.card-popup.open{display:flex;}
-.card-box{
-  width:300px;background:var(--bg2);border-radius:20px;
-  border:2px solid var(--accent);padding:28px;text-align:center;
-}
-.card-icon{font-size:52px;margin-bottom:12px;}
-.card-title{font-size:18px;font-weight:700;color:var(--accent);margin-bottom:6px;}
-.card-desc{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px;}
-
-/* 최종 보스 화면 */
-.final-screen{
-  position:fixed;inset:0;background:rgba(0,0,0,.95);
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  z-index:150;padding:20px;
-}
-.final-screen.open{display:flex;}
-.final-boss-img{width:200px;height:200px;object-fit:cover;border-radius:16px;
-  border:3px solid #f0a500;box-shadow:0 0 40px rgba(240,165,0,.5);margin-bottom:16px;}
-.final-boss-name{font-family:'Black Han Sans',sans-serif;font-size:28px;color:#f0a500;margin-bottom:8px;text-shadow:0 0 20px rgba(240,165,0,.5);}
-.final-hp-bar{width:400px;height:16px;background:rgba(255,255,255,.1);border-radius:8px;overflow:hidden;margin-bottom:6px;}
-.final-hp-fill{height:100%;background:linear-gradient(90deg,#ef4444,#ff9d3c,#ffe072);border-radius:8px;transition:width .3s;}
-.final-hp-text{font-size:13px;color:var(--text2);margin-bottom:20px;}
-.final-dice-wrap{display:flex;gap:16px;align-items:center;margin-bottom:20px;}
-.final-die{width:72px;height:72px;border-radius:14px;background:linear-gradient(135deg,#1a2a40,#0e1520);
-  border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;
-  font-size:40px;font-weight:900;color:var(--accent);font-family:'Black Han Sans',sans-serif;
-  box-shadow:0 0 20px rgba(240,165,0,.4);}
-.final-dmg{font-size:40px;font-weight:900;color:#ef4444;text-shadow:0 0 20px rgba(239,68,68,.8);margin-bottom:16px;}
-.rank-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;width:340px;margin-bottom:16px;}
-.rank-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid rgba(30,45,69,.4);}
+.panel-title{font-size:10px;font-weight:700;color:rgba(240,165,0,.6);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
+.player-card{background:rgba(26,42,64,.6);border:1px solid rgba(30,45,69,.8);border-radius:8px;padding:8px;}
+.player-card.me{border-color:rgba(240,165,0,.5);}
+.player-emoji{font-size:18px;}
+.p-name{font-size:12px;font-weight:700;}
+.p-pos{font-size:10px;color:#64748b;}
+.p-items{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;}
+.p-item{font-size:9px;background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);border-radius:3px;padding:1px 4px;color:#f0a500;}
+.rank-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(30,45,69,.4);}
 .rank-row:last-child{border-bottom:none;}
 
-/* 토스트 */
-.board-toast{
-  position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-60px);
-  background:rgba(10,16,28,.95);border:2px solid var(--accent);border-radius:12px;
-  padding:12px 24px;font-size:14px;font-weight:700;color:var(--accent);
-  z-index:200;transition:transform .3s;white-space:nowrap;
-  box-shadow:0 8px 30px rgba(240,165,0,.3);
-}
-.board-toast.show{transform:translateX(-50%) translateY(0);}
+/* 팝업들 */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:100;}
+.overlay.open{display:flex;}
+.pop-box{background:#0e1520;border:2px solid #f0a500;border-radius:16px;padding:24px;text-align:center;width:min(340px,90vw);}
+.card-icon-big{font-size:48px;margin-bottom:10px;}
+.card-ttl{font-size:17px;font-weight:700;color:#f0a500;margin-bottom:6px;}
+.card-desc-txt{font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:18px;}
 
-@media(max-width:900px){
+/* 최종 보스 화면 */
+.final-screen{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:150;padding:20px;}
+.final-screen.open{display:flex;}
+.final-boss-img{width:160px;height:160px;object-fit:cover;border-radius:14px;border:3px solid #f0a500;box-shadow:0 0 40px rgba(240,165,0,.4);margin-bottom:12px;}
+.final-boss-nm{font-family:'Black Han Sans',sans-serif;font-size:24px;color:#f0a500;margin-bottom:8px;}
+.final-hp-bar{width:360px;height:14px;background:rgba(255,255,255,.1);border-radius:7px;overflow:hidden;margin-bottom:4px;}
+.final-hp-fill{height:100%;background:linear-gradient(90deg,#ef4444,#f0a500);border-radius:7px;transition:width .3s;}
+.final-dice{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#1a2a40,#0e1520);border:3px solid #f0a500;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#f0a500;font-family:'Black Han Sans',sans-serif;box-shadow:0 0 18px rgba(240,165,0,.3);}
+.final-dmg-txt{font-size:36px;font-weight:900;color:#ef4444;text-shadow:0 0 20px rgba(239,68,68,.7);}
+.rank-box{background:#0e1520;border:1px solid rgba(30,45,69,.8);border-radius:10px;padding:12px;width:320px;}
+
+/* 토스트 */
+.b-toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);
+  background:rgba(5,8,20,.95);border:2px solid #f0a500;border-radius:10px;
+  padding:10px 22px;font-size:13px;font-weight:700;color:#f0a500;
+  z-index:300;transition:transform .3s;white-space:nowrap;
+  box-shadow:0 6px 25px rgba(240,165,0,.25);
+}
+.b-toast.show{transform:translateX(-50%) translateY(0);}
+
+@media(max-width:768px){
+  .board-right{display:none;}
   .board-body{flex-direction:column;}
-  .board-right{width:100%;height:200px;border-left:none;border-top:1px solid var(--border);}
-  .board-stage{width:100%;max-width:500px;height:340px;}
 }
 </style>
 </head>
@@ -171,47 +144,46 @@
 <div class="app">
   <div id="sidebar"></div>
   <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
-  <div class="main" style="overflow:hidden">
+  <div class="main" style="overflow:hidden;height:100vh">
     <div class="board-wrap">
       <div class="board-topbar">
         <div style="display:flex;align-items:center;gap:10px">
           <button class="ham" onclick="toggleSb()">☰</button>
-          <div style="font-family:'Black Han Sans',sans-serif;font-size:18px;color:var(--accent)">🎲 길드 레이드 보드</div>
+          <span style="font-family:'Black Han Sans',sans-serif;font-size:16px;color:#f0a500">🎲 로드나인마블</span>
+          <span id="seasonTimer" style="font-size:11px;color:#64748b"></span>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <div id="seasonTimer" style="font-size:12px;color:var(--text2)"></div>
-          <div id="myInfo" style="font-size:12px;color:var(--accent2)"></div>
-          ${isAdmin?`<button class="btn btn-s btn-sm" onclick="openAdmin()">⚙️ 관리자</button>`:''}
+          <span id="myInfo" style="font-size:12px;color:#14b8a6"></span>
+          <button class="btn btn-s btn-sm" onclick="openNickModal()">👤 캐릭터</button>
+          <span id="adminBtn"></span>
         </div>
       </div>
       <div class="board-body">
-        <div class="board-left">
+        <div class="stage-wrap" id="stageWrap">
           <div class="board-stage" id="boardStage">
-            <!-- 최종 보스 중앙 -->
-            <div class="center-boss">
-              <img class="boss-img" src="final_boss.png" onerror="this.src=''" id="finalBossImg">
-              <div class="boss-name">최종 보스 셀페리온</div>
-              <div class="boss-hp-bar"><div class="boss-hp-fill" id="bossHpFill" style="width:100%"></div></div>
-              <div class="boss-hp-text" id="bossHpText">누적 데미지: 0</div>
-              <div class="dice-area">
+            <div id="tilesContainer"></div>
+            <div class="center-area" id="centerArea">
+              <img class="final-img" id="centerBossImg" src="final_boss.png">
+              <div class="boss-title" id="centerBossName">최종 보스 셀페리온</div>
+              <div class="hp-bar-wrap" id="centerHpBar"><div class="hp-bar-fill" id="centerHpFill" style="width:100%"></div></div>
+              <div style="font-size:10px;color:#64748b;margin-bottom:6px" id="centerDmgText">누적 데미지: 0</div>
+              <div class="dice-row">
                 <div class="die" id="die1">?</div>
                 <div class="die" id="die2">?</div>
               </div>
-              <div class="dice-remain" id="diceRemain">오늘 남은 주사위: 3회</div>
-              <button class="roll-btn" id="rollBtn" onclick="rollDice()" style="margin-top:8px">🎲 주사위 굴리기</button>
+              <div style="font-size:10px;color:#64748b;margin:4px 0" id="diceRemain">오늘 남은 주사위: 3회</div>
+              <button class="roll-btn" id="rollBtn" onclick="rollDice()">🎲 주사위 굴리기</button>
             </div>
-            <!-- 타일들 -->
-            <div id="tilesContainer"></div>
-            <!-- 플레이어 말들 -->
             <div id="piecesContainer"></div>
           </div>
         </div>
-        <!-- 우측 플레이어 패널 -->
         <div class="board-right">
-          <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">플레이어 현황</div>
-          <div id="playerPanel"></div>
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-            <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">데미지 랭킹 🐉</div>
+          <div>
+            <div class="panel-title">플레이어 현황</div>
+            <div id="playerPanel"></div>
+          </div>
+          <div>
+            <div class="panel-title">🐉 데미지 랭킹</div>
             <div id="dmgRanking"></div>
           </div>
         </div>
@@ -220,50 +192,44 @@
   </div>
 </div>
 
-<!-- 이벤트 카드 팝업 -->
-<div class="card-popup" id="cardPopup">
-  <div class="card-box">
-    <div class="card-icon" id="cardIcon"></div>
-    <div class="card-title" id="cardTitle"></div>
-    <div class="card-desc" id="cardDesc"></div>
+<!-- 이벤트 카드 -->
+<div class="overlay" id="cardOverlay">
+  <div class="pop-box">
+    <div class="card-icon-big" id="cardIcon"></div>
+    <div class="card-ttl" id="cardTitle"></div>
+    <div class="card-desc-txt" id="cardDesc"></div>
     <button class="btn btn-p" onclick="closeCard()" style="width:100%">확인</button>
   </div>
 </div>
 
-<!-- 최종 보스 공격 화면 -->
+<!-- 최종 보스 -->
 <div class="final-screen" id="finalScreen">
-  <button onclick="closeFinal()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer">✕</button>
-  <img class="final-boss-img" src="final_boss.png" id="finalBossImgBig">
-  <div class="final-boss-name">최종 보스 셀페리온</div>
+  <button onclick="closeFinal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer">✕</button>
+  <img class="final-boss-img" src="final_boss.png">
+  <div class="final-boss-nm">최종 보스 셀페리온</div>
   <div class="final-hp-bar"><div class="final-hp-fill" id="finalHpFill" style="width:100%"></div></div>
-  <div class="final-hp-text" id="finalHpText">누적 데미지: 0</div>
-  <div class="final-dice-wrap">
-    <div class="final-die" id="finalDie1">?</div>
-    <div class="final-die" id="finalDie2">?</div>
+  <div style="font-size:12px;color:#64748b;margin-bottom:16px" id="finalDmgText">누적 데미지: 0</div>
+  <div style="display:flex;gap:14px;margin-bottom:14px">
+    <div class="final-dice" id="finalDie1">?</div>
+    <div class="final-dice" id="finalDie2">?</div>
   </div>
-  <div class="final-dmg" id="finalDmgText" style="display:none"></div>
-  <div class="rank-box">
-    <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px">🏆 데미지 랭킹</div>
+  <div class="final-dmg-txt" id="finalDmgAnim" style="display:none;margin-bottom:10px"></div>
+  <div class="rank-box" style="margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;color:#f0a500;margin-bottom:8px">🏆 데미지 랭킹</div>
     <div id="finalRanking"></div>
   </div>
-  <button class="roll-btn" id="finalRollBtn" onclick="finalAttack()" style="font-size:16px;padding:12px 32px">⚔️ 보스 공격!</button>
+  <button class="roll-btn" id="finalRollBtn" onclick="finalAttack()" style="font-size:15px;padding:12px 32px">⚔️ 보스 공격!</button>
 </div>
 
 <!-- 관리자 모달 -->
 <div class="modal-ov" id="modal-admin">
-  <div class="modal" style="max-width:500px">
+  <div class="modal" style="max-width:480px">
     <div class="modal-title">⚙️ 보드 관리자</div>
-    <div style="margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">칸별 아이템 설정</div>
-      <div id="tileSettings" style="max-height:300px;overflow-y:auto"></div>
-    </div>
-    <div class="fg">
-      <label>보너스 주사위 보스 설정</label>
-      <div id="bonusDiceSettings" style="font-size:12px;color:var(--text2)">준비중...</div>
-    </div>
+    <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px">칸별 아이템 설정</div>
+    <div id="tileSettings" style="max-height:280px;overflow-y:auto"></div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-d btn-sm" onclick="if(confirm('전체 초기화?')){resetBoard();}">🔄 전체 초기화</button>
-      <button class="btn btn-d btn-sm" onclick="if(confirm('데미지 초기화?')){resetDamage();}">💥 데미지 초기화</button>
+      <button class="btn btn-d btn-sm" onclick="if(confirm('전체 초기화?'))resetBoard()">🔄 전체 초기화</button>
+      <button class="btn btn-d btn-sm" onclick="if(confirm('데미지 초기화?'))resetDamage()">💥 데미지 초기화</button>
     </div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('admin')">닫기</button>
@@ -272,11 +238,11 @@
   </div>
 </div>
 
-<!-- 닉네임 선택 모달 -->
+<!-- 닉네임 모달 -->
 <div class="modal-ov" id="modal-nick">
   <div class="modal">
     <div class="modal-title">🎲 캐릭터 선택</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">본인 닉네임을 선택하면 캐릭터가 랜덤 배정됩니다!</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:12px">닉네임 선택 시 이모티콘이 랜덤 배정됩니다!</div>
     <div class="fg">
       <label>닉네임</label>
       <select class="sel" id="boardNick" style="width:100%">
@@ -284,12 +250,12 @@
       </select>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-p" onclick="confirmNick()">시작하기!</button>
+      <button class="btn btn-p" style="width:100%" onclick="confirmNick()">시작하기!</button>
     </div>
   </div>
 </div>
 
-<div class="board-toast" id="boardToast"></div>
+<div class="b-toast" id="bToast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -298,100 +264,152 @@
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
 
-// ===== 타일 데이터 =====
-const TILES = [
-  {type:'start',  name:'START',      icon:'🏁', x:170, y:20},
-  {type:'boss',   name:'베나투스',   img:'boss_00.png', x:248, y:20},
-  {type:'card',   name:'특수카드',   icon:'❓', x:326, y:20},
-  {type:'boss',   name:'클레멘티스', img:'boss_01.png', x:404, y:20},
-  {type:'reward', name:'보급상자',   icon:'🎁', x:482, y:20},
-  {type:'boss',   name:'레이디달리아',img:'boss_02.png',x:560, y:20},
-  {type:'move',   name:'앞으로3칸',  icon:'➜', x:638, y:20},
-  // 오른쪽
-  {type:'boss',   name:'아를레우스', img:'boss_03.png', x:620, y:98},
-  {type:'card',   name:'추가주사위', icon:'🎲', x:620, y:176},
-  {type:'boss',   name:'아멘티스',   img:'boss_04.png', x:620, y:254},
-  {type:'trap',   name:'함정',       icon:'⚠️', x:620, y:332},
-  // 하단 (오른→왼)
-  {type:'boss',   name:'밀라베',     img:'boss_05.png', x:560, y:390},
-  {type:'reward', name:'강화석',     icon:'💎', x:482, y:390},
-  {type:'card',   name:'공격강화',   icon:'⚔️', x:404, y:390},
-  {type:'boss',   name:'세크레타',   img:'boss_06.png', x:326, y:390},
-  {type:'reward', name:'보상칸',     icon:'⭐', x:248, y:390},
-  {type:'boss',   name:'카테나',     img:'boss_07.png', x:170, y:390},
-  // 왼쪽 (아래→위)
-  {type:'trap',   name:'위험지대',   icon:'☠️', x:20, y:332},
-  {type:'boss',   name:'링고르',     img:'boss_08.png', x:20, y:254},
-  {type:'reward', name:'회복물약',   icon:'✚',  x:20, y:176},
-  {type:'card',   name:'특수카드',   icon:'❓', x:20, y:98},
+// ===== 타일 정의 (21칸 순환) =====
+const TILE_DEFS = [
+  {type:'start',  name:'START',       icon:'🏁'},
+  {type:'boss',   name:'베나투스',    img:'boss_00.png'},
+  {type:'card',   name:'특수카드',    icon:'❓'},
+  {type:'boss',   name:'클레멘티스',  img:'boss_01.png'},
+  {type:'reward', name:'보급상자',    icon:'🎁'},
+  {type:'boss',   name:'레이디달리아',img:'boss_02.png'},
+  {type:'move',   name:'앞으로3칸',   icon:'➜'},
+  {type:'boss',   name:'아를레우스',  img:'boss_03.png'},
+  {type:'card',   name:'추가주사위',  icon:'🎲'},
+  {type:'boss',   name:'아멘티스',    img:'boss_04.png'},
+  {type:'trap',   name:'함정',        icon:'⚠️'},
+  {type:'boss',   name:'밀라베',      img:'boss_05.png'},
+  {type:'reward', name:'강화석',      icon:'💎'},
+  {type:'boss',   name:'세크레타',    img:'boss_06.png'},
+  {type:'card',   name:'공격강화',    icon:'⚔️'},
+  {type:'boss',   name:'카테나',      img:'boss_07.png'},
+  {type:'trap',   name:'위험지대',    icon:'☠️'},
+  {type:'boss',   name:'링고르',      img:'boss_08.png'},
+  {type:'reward', name:'회복물약',    icon:'✚'},
+  {type:'boss',   name:'알시',        img:'boss_09.png'},
+  {type:'card',   name:'특수카드',    icon:'❓'},
+  {type:'boss',   name:'네바',        img:'boss_10.png'},
+  {type:'reward', name:'보급상자',    icon:'🎁'},
+  {type:'boss',   name:'루쿠스',      img:'boss_11.png'},
+  {type:'card',   name:'약점공격',    icon:'⚔️'},
+  {type:'trap',   name:'뒤로2칸',     icon:'↶'},
+  {type:'reward', name:'제작재료',    icon:'◇'},
 ];
 
 const EMOJIS = ['🐱','🐶','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦆','🦉','🦋'];
 
 const EVENT_CARDS = [
-  {icon:'⚔️', title:'보스 강화 공격', desc:'최종 보스에게 추가 데미지 50,000을 줍니다!', type:'extra_dmg', value:50000},
-  {icon:'💥', title:'공격력 2배', desc:'다음 최종 보스 공격 시 데미지가 2배가 됩니다!', type:'double_atk'},
+  {icon:'⚔️', title:'보스 추가 공격', desc:'최종 보스에게 추가 데미지 50,000을 줍니다!', type:'extra_dmg', value:50000},
+  {icon:'💥', title:'공격력 2배', desc:'다음 최종 보스 공격 시 데미지가 2배!', type:'double_atk'},
   {icon:'🎲', title:'주사위 추가', desc:'오늘 주사위 1회를 추가로 얻습니다!', type:'extra_dice'},
-  {icon:'🛡️', title:'방어권 획득', desc:'강탈이나 교환 요청을 1회 거부할 수 있습니다!', type:'shield'},
+  {icon:'🛡️', title:'방어권', desc:'강탈이나 교환 요청을 1회 거부할 수 있어요!', type:'shield'},
   {icon:'🃏', title:'강탈', desc:'길드원 1명의 아이템 1개를 가져옵니다!', type:'steal'},
-  {icon:'🔄', title:'교환', desc:'길드원 1명과 아이템을 교환합니다!', type:'swap'},
-  {icon:'🍀', title:'행운', desc:'현재 칸 아이템을 2개 받습니다!', type:'lucky'},
-  {icon:'⏩', title:'앞으로 점프', desc:'주사위 없이 3칸 앞으로 이동합니다!', type:'jump', value:3},
-  {icon:'☠️', title:'저주', desc:'다음 주사위 이동 칸 수가 절반이 됩니다!', type:'curse'},
+  {icon:'🍀', title:'행운', desc:'현재 칸 아이템을 2배로 받습니다!', type:'lucky'},
+  {icon:'⏩', title:'앞으로 점프', desc:'주사위 없이 3칸 앞으로 이동!', type:'jump', value:3},
+  {icon:'☠️', title:'저주', desc:'다음 주사위 이동칸이 절반이 됩니다!', type:'curse'},
+  {icon:'🎁', title:'깜짝 선물', desc:'랜덤 아이템 추가 획득!', type:'gift'},
 ];
 
+const BOSS_HP = 999999999;
 let boardData = {};
 let members = [];
 let myNick = localStorage.getItem('gm_boardNick') || '';
 let myEmoji = localStorage.getItem('gm_boardEmoji') || '';
-let cardCallback = null;
-let totalBossDmg = 0;
-const BOSS_HP = 999999999;
+let cardCb = null;
+let TW = 70, TH = 70; // 타일 크기
+let COLS = 7; // 한 줄 칸 수
 
 window.addEventListener('load', () => {
   const sess = requireLogin(); if(!sess) return;
-  initFirebase();
-  watchServerName();
-  renderSidebar('board');
+  initFirebase(); watchServerName(); renderSidebar('board');
+  if(isAdmin()) document.getElementById('adminBtn').innerHTML = `<button class="btn btn-s btn-sm" onclick="openAdmin()">⚙️ 관리</button>`;
 
   members = getData('members', []);
-  fbListen('members', d => { if(d) { members = Array.isArray(d)?d:Object.values(d); } });
+  fbListen('members', d => { if(d) members = Array.isArray(d)?d:Object.values(d); });
   fbListen('boardData', d => {
     boardData = d || {};
-    renderBoard();
-    renderPlayerPanel();
-    renderDmgRanking();
-    updateMyDiceUI();
+    renderPieces(); renderPlayerPanel(); renderDmgRanking(); updateMyUI();
   });
 
   boardData = getData('boardData', {});
-  renderTiles();
-  renderBoard();
-  renderPlayerPanel();
-  renderDmgRanking();
+  initBoard();
+  if(!myNick) setTimeout(openNickModal, 400);
+  else updateMyUI();
 
-  // 닉네임 없으면 선택
-  if(!myNick) {
-    setTimeout(openNickModal, 500);
-  } else {
-    updateMyDiceUI();
-  }
-
-  // 시즌 타이머
-  updateTimer();
-  setInterval(updateTimer, 1000);
+  updateTimer(); setInterval(updateTimer, 1000);
+  window.addEventListener('resize', resizeBoard);
 });
 
-// ===== 타일 렌더 =====
+// ===== 보드 초기화 =====
+function initBoard() {
+  resizeBoard();
+  renderTiles();
+  renderPieces();
+}
+
+function resizeBoard() {
+  const wrap = document.getElementById('stageWrap');
+  const W = wrap.clientWidth - 16;
+  const H = wrap.clientHeight - 16;
+  const n = TILE_DEFS.length;
+  // 직사각형 보드: 가로 N칸, 세로 M칸
+  // 상단+하단: COLS칸, 좌+우: 나머지
+  const side = Math.ceil((n - COLS*2) / 2);
+  const rows = side + 2;
+  const tileW = Math.floor(Math.min(W / (COLS+2), H / (rows+2)));
+  TW = Math.max(50, Math.min(tileW, 90));
+  TH = TW;
+
+  const bw = (COLS+2) * TW;
+  const bh = (rows) * TH;
+  const stage = document.getElementById('boardStage');
+  stage.style.width = bw + 'px';
+  stage.style.height = bh + 'px';
+
+  // 중앙
+  const cx = TW, cy = TH;
+  const cw = COLS * TW, ch = (rows-2) * TH;
+  const center = document.getElementById('centerArea');
+  center.style.left = cx + 'px'; center.style.top = cy + 'px';
+  center.style.width = cw + 'px'; center.style.height = ch + 'px';
+
+  // 다이 크기
+  const ds = Math.max(28, Math.min(44, TW*0.55));
+  document.querySelectorAll('.die').forEach(d=>{d.style.width=ds+'px';d.style.height=ds+'px';d.style.fontSize=(ds*.6)+'px';});
+  document.getElementById('centerBossImg').style.cssText = `width:${Math.min(80,cw*.4)}px;height:${Math.min(80,ch*.35)}px;object-fit:cover;border-radius:10px;border:2px solid rgba(240,165,0,.3);margin-bottom:6px;`;
+  document.getElementById('centerBossName').style.fontSize = Math.max(10,TW*.18)+'px';
+  document.getElementById('centerHpBar').style.cssText = `width:${cw*.7}px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;margin-bottom:4px;`;
+  document.getElementById('rollBtn').style.cssText = `border-radius:8px;background:linear-gradient(180deg,#a855f7,#5b21b6);color:#fff3bf;font-weight:700;border:2px solid #f5d879;cursor:pointer;font-family:'Noto Sans KR',sans-serif;box-shadow:0 4px 12px rgba(168,85,247,.4);transition:all .15s;font-size:${Math.max(10,TW*.15)}px;padding:${TW*.08}px ${TW*.2}px;margin-top:6px;`;
+
+  renderTiles();
+  renderPieces();
+}
+
+// ===== 타일 위치 계산 =====
+function getTilePos(i) {
+  const n = TILE_DEFS.length;
+  const side = Math.ceil((n - COLS*2) / 2);
+  const total = COLS*2 + side*2;
+  const idx = i % total;
+
+  // 상단: 0 ~ COLS-1 (왼→오)
+  if(idx < COLS) return {x: (1+idx)*TW, y: 0};
+  // 오른쪽: COLS ~ COLS+side-1 (위→아래)
+  if(idx < COLS+side) return {x: (COLS+1)*TW, y: (idx-COLS+1)*TH};
+  // 하단: COLS+side ~ COLS*2+side-1 (오→왼)
+  if(idx < COLS*2+side) return {x: (COLS-(idx-COLS-side))*TW, y: (side+1)*TH};
+  // 왼쪽: COLS*2+side ~ (오→왼은 내려온 상태에서) (아→위)
+  return {x: 0, y: (side-(idx-COLS*2-side)+1)*TH};
+}
+
 function renderTiles() {
   const container = document.getElementById('tilesContainer');
-  container.innerHTML = TILES.map((t,i) => {
+  container.innerHTML = TILE_DEFS.map((t,i) => {
+    const pos = getTilePos(i);
     const cls = `tile tile-${t.type}`;
     const inner = t.img
-      ? `<img class="tile-img" src="${t.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-         <div style="display:none;font-size:24px;width:100%;height:100%;align-items:center;justify-content:center;">${t.icon||'👾'}</div>`
-      : `<div style="font-size:24px">${t.icon}</div>`;
-    return `<div class="${cls}" style="left:${t.x}px;top:${t.y}px" title="${t.name}">
+      ? `<img src="${t.img}" style="width:100%;height:100%;object-fit:cover;border-radius:6px" onerror="this.style.display='none'">`
+      : `<div class="tile-icon">${t.icon}</div>`;
+    return `<div class="${cls}" style="left:${pos.x}px;top:${pos.y}px;width:${TW}px;height:${TH}px" title="${t.name}">
       ${inner}
       <div class="tile-label">${t.name}</div>
       <div class="tile-num">${String(i+1).padStart(2,'0')}</div>
@@ -399,398 +417,297 @@ function renderTiles() {
   }).join('');
 }
 
-// ===== 플레이어 말 렌더 =====
-function renderBoard() {
+// ===== 말 =====
+function renderPieces() {
   const container = document.getElementById('piecesContainer');
   container.innerHTML = '';
   const posCount = {};
-  Object.entries(boardData).forEach(([nick, pd]) => {
-    if(!pd || pd.pos === undefined) return;
-    const pos = pd.pos % TILES.length;
-    posCount[pos] = (posCount[pos]||0);
-    const tile = TILES[pos];
-    const offset = posCount[pos] * 16;
-    posCount[pos]++;
+  Object.entries(boardData).filter(([k])=>k!=='_totalDmg'&&k!=='tileItems').forEach(([nick,pd]) => {
+    if(!pd||pd.pos===undefined) return;
+    const tileIdx = pd.pos % TILE_DEFS.length;
+    const pos = getTilePos(tileIdx);
+    const cnt = posCount[tileIdx] = (posCount[tileIdx]||0);
+    posCount[tileIdx]++;
+    const off = cnt * 14;
+    const sz = Math.max(22, TW*.38);
     const el = document.createElement('div');
     el.className = 'piece';
-    el.textContent = pd.emoji || '🐱';
+    el.textContent = pd.emoji||'🐱';
     el.title = nick;
-    el.style.left = (tile.x + 22 + offset) + 'px';
-    el.style.top = (tile.y + 22 + offset) + 'px';
-    if(nick === myNick) el.style.boxShadow = '0 0 15px gold';
+    el.style.cssText = `left:${pos.x+TW/2-sz/2+off}px;top:${pos.y+TH/2-sz/2+off}px;width:${sz}px;height:${sz}px;font-size:${sz*.65}px;${nick===myNick?'box-shadow:0 0 12px gold;border-color:gold;':''}`;
     container.appendChild(el);
   });
 }
 
-// ===== 주사위 굴리기 =====
+// ===== 주사위 =====
 function rollDice() {
   if(!myNick) { openNickModal(); return; }
   const today = new Date().toDateString();
-  const pd = boardData[myNick] || {};
-  const lastDate = pd.lastRollDate || '';
-  let rollsLeft = lastDate === today ? (pd.rollsLeft ?? 3) : 3;
+  const pd = boardData[myNick]||{};
+  const rollsLeft = pd.lastRollDate===today ? (pd.rollsLeft??3) : 3;
+  if(rollsLeft<=0) { showToast('오늘 주사위를 모두 사용했어요!'); return; }
 
-  if(rollsLeft <= 0) { showBoardToast('오늘 주사위를 모두 사용했어요!'); return; }
-
-  // 주사위 굴리기 애니메이션
   const btn = document.getElementById('rollBtn');
   btn.disabled = true;
-  let count = 0;
-  const interval = setInterval(() => {
+  let cnt = 0;
+  const iv = setInterval(()=>{
     document.getElementById('die1').textContent = Math.floor(Math.random()*6)+1;
     document.getElementById('die2').textContent = Math.floor(Math.random()*6)+1;
-    count++;
-    if(count >= 12) {
-      clearInterval(interval);
-      const d1 = Math.floor(Math.random()*6)+1;
-      const d2 = Math.floor(Math.random()*6)+1;
-      document.getElementById('die1').textContent = d1;
-      document.getElementById('die2').textContent = d2;
-      const move = d1 + d2;
-      btn.disabled = false;
-      doMove(move, d1, d2);
+    if(++cnt>=14){
+      clearInterval(iv);
+      const d1=Math.floor(Math.random()*6)+1, d2=Math.floor(Math.random()*6)+1;
+      document.getElementById('die1').textContent=d1;
+      document.getElementById('die2').textContent=d2;
+      btn.disabled=false;
+      doMove(d1+d2, d1, d2);
     }
-  }, 80);
+  }, 70);
 }
 
 function doMove(move, d1, d2) {
   const today = new Date().toDateString();
-  const pd = boardData[myNick] || {pos:0, items:{}, dmg:0, completed:false, emoji:myEmoji};
-  const lastDate = pd.lastRollDate || '';
-  let rollsLeft = lastDate === today ? (pd.rollsLeft ?? 3) : 3;
-
-  const prevPos = pd.pos || 0;
-  const newPos = prevPos + move;
-  const tileIdx = newPos % TILES.length;
-  const laps = Math.floor(newPos / TILES.length);
-  const prevLaps = Math.floor(prevPos / TILES.length);
-  const justCompleted = laps > prevLaps;
-
-  pd.pos = newPos;
-  pd.rollsLeft = rollsLeft - 1;
+  const pd = boardData[myNick]||{pos:0,items:{},dmg:0,completed:false,emoji:myEmoji};
+  const rollsLeft = pd.lastRollDate===today ? (pd.rollsLeft??3) : 3;
+  const prevLaps = Math.floor((pd.pos||0)/TILE_DEFS.length);
+  pd.pos = (pd.pos||0) + move;
+  pd.rollsLeft = rollsLeft-1;
   pd.lastRollDate = today;
   pd.emoji = myEmoji;
 
-  const tile = TILES[tileIdx];
-  showBoardToast(`🎲 ${d1}+${d2}=${move} → ${tile.name} 도착!`);
+  const tileIdx = pd.pos % TILE_DEFS.length;
+  const tile = TILE_DEFS[tileIdx];
+  const newLaps = Math.floor(pd.pos/TILE_DEFS.length);
+  const justCompleted = newLaps > prevLaps;
+
+  showToast(`🎲 ${d1}+${d2}=${move} → ${tile.name} 도착!`);
 
   // 타일 효과
-  if(tile.type === 'boss' && boardData.tileItems?.[tileIdx]) {
-    const item = boardData.tileItems[tileIdx];
-    if(!pd.items) pd.items = {};
-    pd.items[item] = (pd.items[item]||0) + 1;
-    setTimeout(()=>showBoardToast(`🎁 ${tile.name}에서 ${item} 획득!`), 1000);
+  const tileItem = (boardData.tileItems||{})[tileIdx];
+  if((tile.type==='boss'||tile.type==='reward'||tile.type==='gold') && tileItem) {
+    if(!pd.items) pd.items={};
+    pd.items[tileItem]=(pd.items[tileItem]||0)+1;
+    setTimeout(()=>showToast(`🎁 ${tileItem} 획득!`), 1000);
   }
-  if(tile.type === 'reward' && boardData.tileItems?.[tileIdx]) {
-    const item = boardData.tileItems[tileIdx];
-    if(!pd.items) pd.items = {};
-    pd.items[item] = (pd.items[item]||0) + 1;
-    setTimeout(()=>showBoardToast(`🎁 ${item} 획득!`), 1000);
+  if(tile.type==='card') setTimeout(()=>triggerCard(pd), 1200);
+  if(tile.type==='move' && tile.name.includes('앞')) {
+    const n=parseInt(tile.name.match(/\d+/)?.[0]||2);
+    pd.pos+=n;
+    setTimeout(()=>showToast(`➜ ${n}칸 추가!`), 1200);
   }
-  if(tile.type === 'card') {
-    setTimeout(()=>triggerEventCard(pd), 1200);
-  }
-  if(tile.type === 'move') {
-    if(tile.name.includes('앞')) {
-      const n = parseInt(tile.name.match(/\d+/)?.[0]||2);
-      pd.pos += n;
-      setTimeout(()=>showBoardToast(`➜ ${n}칸 추가 이동!`), 1200);
-    }
-  }
-  if(tile.type === 'trap') {
+  if(tile.type==='trap') {
     if(tile.name.includes('뒤')) {
-      const n = parseInt(tile.name.match(/\d+/)?.[0]||2);
-      pd.pos = Math.max(0, pd.pos - n);
-      setTimeout(()=>showBoardToast(`☠️ 함정! ${n}칸 뒤로!`), 1200);
+      const n=parseInt(tile.name.match(/\d+/)?.[0]||2);
+      pd.pos=Math.max(0,pd.pos-n);
+      setTimeout(()=>showToast(`↶ ${n}칸 뒤로!`), 1200);
     } else {
-      setTimeout(()=>showBoardToast(`☠️ 위험지대! 다음 주사위 절반!`), 1200);
-      pd.cursed = true;
+      pd.cursed=true;
+      setTimeout(()=>showToast('☠️ 저주! 다음 주사위 절반!'), 1200);
     }
   }
 
-  // 한 바퀴 완주
   if(justCompleted) {
-    pd.completed = true;
-    setTimeout(()=>{
-      showBoardToast('🎉 한 바퀴 완주! 최종 보스 공격 가능!');
-      openFinalBoss();
-    }, 1500);
+    pd.completed=true;
+    setTimeout(()=>{ showToast('🎉 한 바퀴 완주! 최종 보스 공격 가능!'); openFinalBoss(); }, 1800);
   }
 
-  if(!boardData[myNick]) boardData[myNick] = {};
+  if(!boardData[myNick]) boardData[myNick]={};
   Object.assign(boardData[myNick], pd);
   saveBoardData();
-  updateMyDiceUI();
+  updateMyUI();
 }
 
 // ===== 이벤트 카드 =====
-function triggerEventCard(pd) {
+function triggerCard(pd) {
   const card = EVENT_CARDS[Math.floor(Math.random()*EVENT_CARDS.length)];
-  document.getElementById('cardIcon').textContent = card.icon;
-  document.getElementById('cardTitle').textContent = card.title;
-  document.getElementById('cardDesc').textContent = card.desc;
-  document.getElementById('cardPopup').classList.add('open');
-
-  cardCallback = () => {
-    if(card.type === 'extra_dice') {
-      pd.rollsLeft = (pd.rollsLeft||0) + 1;
-      Object.assign(boardData[myNick], pd);
-      saveBoardData();
-      updateMyDiceUI();
-    }
-    if(card.type === 'extra_dmg') {
-      addBossDmg(card.value);
-    }
-    if(card.type === 'jump') {
-      pd.pos += card.value;
-      Object.assign(boardData[myNick], pd);
-      saveBoardData();
-    }
-    if(card.type === 'lucky') {
-      showBoardToast('🍀 행운! 아이템 2배!');
-    }
-    if(card.type === 'shield') {
-      pd.shield = (pd.shield||0)+1;
-      Object.assign(boardData[myNick], pd);
-      saveBoardData();
-    }
+  document.getElementById('cardIcon').textContent=card.icon;
+  document.getElementById('cardTitle').textContent=card.title;
+  document.getElementById('cardDesc').textContent=card.desc;
+  document.getElementById('cardOverlay').classList.add('open');
+  cardCb=()=>{
+    if(card.type==='extra_dice'){ pd.rollsLeft=(pd.rollsLeft||0)+1; Object.assign(boardData[myNick],pd); saveBoardData(); updateMyUI(); }
+    if(card.type==='extra_dmg') addFinalDmg(card.value);
+    if(card.type==='jump'){ pd.pos+=(card.value||3); Object.assign(boardData[myNick],pd); saveBoardData(); }
+    if(card.type==='shield'){ pd.shield=(pd.shield||0)+1; Object.assign(boardData[myNick],pd); saveBoardData(); }
   };
 }
-
-function closeCard() {
-  document.getElementById('cardPopup').classList.remove('open');
-  if(cardCallback) { cardCallback(); cardCallback=null; }
-}
+function closeCard(){ document.getElementById('cardOverlay').classList.remove('open'); if(cardCb){cardCb();cardCb=null;} }
 
 // ===== 최종 보스 =====
 function openFinalBoss() {
   updateFinalRanking();
+  const total=boardData._totalDmg||0;
+  document.getElementById('finalHpFill').style.width=Math.max(0,100-total/BOSS_HP*100)+'%';
+  document.getElementById('finalDmgText').textContent='누적 데미지: '+total.toLocaleString();
   document.getElementById('finalScreen').classList.add('open');
 }
-
-function closeFinal() {
-  document.getElementById('finalScreen').classList.remove('open');
-}
+function closeFinal(){ document.getElementById('finalScreen').classList.remove('open'); }
 
 function finalAttack() {
-  const pd = boardData[myNick];
-  if(!pd?.completed) { showBoardToast('한 바퀴를 완주해야 공격할 수 있어요!'); return; }
-
-  const btn = document.getElementById('finalRollBtn');
-  btn.disabled = true;
-  let count = 0;
-  const iv = setInterval(()=>{
-    document.getElementById('finalDie1').textContent = Math.floor(Math.random()*6)+1;
-    document.getElementById('finalDie2').textContent = Math.floor(Math.random()*6)+1;
-    count++;
-    if(count>=15){
+  const pd=boardData[myNick];
+  if(!pd?.completed){ showToast('한 바퀴 완주 후 공격 가능해요!'); return; }
+  const btn=document.getElementById('finalRollBtn');
+  btn.disabled=true;
+  let cnt=0;
+  const iv=setInterval(()=>{
+    document.getElementById('finalDie1').textContent=Math.floor(Math.random()*6)+1;
+    document.getElementById('finalDie2').textContent=Math.floor(Math.random()*6)+1;
+    if(++cnt>=16){
       clearInterval(iv);
-      const d1=Math.floor(Math.random()*6)+1;
-      const d2=Math.floor(Math.random()*6)+1;
+      const d1=Math.floor(Math.random()*6)+1,d2=Math.floor(Math.random()*6)+1;
       document.getElementById('finalDie1').textContent=d1;
       document.getElementById('finalDie2').textContent=d2;
-      let dmg = (d1+d2) * 10000;
-
-      // 더블 공격 버프
-      if(pd.doubleAtk){ dmg*=2; pd.doubleAtk=false; }
-
-      addBossDmg(dmg);
-      const dmgEl = document.getElementById('finalDmgText');
-      dmgEl.style.display='block';
-      dmgEl.textContent = dmg.toLocaleString() + ' DAMAGE!';
-      setTimeout(()=>{ dmgEl.style.display='none'; btn.disabled=false; }, 2000);
+      let dmg=(d1+d2)*10000;
+      if(pd.doubleAtk){dmg*=2;pd.doubleAtk=false;}
+      addFinalDmg(dmg);
+      const el=document.getElementById('finalDmgAnim');
+      el.style.display='block'; el.textContent=dmg.toLocaleString()+' DAMAGE!';
+      setTimeout(()=>{el.style.display='none';btn.disabled=false;},2000);
       updateFinalRanking();
     }
-  }, 80);
+  },75);
 }
 
-function addBossDmg(dmg) {
+function addFinalDmg(dmg) {
   if(!boardData[myNick]) boardData[myNick]={};
-  boardData[myNick].dmg = (boardData[myNick].dmg||0) + dmg;
-  const totalDmg = Object.values(boardData).reduce((s,p)=>s+(p.dmg||0),0);
-  boardData._totalDmg = totalDmg;
+  boardData[myNick].dmg=(boardData[myNick].dmg||0)+dmg;
+  const total=Object.entries(boardData).filter(([k])=>k!=='_totalDmg'&&k!=='tileItems').reduce((s,[,p])=>s+(p.dmg||0),0);
+  boardData._totalDmg=total;
   saveBoardData();
-  updateFinalHp(totalDmg);
-}
-
-function updateFinalHp(total) {
-  const pct = Math.max(0, 100 - (total/BOSS_HP)*100);
-  document.getElementById('finalHpFill').style.width = pct+'%';
-  document.getElementById('finalHpText').textContent = '누적 데미지: '+total.toLocaleString();
-  document.getElementById('bossHpFill').style.width = pct+'%';
-  document.getElementById('bossHpText').textContent = '누적 데미지: '+total.toLocaleString();
+  const pct=Math.max(0,100-total/BOSS_HP*100);
+  document.getElementById('finalHpFill').style.width=pct+'%';
+  document.getElementById('finalDmgText').textContent='누적 데미지: '+total.toLocaleString();
+  document.getElementById('centerHpFill').style.width=pct+'%';
+  document.getElementById('centerDmgText').textContent='누적 데미지: '+total.toLocaleString();
 }
 
 function updateFinalRanking() {
-  const players = Object.entries(boardData)
-    .filter(([k,v])=>k!=='_totalDmg'&&k!=='tileItems'&&v&&v.dmg>0)
-    .sort((a,b)=>b[1].dmg-a[1].dmg);
-  document.getElementById('finalRanking').innerHTML = players.length===0
-    ? '<div style="color:var(--text2);font-size:12px">아직 공격자 없음</div>'
-    : players.map(([nick,pd],i)=>`
-      <div class="rank-row" style="${i===0?'color:var(--accent);font-weight:700':''}">
-        <span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}위`} ${pd.emoji||''} ${nick}</span>
-        <span style="color:var(--red)">${(pd.dmg||0).toLocaleString()}</span>
-      </div>`).join('');
+  const players=Object.entries(boardData).filter(([k,v])=>k!=='_totalDmg'&&k!=='tileItems'&&v?.dmg>0).sort((a,b)=>b[1].dmg-a[1].dmg);
+  document.getElementById('finalRanking').innerHTML=players.length===0
+    ?'<div style="color:#64748b;font-size:12px">아직 공격자 없음</div>'
+    :players.map(([nick,pd],i)=>`<div class="rank-row" style="${i===0?'color:#f0a500;font-weight:700':''}">
+      <span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${pd.emoji||''} ${nick}</span>
+      <span style="color:#ef4444">${(pd.dmg||0).toLocaleString()}</span></div>`).join('');
 }
 
-// ===== UI 업데이트 =====
-function updateMyDiceUI() {
+// ===== UI =====
+function updateMyUI() {
   if(!myNick) return;
-  const today = new Date().toDateString();
-  const pd = boardData[myNick] || {};
-  const lastDate = pd.lastRollDate || '';
-  const rollsLeft = lastDate === today ? (pd.rollsLeft ?? 3) : 3;
-  document.getElementById('diceRemain').textContent = `오늘 남은 주사위: ${rollsLeft}회`;
-  document.getElementById('rollBtn').disabled = rollsLeft <= 0;
-  document.getElementById('myInfo').textContent = myNick ? `${myEmoji} ${myNick} · ${rollsLeft}회 남음` : '';
-
-  const totalDmg = boardData._totalDmg || 0;
-  updateFinalHp(totalDmg);
+  const today=new Date().toDateString();
+  const pd=boardData[myNick]||{};
+  const rollsLeft=pd.lastRollDate===today?(pd.rollsLeft??3):3;
+  document.getElementById('diceRemain').textContent=`오늘 남은 주사위: ${rollsLeft}회`;
+  document.getElementById('rollBtn').disabled=rollsLeft<=0;
+  document.getElementById('myInfo').textContent=`${myEmoji} ${myNick} · 주사위 ${rollsLeft}회`;
+  const total=boardData._totalDmg||0;
+  document.getElementById('centerHpFill').style.width=Math.max(0,100-total/BOSS_HP*100)+'%';
+  document.getElementById('centerDmgText').textContent='누적 데미지: '+total.toLocaleString();
 }
 
 function renderPlayerPanel() {
-  const sorted = Object.entries(boardData)
-    .filter(([k])=>k!=='_totalDmg'&&k!=='tileItems')
-    .sort((a,b)=>(b[1].pos||0)-(a[1].pos||0));
-  document.getElementById('playerPanel').innerHTML = sorted.map(([nick,pd])=>{
-    const tile = TILES[(pd.pos||0)%TILES.length];
-    const laps = Math.floor((pd.pos||0)/TILES.length);
-    const items = Object.entries(pd.items||{}).map(([k,v])=>`${k}×${v}`);
+  const sorted=Object.entries(boardData).filter(([k])=>k!=='_totalDmg'&&k!=='tileItems').sort((a,b)=>(b[1].pos||0)-(a[1].pos||0));
+  document.getElementById('playerPanel').innerHTML=sorted.map(([nick,pd])=>{
+    const tile=TILE_DEFS[(pd.pos||0)%TILE_DEFS.length];
+    const laps=Math.floor((pd.pos||0)/TILE_DEFS.length);
+    const items=Object.entries(pd.items||{}).map(([k,v])=>`${k}×${v}`);
     return `<div class="player-card${nick===myNick?' me':''}">
-      <div class="player-header">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
         <span class="player-emoji">${pd.emoji||'🐱'}</span>
-        <div>
-          <div class="player-name">${nick} ${nick===myNick?'(나)':''}</div>
-          <div class="player-pos">${laps>0?`${laps}바퀴 + `:''} ${tile?.name||''} (${(pd.pos||0)%TILES.length+1}칸)</div>
-        </div>
-        ${pd.completed?'<span class="completed-badge">완주✓</span>':''}
-        ${pd.shield>0?`<span style="font-size:10px;color:var(--accent2)">🛡️×${pd.shield}</span>`:''}
+        <div><div class="p-name">${nick}${nick===myNick?' (나)':''}</div>
+        <div class="p-pos">${laps>0?laps+'바퀴 + ':''}${tile?.name||''}${pd.completed?'  ✅완주':''}</div></div>
       </div>
-      ${pd.dmg>0?`<div class="player-dmg">💥 데미지: ${(pd.dmg||0).toLocaleString()}</div>`:''}
-      ${items.length>0?`<div class="player-items">${items.map(i=>`<span class="player-item">${i}</span>`).join('')}</div>`:''}
+      ${pd.dmg>0?`<div style="font-size:10px;color:#ef4444">💥 ${(pd.dmg||0).toLocaleString()}</div>`:''}
+      ${items.length>0?`<div class="p-items">${items.map(i=>`<span class="p-item">${i}</span>`).join('')}</div>`:''}
     </div>`;
-  }).join('') || '<div style="color:var(--text2);font-size:12px">아직 참여자 없음</div>';
+  }).join('')||'<div style="color:#64748b;font-size:12px">아직 참여자 없음</div>';
 }
 
 function renderDmgRanking() {
-  const players = Object.entries(boardData)
-    .filter(([k,v])=>k!=='_totalDmg'&&k!=='tileItems'&&v&&v.dmg>0)
-    .sort((a,b)=>b[1].dmg-a[1].dmg);
-  document.getElementById('dmgRanking').innerHTML = players.map(([nick,pd],i)=>`
-    <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;${nick===myNick?'color:var(--accent)':''}">
+  const players=Object.entries(boardData).filter(([k,v])=>k!=='_totalDmg'&&k!=='tileItems'&&v?.dmg>0).sort((a,b)=>b[1].dmg-a[1].dmg);
+  document.getElementById('dmgRanking').innerHTML=players.map(([nick,pd],i)=>`
+    <div class="rank-row" style="${nick===myNick?'color:#f0a500':''}">
       <span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${pd.emoji||''} ${nick}</span>
-      <span style="color:var(--red);font-weight:700">${(pd.dmg||0).toLocaleString()}</span>
-    </div>`).join('') || '<div style="color:var(--text2);font-size:11px">아직 없음</div>';
+      <span style="color:#ef4444;font-weight:700">${(pd.dmg||0).toLocaleString()}</span>
+    </div>`).join('')||'<div style="color:#64748b;font-size:11px">아직 없음</div>';
 }
 
 function updateTimer() {
-  // 시즌 종료까지 남은 시간 (예: 다음 일요일 23:59)
-  const now = new Date();
-  const day = now.getDay();
-  const daysUntilSunday = day===0?0:7-day;
-  const target = new Date(now);
-  target.setDate(now.getDate()+daysUntilSunday);
+  const now=new Date();
+  const d=7-now.getDay();
+  const target=new Date(now);
+  target.setDate(now.getDate()+(d===7?0:d));
   target.setHours(23,59,0,0);
-  const diff = target-now;
-  const d=Math.floor(diff/86400000);
-  const h=Math.floor((diff%86400000)/3600000);
-  const m=Math.floor((diff%3600000)/60000);
-  const s=Math.floor((diff%60000)/1000);
-  document.getElementById('seasonTimer').textContent = `시즌 종료까지 ${d}일 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const diff=target-now;
+  const days=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+  document.getElementById('seasonTimer').textContent=`시즌 종료 ${days}일 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 // ===== 닉네임 =====
 function openNickModal() {
-  const sel = document.getElementById('boardNick');
-  sel.innerHTML = '<option value="">선택하세요</option>';
+  const sel=document.getElementById('boardNick');
+  sel.innerHTML='<option value="">선택하세요</option>';
   [...members].sort((a,b)=>a.nick.localeCompare(b.nick,'ko')).forEach(m=>{
-    sel.innerHTML += `<option value="${m.nick}" ${m.nick===myNick?'selected':''}>${m.nick}</option>`;
+    sel.innerHTML+=`<option value="${m.nick}"${m.nick===myNick?' selected':''}>${m.nick}</option>`;
   });
   openModal('nick');
 }
 
 function confirmNick() {
-  const nick = document.getElementById('boardNick').value;
-  if(!nick) { showBoardToast('닉네임을 선택해주세요!'); return; }
-  myNick = nick;
-  localStorage.setItem('gm_boardNick', nick);
-
-  // 이미 이모지 있으면 유지, 없으면 랜덤 배정
-  if(boardData[nick]?.emoji) {
-    myEmoji = boardData[nick].emoji;
-  } else {
-    // 사용 중인 이모지 제외
-    const used = Object.values(boardData).map(p=>p.emoji).filter(Boolean);
-    const avail = EMOJIS.filter(e=>!used.includes(e));
-    myEmoji = avail.length>0 ? avail[Math.floor(Math.random()*avail.length)] : EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+  const nick=document.getElementById('boardNick').value;
+  if(!nick){showToast('닉네임을 선택해주세요!');return;}
+  myNick=nick; localStorage.setItem('gm_boardNick',nick);
+  if(boardData[nick]?.emoji){ myEmoji=boardData[nick].emoji; }
+  else {
+    const used=Object.values(boardData).map(p=>p.emoji).filter(Boolean);
+    const avail=EMOJIS.filter(e=>!used.includes(e));
+    myEmoji=avail.length>0?avail[Math.floor(Math.random()*avail.length)]:EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
   }
-  localStorage.setItem('gm_boardEmoji', myEmoji);
-
-  if(!boardData[nick]) {
-    boardData[nick] = {pos:0, emoji:myEmoji, items:{}, dmg:0, completed:false, rollsLeft:3, lastRollDate:''};
+  localStorage.setItem('gm_boardEmoji',myEmoji);
+  if(!boardData[nick]){
+    boardData[nick]={pos:0,emoji:myEmoji,items:{},dmg:0,completed:false,rollsLeft:3,lastRollDate:''};
     saveBoardData();
   }
-  closeModal('nick');
-  updateMyDiceUI();
-  showBoardToast(`${myEmoji} ${nick}님 환영합니다!`);
+  closeModal('nick'); updateMyUI();
+  showToast(`${myEmoji} ${nick}님 환영합니다!`);
 }
 
 // ===== 관리자 =====
 function openAdmin() {
-  // 칸 아이템 설정 UI
-  const tileItems = boardData.tileItems || {};
-  document.getElementById('tileSettings').innerHTML = TILES.map((t,i)=>{
-    if(t.type!=='boss'&&t.type!=='reward'&&t.type!=='gold') return '';
+  const tileItems=boardData.tileItems||{};
+  document.getElementById('tileSettings').innerHTML=TILE_DEFS.map((t,i)=>{
+    if(!['boss','reward','gold'].includes(t.type)) return '';
     return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-      <span style="font-size:11px;color:var(--accent2);min-width:80px">${t.name}</span>
-      <input class="inp" type="text" value="${tileItems[i]||''}" placeholder="아이템명" id="tileItem_${i}" style="flex:1;padding:4px 8px;font-size:12px">
+      <span style="font-size:11px;color:#14b8a6;min-width:90px">${t.name}</span>
+      <input class="inp" type="text" value="${tileItems[i]||''}" placeholder="아이템명" id="ti_${i}" style="flex:1;padding:4px 8px;font-size:12px">
     </div>`;
   }).join('');
   openModal('admin');
 }
 
 function saveTileSettings() {
-  if(!boardData.tileItems) boardData.tileItems = {};
-  TILES.forEach((t,i)=>{
-    const el = document.getElementById(`tileItem_${i}`);
-    if(el) boardData.tileItems[i] = el.value.trim();
-  });
-  saveBoardData();
-  closeModal('admin');
-  showBoardToast('저장됐어요!');
+  if(!boardData.tileItems) boardData.tileItems={};
+  TILE_DEFS.forEach((_,i)=>{const el=document.getElementById(`ti_${i}`);if(el) boardData.tileItems[i]=el.value.trim();});
+  saveBoardData(); closeModal('admin'); showToast('저장됐어요!');
 }
 
 function resetBoard() {
-  const tileItems = boardData.tileItems;
-  boardData = {tileItems};
-  saveBoardData();
-  myNick=''; myEmoji='';
-  localStorage.removeItem('gm_boardNick');
-  localStorage.removeItem('gm_boardEmoji');
+  const tileItems=boardData.tileItems;
+  boardData={tileItems};
+  saveBoardData(); myNick=''; myEmoji='';
+  localStorage.removeItem('gm_boardNick'); localStorage.removeItem('gm_boardEmoji');
   location.reload();
 }
 
 function resetDamage() {
-  Object.keys(boardData).forEach(k=>{
-    if(k!=='_totalDmg'&&k!=='tileItems'&&boardData[k]) boardData[k].dmg=0;
-  });
-  boardData._totalDmg=0;
-  saveBoardData();
-  showBoardToast('데미지 초기화됐어요!');
+  Object.keys(boardData).forEach(k=>{if(k!=='_totalDmg'&&k!=='tileItems'&&boardData[k])boardData[k].dmg=0;});
+  boardData._totalDmg=0; saveBoardData(); showToast('데미지 초기화!');
 }
 
-function saveBoardData() {
-  setData('boardData', boardData);
-  fbSet('boardData', boardData);
-}
+function saveBoardData() { setData('boardData',boardData); fbSet('boardData',boardData); renderPieces(); renderPlayerPanel(); renderDmgRanking(); }
 
-// ===== 토스트 =====
-function showBoardToast(msg) {
-  const el = document.getElementById('boardToast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'), 2500);
+function showToast(msg) {
+  const el=document.getElementById('bToast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2500);
 }
 
 function openModal(n){document.getElementById('modal-'+n).classList.add('open');}

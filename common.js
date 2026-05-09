@@ -288,7 +288,7 @@ function renderSidebar(activePage) {
     {id:'market', label:'거래소 내역', icon:'💰', href:'market.html', oc:''},
     {id:'items', label:'아이템 분배', icon:'📦', href:'items.html', oc:''},
     {id:'game', label:'길드 게임', icon:'🎮', href:'game.html', oc:''},
-    {id:'board', label:'레이드 보드', icon:'🎲', href:'board.html', oc:''},
+    {id:'board', label:'로드나인마블', icon:'🎲', href:'board.html', oc:''},
     {id:'guide', label:'사용 설명서', icon:'📖', href:'guide.html', oc:''},
   ];
   if (admin) pages.push({id:'admin', label:'관리자', icon:'⚙️', href:'admin.html', oc:''});
