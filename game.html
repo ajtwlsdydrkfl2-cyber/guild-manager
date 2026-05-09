@@ -48,8 +48,8 @@
 .play-card.lose{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red);}
 
 /* 메모리 게임 */
-.memory-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px;max-width:480px;}
-.mem-card{width:68px;height:68px;border-radius:10px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;font-size:28px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;perspective:600px;}
+.memory-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;max-width:400px;}
+.mem-card{width:72px;height:72px;border-radius:10px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;font-size:28px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;perspective:600px;}
 .mem-card.hidden{font-size:0;background:var(--bg3);border-color:var(--border);}
 .mem-card.hidden::after{content:'🎴';font-size:24px;}
 .mem-card.matched{background:rgba(34,197,94,.15);border-color:var(--green);cursor:default;}
@@ -145,7 +145,7 @@
   <div class="game-screen-title">🧩 짝 맞추기</div>
   <div class="game-screen-prize" id="memory-prize-label"></div>
   <div style="font-size:13px;color:var(--text2);margin-bottom:6px">같은 그림 카드 짝을 맞추세요! <span id="memory-timer" style="color:var(--accent);font-weight:700"></span></div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">남은 쌍: <span id="memory-remain" style="color:var(--accent);font-weight:700">18</span></div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">남은 쌍: <span id="memory-remain" style="color:var(--accent);font-weight:700">10</span></div>
   <div class="memory-grid" id="memory-grid"></div>
   <div class="score-board" id="memory-scores"></div>
   <button class="btn btn-p" id="memory-btn" onclick="startMemory()" style="font-size:15px;padding:12px 32px">🧩 시작!</button>
@@ -850,14 +850,14 @@ function initMemory(d) {
   document.getElementById('memory-btn').disabled = false;
   document.getElementById('memory-grid').innerHTML = '';
   document.getElementById('memory-timer').textContent = '';
-  document.getElementById('memory-remain').textContent = '18';
+  document.getElementById('memory-remain').textContent = '10';
   updateScoreBoard('memory-scores', d.scores||{}, true);
   memRunning = false; memMatched = 0;
 }
 
 function startMemory() {
   // 18쌍 = 36장 (6x6)
-  const icons = MEMORY_ICONS.slice(0,18);
+  const icons = MEMORY_ICONS.slice(0,10);
   memCards = [...icons,...icons].sort(()=>Math.random()-.5);
   memSelected = []; memMatched = 0; memRunning = true; memLocked = false;
   memTimerVal = 60;
@@ -905,8 +905,8 @@ function flipMemCard(i) {
         document.getElementById(`mc_${b}`).classList.remove('selected');
         document.getElementById(`mc_${b}`).classList.add('matched');
         memSelected=[]; memLocked=false; memMatched++;
-        document.getElementById('memory-remain').textContent=18-memMatched;
-        if(memMatched===18){ clearInterval(memTimerIv); memRunning=false; finishMemory(memTimerVal+memMatched*5); }
+        document.getElementById('memory-remain').textContent=10-memMatched;
+        if(memMatched===10){ clearInterval(memTimerIv); memRunning=false; finishMemory(memTimerVal+memMatched*5); }
       },400);
     } else {
       // 틀림
