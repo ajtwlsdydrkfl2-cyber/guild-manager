@@ -140,6 +140,17 @@
   <div id="card-remain" style="font-size:12px;color:var(--text2)"></div>
 </div>
 
+<div class="game-screen" id="screen-memory">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🧩 짝 맞추기</div>
+  <div class="game-screen-prize" id="memory-prize-label"></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:6px">같은 그림 카드 짝을 맞추세요! <span id="memory-timer" style="color:var(--accent);font-weight:700"></span></div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">남은 쌍: <span id="memory-remain" style="color:var(--accent);font-weight:700">18</span></div>
+  <div class="memory-grid" id="memory-grid"></div>
+  <div class="score-board" id="memory-scores"></div>
+  <button class="btn btn-p" id="memory-btn" onclick="startMemory()" style="font-size:15px;padding:12px 32px">🧩 시작!</button>
+</div>
+
 <div class="game-screen" id="screen-timer">
   <button class="game-close" onclick="closeGame()">✕</button>
   <div class="game-screen-title">⏱ 10초 챌린지</div>
