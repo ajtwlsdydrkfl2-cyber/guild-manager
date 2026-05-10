@@ -102,13 +102,33 @@
   <button class="game-close" onclick="closeGame()">✕</button>
   <div class="game-screen-title">🎡 룰렛</div>
   <div class="game-screen-prize" id="roulette-prize-label"></div>
-  <div class="roulette-wrap">
-    <div class="roulette-arrow">▼</div>
-    <canvas class="roulette-canvas" id="roulette-canvas" width="300" height="300"></canvas>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">각 룰렛을 돌리고 STOP을 눌러 점수를 만드세요! (최대 999점)</div>
+  <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px">
+    <div style="text-align:center">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">100의 자리</div>
+      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px">▼</div>
+      <canvas id="r1" width="160" height="160" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
+      <button class="btn btn-p" id="stop1" onclick="stopR(0)" style="margin-top:8px;padding:8px 16px;font-size:13px">STOP</button>
+      <div style="font-size:24px;font-weight:900;color:var(--accent);margin-top:4px" id="val1">?</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">10의 자리</div>
+      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px">▼</div>
+      <canvas id="r2" width="160" height="160" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
+      <button class="btn btn-p" id="stop2" onclick="stopR(1)" style="margin-top:8px;padding:8px 16px;font-size:13px">STOP</button>
+      <div style="font-size:24px;font-weight:900;color:var(--accent);margin-top:4px" id="val2">?</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">1의 자리</div>
+      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px">▼</div>
+      <canvas id="r3" width="160" height="160" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
+      <button class="btn btn-p" id="stop3" onclick="stopR(2)" style="margin-top:8px;padding:8px 16px;font-size:13px">STOP</button>
+      <div style="font-size:24px;font-weight:900;color:var(--accent);margin-top:4px" id="val3">?</div>
+    </div>
   </div>
+  <div style="font-size:28px;font-weight:900;color:var(--accent);margin-bottom:8px" id="roulette-total">합계: ?점</div>
   <div class="score-board" id="roulette-scores"></div>
-  <button class="btn btn-p" id="roulette-btn" onclick="spinRoulette()" style="font-size:16px;padding:14px 40px">🎡 돌리기!</button>
-  <div id="roulette-remain" style="margin-top:10px;font-size:12px;color:var(--text2)"></div>
+  <button class="btn btn-p" id="roulette-btn" onclick="startAllRoulette()" style="font-size:16px;padding:14px 40px">🎡 시작!</button>
 </div>
 
 <div class="game-screen" id="screen-slot">
@@ -240,10 +260,12 @@ let myNick = localStorage.getItem('gm_gameNick') || '';
 let pendingGame = '';
 let currentGame = '';
 
-// 룰렛
-let rouletteSpinning = false;
-let rouletteAngle = 0;
-let rouletteAnimId = null;
+// 룰렛 (3개)
+let rAngles = [0,0,0];
+let rAnimIds = [null,null,null];
+let rStopped = [false,false,false];
+let rVals = [-1,-1,-1];
+let rRunning = false;
 
 // 슬롯
 let slotRunning = false;
@@ -390,7 +412,7 @@ function startGame(key) {
 
 function closeGame() {
   document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('open'));
-  if(rouletteAnimId) { cancelAnimationFrame(rouletteAnimId); rouletteAnimId=null; }
+  rAnimIds.forEach((id,i)=>{ if(id){cancelAnimationFrame(id);rAnimIds[i]=null;} }); rRunning=false;
   if(ballAnimId) { cancelAnimationFrame(ballAnimId); ballAnimId=null; }
   if(ballTimerInterval) { clearInterval(ballTimerInterval); ballTimerInterval=null; }
   if(slotInterval) { clearInterval(slotInterval); slotInterval=null; }
@@ -401,11 +423,84 @@ function closeGame() {
 // ===== 룰렛 =====
 function initRoulette(d) {
   document.getElementById('roulette-prize-label').textContent = `🎁 ${d.prize||''}`;
-  drawRoulette(0);
+  rAngles=[0,0,0]; rStopped=[false,false,false]; rVals=[-1,-1,-1]; rRunning=false;
+  [0,1,2].forEach(i=>{ drawR(i,0); document.getElementById('stop'+(i+1)).disabled=true; document.getElementById('val'+(i+1)).textContent='?'; });
+  document.getElementById('roulette-total').textContent='합계: ?점';
+  document.getElementById('roulette-btn').textContent='🎡 시작!';
+  document.getElementById('roulette-btn').disabled=false;
+  document.getElementById('roulette-btn').setAttribute('onclick','startAllRoulette()');
   updateScoreBoard('roulette-scores', d.scores||{}, false);
-  document.getElementById('roulette-btn').textContent = '🎡 돌리기!';
-  document.getElementById('roulette-btn').disabled = false;
-  document.getElementById('roulette-btn').onclick = spinRoulette;
+}
+
+function drawR(i, angle) {
+  const ids=['r1','r2','r3'];
+  const canvas=document.getElementById(ids[i]);
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const nums=[0,1,2,3,4,5,6,7,8,9];
+  const colors=['#f0a500','#ef4444','#14b8a6','#3b82f6','#a855f7','#22c55e','#f87171','#60a5fa','#34d399','#fb923c'];
+  const n=nums.length;
+  const cx=canvas.width/2, cy=canvas.height/2, r=cx-8;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  nums.forEach((num,j)=>{
+    const start=angle+(j/n)*Math.PI*2;
+    const end=angle+((j+1)/n)*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end);
+    ctx.fillStyle=colors[j]; ctx.fill();
+    ctx.strokeStyle='#0e1520'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(start+(end-start)/2);
+    ctx.textAlign='right'; ctx.fillStyle='#fff';
+    ctx.font='bold 14px Black Han Sans'; ctx.fillText(num, r-6, 5);
+    ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,12,0,Math.PI*2);
+  ctx.fillStyle='#0e1520'; ctx.fill();
+  ctx.strokeStyle=colors[0]; ctx.lineWidth=2; ctx.stroke();
+}
+
+function startAllRoulette() {
+  rRunning=true; rStopped=[false,false,false]; rVals=[-1,-1,-1];
+  document.getElementById('roulette-btn').disabled=true;
+  document.getElementById('roulette-total').textContent='합계: ?점';
+  [0,1,2].forEach(i=>{ document.getElementById('stop'+(i+1)).disabled=false; document.getElementById('val'+(i+1)).textContent='?'; spinR(i); });
+}
+
+function spinR(i) {
+  if(rStopped[i]) return;
+  const speed=0.08+Math.random()*0.04;
+  rAngles[i]+=speed;
+  drawR(i, rAngles[i]);
+  rAnimIds[i]=requestAnimationFrame(()=>spinR(i));
+}
+
+function stopR(i) {
+  if(!rRunning||rStopped[i]) return;
+  rStopped[i]=true;
+  if(rAnimIds[i]){ cancelAnimationFrame(rAnimIds[i]); rAnimIds[i]=null; }
+  // 화살표(▼)가 맨 위(270도=-π/2)를 가리킴 → 해당 구간 계산
+  const nums=[0,1,2,3,4,5,6,7,8,9];
+  const n=nums.length;
+  const normalized=((( -rAngles[i] - Math.PI/2*3) % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+  const idx=Math.floor(normalized/(Math.PI*2/n))%n;
+  rVals[i]=nums[idx];
+  document.getElementById('val'+(i+1)).textContent=rVals[i];
+  document.getElementById('stop'+(i+1)).disabled=true;
+  // 3개 다 멈추면 점수 계산
+  if(rStopped[0]&&rStopped[1]&&rStopped[2]) {
+    const total=rVals[0]*100+rVals[1]*10+rVals[2];
+    document.getElementById('roulette-total').textContent=`합계: ${total}점!`;
+    if(!gameData['roulette']) gameData['roulette']={};
+    if(!gameData['roulette'].scores) gameData['roulette'].scores={};
+    gameData['roulette'].scores[myNick]=total;
+    saveGameData();
+    showToast(`🎡 ${rVals[0]}${rVals[1]}${rVals[2]} = ${total}점!`,'success');
+    updateScoreBoard('roulette-scores', gameData['roulette'].scores, false);
+    document.getElementById('roulette-btn').textContent='✓ 완료 (닫기)';
+    document.getElementById('roulette-btn').disabled=false;
+    document.getElementById('roulette-btn').setAttribute('onclick','closeGame()');
+    checkLeader('roulette');
+    rRunning=false;
+  }
 }
 
 function drawRoulette(angle) {
