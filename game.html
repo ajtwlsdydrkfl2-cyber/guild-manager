@@ -395,7 +395,7 @@ function renderGames() {
     const noNeedPrize = ['rsp','shooting','mole'].includes(key);
     const isDone = key==='card' ? myCardDone : myDone;
     // rsp/shooting/mole은 항상 플레이 가능
-    const alwaysPlay = ['rsp','shooting','mole'].includes(key);
+    const alwaysPlay = ['rsp','shooting'].includes(key);
     const btnText = (!prize&&!noNeedPrize) ? '상품 미설정' : (isDone&&!alwaysPlay) ? '✓ 완료' : '▶ 플레이';
     const btnClass = (!prize&&!noNeedPrize) ? 'no-prize' : (isDone&&!alwaysPlay) ? 'done' : '';
     const canPlay = (prize||noNeedPrize);
@@ -1302,83 +1302,131 @@ function hitMole(i) {
 // ===== 토너먼트 가위바위보 =====
 const RSP_CHOICES=['rock','scissors','paper'];
 const RSP_NAMES=['바위','가위','보'];
-const RSP_IMGS={'rock':'rsp_rock.png','scissors':'rsp_scissors.png','paper':'rsp_paper.png'};
+const RSP_IMGS={rock:'rsp_rock.png',scissors:'rsp_scissors.png',paper:'rsp_paper.png'};
+const RSP_ROUNDS=['16강','8강','4강','결승'];
 
 function initRSP(d) {
   document.getElementById('rsp-prize-label').textContent=`🎁 ${d.prize||''}`;
   renderRSP(d);
+  // 10시 자동 처리 체크
+  checkRSPAutoProcess();
+}
+
+function checkRSPAutoProcess() {
+  const t=gameData['rsp']?.tournament;
+  if(!t||!t.deadline) return;
+  const now=Date.now();
+  if(now>=t.deadline) {
+    // 마감 시간 지났으면 자동 처리
+    processRSPRound();
+  } else {
+    // 1분마다 체크
+    clearTimeout(window._rspAutoTimer);
+    window._rspAutoTimer=setTimeout(checkRSPAutoProcess, 30000);
+  }
 }
 
 function renderRSP(d) {
   const rspData = gameData['rsp']||{};
   const tournament = rspData.tournament||null;
   const admin = isAdmin();
+  const imgBar = `<div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px">
+    <img src="rsp_rock.png" style="width:52px;height:52px;object-fit:contain">
+    <img src="rsp_scissors.png" style="width:52px;height:52px;object-fit:contain">
+    <img src="rsp_paper.png" style="width:52px;height:52px;object-fit:contain">
+  </div>`;
   let html='';
 
   if(!tournament) {
-    // 대기 화면
-    html=`<div style="text-align:center;padding:20px">
-      <div style="font-size:40px;margin-bottom:12px">🪨✂️📄</div>
-      <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">
-        16강 토너먼트 가위바위보!<br>
-        각 라운드마다 5번 순서 미리 입력<br>
-        2시간 내 미입력 시 자동 탈락
+    html=`<div style="text-align:center;padding:16px">
+      ${imgBar}
+      <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:8px">토너먼트 가위바위보!</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.8">
+        16강 ~ 결승까지 모든 라운드 가위바위보를<br>처음에 미리 입력합니다.<br>
+        두 선수 모두 입력하면 즉시 결과 공개!<br>
+        저녁 10시 미입력 시 자동 탈락
       </div>
-      ${admin?`<button class="btn btn-p" onclick="startRSPTournament()" style="width:100%">🏆 토너먼트 시작!</button>`:'<div style="color:var(--text2);font-size:13px">관리자가 시작할 때까지 대기하세요</div>'}
+      ${admin?`<button class="btn btn-p" onclick="startRSPTournament()" style="width:100%;font-size:15px;padding:12px">🏆 토너먼트 시작!</button>`
+      :`<div style="color:var(--text2);font-size:13px;padding:20px;background:var(--bg3);border-radius:10px">관리자가 토너먼트를 시작하면<br>바로 입력할 수 있어요!</div>`}
     </div>`;
   } else {
-    // 토너먼트 진행 중
     const round = tournament.round||1;
-    const myMatch = findMyMatch(tournament);
-    const roundName = round===1?'16강':round===2?'8강':round===3?'4강':'결승';
-    const myInputs = tournament.inputs?.[myNick]||[];
+    const roundName = RSP_ROUNDS[round-1]||'결승';
     const myElim = tournament.eliminated?.includes(myNick);
     const deadline = tournament.deadline;
-    const timeLeft = deadline ? Math.max(0, Math.floor((deadline-Date.now())/1000)) : 0;
+    const timeLeft = deadline ? Math.max(0,Math.floor((deadline-Date.now())/1000)) : 0;
     const mins = Math.floor(timeLeft/60), secs = timeLeft%60;
+    const myAllInputs = tournament.allInputs?.[myNick]||{};
+    const mySubmitted = tournament.submitted?.includes(myNick);
 
     html=`<div style="text-align:center">
-      <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px">🏆 ${roundName}</div>
-      <div style="font-size:12px;color:var(--red);margin-bottom:12px">⏰ ${mins}분 ${String(secs).padStart(2,'0')}초 남음</div>`;
+      ${imgBar}
+      <div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:4px">🏆 현재: ${roundName}</div>
+      <div style="font-size:11px;color:var(--red);margin-bottom:12px">⏰ 마감까지 ${mins}분 ${String(secs).padStart(2,'0')}초</div>`;
 
     if(myElim) {
-      html+=`<div style="font-size:14px;color:var(--red);margin-bottom:12px">❌ 탈락했습니다</div>`;
-    } else if(myMatch) {
-      html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
-        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">내 대진</div>
-        <div style="font-size:16px;font-weight:700">${myNick} vs ${myMatch.opp||'?'}</div>
+      html+=`<div style="font-size:15px;color:var(--red);padding:20px;background:rgba(239,68,68,.1);border-radius:10px">❌ 탈락했습니다</div>`;
+    } else if(!mySubmitted) {
+      // 입력 화면 - 모든 라운드 한번에
+      html+=`<div style="font-size:12px;color:var(--text2);margin-bottom:12px">16강 ~ 결승 가위바위보를 미리 입력하세요!</div>`;
+      RSP_ROUNDS.forEach((rname,ri)=>{
+        const inputs = myAllInputs[ri]||[];
+        html+=`<div style="background:var(--bg3);border:1px solid ${inputs.length===5?'var(--green)':'var(--border)'};border-radius:10px;padding:10px;margin-bottom:8px;text-align:left">
+          <div style="font-size:12px;font-weight:700;color:${inputs.length===5?'var(--green)':'var(--accent)'};margin-bottom:6px">
+            ${rname} ${inputs.length===5?'✅':'('+inputs.length+'/5)'}
+          </div>
+          <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;min-height:36px;align-items:center">
+            ${inputs.length===0?'<span style="font-size:11px;color:var(--text2)">선택하세요</span>':inputs.map(c=>`<img src="${RSP_IMGS[c]}" style="width:32px;height:32px;object-fit:contain">`).join('')}
+            ${inputs.length>0&&inputs.length<5?`<button onclick="undoRSPChoice(${ri})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;padding:2px 6px;cursor:pointer">↩</button>`:''}
+          </div>
+          ${inputs.length<5?`<div style="display:flex;gap:6px">
+            ${RSP_CHOICES.map(c=>`<button onclick="addRSPChoice('${c}',${ri})" style="width:56px;height:56px;border-radius:10px;background:var(--bg2);border:2px solid var(--border);cursor:pointer;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
+              <img src="${RSP_IMGS[c]}" style="width:34px;height:34px;object-fit:contain">
+              <span style="font-size:9px;color:var(--text2)">${RSP_NAMES[RSP_CHOICES.indexOf(c)]}</span>
+            </button>`).join('')}
+          </div>`:''}
+        </div>`;
+      });
+      const allDone = RSP_ROUNDS.every((_,ri)=>(myAllInputs[ri]||[]).length===5);
+      html+=`<button class="btn btn-p" onclick="submitAllRSP()" style="width:100%;margin-top:4px;font-size:14px;padding:12px" ${allDone?'':'disabled'}>
+        ${allDone?'✅ 제출하기!':'모든 라운드 5번씩 입력 후 제출'}
+      </button>`;
+    } else {
+      // 이미 제출함 - 결과 대기
+      html+=`<div style="background:rgba(34,197,94,.1);border:1px solid var(--green);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:14px;color:var(--green);font-weight:700;margin-bottom:4px">✅ 제출 완료!</div>
+        <div style="font-size:12px;color:var(--text2)">상대방 제출 시 즉시 결과 공개<br>저녁 10시 미제출자 자동 탈락</div>
       </div>`;
-
-      if(myInputs.length<5){
-        html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:8px">5번 순서 입력 (${myInputs.length}/5)</div>
-        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:8px">
-          ${RSP_CHOICES.map((c,i)=>`<button onclick="addRSPChoice('${c}')" style="width:80px;height:80px;border-radius:12px;background:var(--bg3);border:2px solid var(--border);cursor:pointer;transition:all .15s;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"><img src="${RSP_IMGS[c]}" style="width:52px;height:52px;object-fit:contain"><div style="font-size:10px;color:var(--text2)">${RSP_NAMES[i]}</div></button>`).join('')}
-        </div>
-        <div style="display:flex;gap:4px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
-          <span style="font-size:12px;color:var(--text2)">입력:</span>
-          ${myInputs.length===0?'<span style="font-size:12px;color:var(--text2)">없음</span>':myInputs.map(c=>`<img src="${RSP_IMGS[c]}" style="width:28px;height:28px;object-fit:contain">`).join('')}
-        </div>
-        ${myInputs.length>0?`<button class="btn btn-s btn-sm" onclick="undoRSPChoice()">↩ 취소</button>`:''}`;
-      } else {
-        html+=`<div style="font-size:13px;color:var(--green);margin-bottom:8px">✅ 입력 완료: ${myInputs.join(' ')}</div>`;
-      }
+      // 내 입력 보여주기
+      RSP_ROUNDS.forEach((rname,ri)=>{
+        const inputs=myAllInputs[ri]||[];
+        html+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-size:11px;color:var(--text2);min-width:30px">${rname}</span>
+          <div style="display:flex;gap:3px">${inputs.map(c=>`<img src="${RSP_IMGS[c]}" style="width:24px;height:24px;object-fit:contain">`).join('')}</div>
+        </div>`;
+      });
     }
 
-    // 대진표
-    html+=`<div style="margin-top:12px;text-align:left">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">대진표</div>
-      ${(tournament.matches||[]).map(m=>`
-        <div style="background:var(--bg3);border-radius:8px;padding:8px;margin-bottom:4px;font-size:12px;display:flex;justify-content:space-between;align-items:center">
-          <span style="${m.p1===myNick?'color:var(--accent);font-weight:700':''}">${m.p1}</span>
-          <span style="color:var(--text2)">vs</span>
-          <span style="${m.p2===myNick?'color:var(--accent);font-weight:700':''}">${m.p2||'TBD'}</span>
-          ${m.winner?`<span style="color:var(--green);font-size:10px">→ ${m.winner}</span>`:''}
-        </div>`).join('')}
+    // 대진표 & 결과
+    html+=`<div style="margin-top:14px;text-align:left">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">${roundName} 대진표</div>
+      ${(tournament.matches||[]).map(m=>{
+        const p1sub=tournament.submitted?.includes(m.p1);
+        const p2sub=tournament.submitted?.includes(m.p2);
+        return `<div style="background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:4px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="${m.p1===myNick?'color:var(--accent);font-weight:700':''}">${m.p1} ${p1sub?'✅':''}</span>
+            <span style="color:var(--text2)">vs</span>
+            <span style="${m.p2===myNick?'color:var(--accent);font-weight:700':''}">${m.p2||'BYE'} ${m.p2&&m.p2!=='BYE'&&p2sub?'✅':''}</span>
+          </div>
+          ${m.winner?`<div style="text-align:center;font-size:11px;color:var(--green);margin-top:4px">🏆 승자: ${m.winner}</div>`:''}
+        </div>`;
+      }).join('')}
     </div>`;
 
     if(admin){
-      html+=`<div style="margin-top:12px;display:flex;gap:8px">
-        <button class="btn btn-p btn-sm" onclick="processRSPRound()" style="flex:1">⚡ 결과 처리</button>
+      html+=`<div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-p btn-sm" onclick="if(confirm('지금 바로 결과 처리?'))processRSPRound()" style="flex:1">⚡ 조기 종료</button>
         <button class="btn btn-d btn-sm" onclick="if(confirm('토너먼트 초기화?'))resetRSP()">🔄 초기화</button>
       </div>`;
     }
@@ -1386,12 +1434,8 @@ function renderRSP(d) {
   }
 
   document.getElementById('rsp-content').innerHTML=html;
-
-  // 타이머 업데이트
-  if(tournament?.deadline) {
-    clearTimeout(window._rspTimerTick);
-    window._rspTimerTick=setTimeout(()=>renderRSP(gameData['rsp']||{}), 1000);
-  }
+  clearTimeout(window._rspTimerTick);
+  if(tournament?.deadline) window._rspTimerTick=setTimeout(()=>renderRSP(gameData['rsp']||{}),1000);
 }
 
 function findMyMatch(tournament) {
@@ -1433,69 +1477,121 @@ function startRSPTournament() {
   });
 }
 
-function addRSPChoice(c) {
+function addRSPChoice(c, ri) {
   if(!gameData['rsp']?.tournament) return;
-  if(!gameData['rsp'].tournament.inputs) gameData['rsp'].tournament.inputs={};
-  const inputs=gameData['rsp'].tournament.inputs[myNick]||[];
+  if(!gameData['rsp'].tournament.allInputs) gameData['rsp'].tournament.allInputs={};
+  if(!gameData['rsp'].tournament.allInputs[myNick]) gameData['rsp'].tournament.allInputs[myNick]={};
+  const inputs=gameData['rsp'].tournament.allInputs[myNick][ri]||[];
   if(inputs.length>=5) return;
   inputs.push(c);
-  gameData['rsp'].tournament.inputs[myNick]=inputs;
+  gameData['rsp'].tournament.allInputs[myNick][ri]=inputs;
   saveGameData();
   renderRSP(gameData['rsp']);
 }
 
-function undoRSPChoice() {
+function undoRSPChoice(ri) {
   if(!gameData['rsp']?.tournament) return;
-  const inputs=gameData['rsp'].tournament.inputs[myNick]||[];
-  if(inputs.length>0){ inputs.pop(); gameData['rsp'].tournament.inputs[myNick]=inputs; saveGameData(); renderRSP(gameData['rsp']); }
+  const inputs=gameData['rsp'].tournament.allInputs?.[myNick]?.[ri]||[];
+  if(inputs.length>0){
+    inputs.pop();
+    gameData['rsp'].tournament.allInputs[myNick][ri]=inputs;
+    saveGameData(); renderRSP(gameData['rsp']);
+  }
 }
 
-function processRSPRound() {
+function submitAllRSP() {
   const t=gameData['rsp']?.tournament; if(!t) return;
-  const inputs=t.inputs||{};
-  const eliminated=t.eliminated||[];
-  const winners=[];
+  const myAllInputs=t.allInputs?.[myNick]||{};
+  const allDone=RSP_ROUNDS.every((_,ri)=>(myAllInputs[ri]||[]).length===5);
+  if(!allDone){showToast('모든 라운드 5번씩 입력해주세요!','error');return;}
+  if(!t.submitted) t.submitted=[];
+  if(!t.submitted.includes(myNick)) t.submitted.push(myNick);
+  saveGameData();
+  // 즉시 결과 체크
+  checkAndProcessMatches();
+  renderRSP(gameData['rsp']);
+  showToast('✅ 제출 완료!','success');
+}
 
+function checkAndProcessMatches() {
+  const t=gameData['rsp']?.tournament; if(!t) return;
+  let changed=false;
   t.matches.forEach(m=>{
-    if(m.winner) return; // 이미 처리됨
-    const i1=inputs[m.p1]||[];
-    const i2=inputs[m.p2]||[];
-    // 미입력자 탈락
-    if(i1.length===0&&m.p1!=='BYE'){ m.winner=m.p2; eliminated.push(m.p1); winners.push(m.p2); return; }
-    if(i2.length===0&&m.p2!=='BYE'){ m.winner=m.p1; eliminated.push(m.p2); winners.push(m.p1); return; }
-    if(m.p2==='BYE'){ m.winner=m.p1; winners.push(m.p1); return; }
-    // 가위바위보 판정
-    let w1=0,w2=0;
-    const n=Math.min(i1.length,i2.length,5);
-    for(let i=0;i<n;i++){
-      const r=rspResult(i1[i],i2[i]);
-      if(r===1) w1++; else if(r===2) w2++;
+    if(m.winner) return;
+    if(m.p2==='BYE'){m.winner=m.p1;changed=true;return;}
+    const p1sub=t.submitted?.includes(m.p1);
+    const p2sub=t.submitted?.includes(m.p2);
+    if(p1sub&&p2sub){
+      // 둘다 제출했으면 해당 라운드 결과 계산
+      const ri=t.round-1;
+      const i1=t.allInputs?.[m.p1]?.[ri]||[];
+      const i2=t.allInputs?.[m.p2]?.[ri]||[];
+      let w1=0,w2=0;
+      for(let i=0;i<5;i++){
+        const r=rspResult(i1[i],i2[i]);
+        if(r===1)w1++; else if(r===2)w2++;
+      }
+      if(w1>w2){m.winner=m.p1;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2);}
+      else if(w2>w1){m.winner=m.p2;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1);}
+      // 무승부면 winner 없음 유지
+      changed=true;
     }
-    if(w1>w2){ m.winner=m.p1; eliminated.push(m.p2); winners.push(m.p1); }
-    else if(w2>w1){ m.winner=m.p2; eliminated.push(m.p1); winners.push(m.p2); }
-    else { m.winner=null; showToast(`${m.p1} vs ${m.p2} 무승부! 재입력 필요`,'error'); }
   });
-
-  // 모든 매치 완료되면 다음 라운드
+  // 모든 매치 완료시 다음 라운드
   if(t.matches.every(m=>m.winner)){
+    const winners=t.matches.map(m=>m.winner).filter(Boolean);
     if(winners.length===1){
+      t.champion=winners[0];
       showToast(`🏆 우승: ${winners[0]}!`,'success');
     } else {
-      // 다음 라운드
       t.round++;
       const newMatches=[];
       for(let i=0;i<winners.length;i+=2){
         newMatches.push({p1:winners[i],p2:winners[i+1]||'BYE',winner:null});
       }
       t.matches=newMatches;
-      t.inputs={};
+      t.submitted=[];
       t.deadline=getNext10PM();
-      showToast(`다음 라운드 시작!`,'success');
+      showToast(`🏆 ${RSP_ROUNDS[t.round-1]} 시작!`,'success');
     }
+    changed=true;
   }
-  t.eliminated=eliminated;
-  saveGameData();
-  renderRSP(gameData['rsp']);
+  if(changed) saveGameData();
+}
+
+function processRSPRound() {
+  const t=gameData['rsp']?.tournament; if(!t) return;
+  const ri=t.round-1;
+  // 미제출자 탈락 처리
+  t.matches.forEach(m=>{
+    if(m.winner) return;
+    if(m.p2==='BYE'){m.winner=m.p1;return;}
+    const p1sub=t.submitted?.includes(m.p1);
+    const p2sub=t.submitted?.includes(m.p2);
+    if(!p1sub&&!p2sub){ // 둘다 미제출 - 랜덤
+      m.winner=Math.random()<0.5?m.p1:m.p2;
+    } else if(!p1sub){ m.winner=m.p2; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1); }
+    else if(!p2sub){ m.winner=m.p1; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2); }
+    else {
+      const i1=t.allInputs?.[m.p1]?.[ri]||[];
+      const i2=t.allInputs?.[m.p2]?.[ri]||[];
+      let w1=0,w2=0;
+      for(let i=0;i<5;i++){const r=rspResult(i1[i],i2[i]);if(r===1)w1++;else if(r===2)w2++;}
+      if(w1>w2){m.winner=m.p1;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2);}
+      else if(w2>w1){m.winner=m.p2;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1);}
+      else{m.winner=Math.random()<0.5?m.p1:m.p2;} // 무승부 랜덤
+    }
+  });
+  const winners=t.matches.map(m=>m.winner).filter(Boolean);
+  if(winners.length===1){t.champion=winners[0];showToast(`🏆 우승: ${winners[0]}!`,'success');}
+  else{
+    t.round++;
+    const nm=[];
+    for(let i=0;i<winners.length;i+=2)nm.push({p1:winners[i],p2:winners[i+1]||'BYE',winner:null});
+    t.matches=nm; t.submitted=[]; t.deadline=getNext10PM();
+    showToast(`🏆 ${RSP_ROUNDS[t.round-1]} 시작!`,'success');
+  }
+  saveGameData(); renderRSP(gameData['rsp']);
 }
 
 function rspResult(a,b) {
