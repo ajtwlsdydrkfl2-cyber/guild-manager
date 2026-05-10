@@ -251,6 +251,9 @@ const GAMES = {
   timer:    {name:'10초 챌린지', icon:'⏱'},
   card:     {name:'카드 뽑기', icon:'🃏'},
   memory:   {name:'짝 맞추기', icon:'🧩'},
+  rsp:      {name:'토너먼트 가위바위보', icon:'🪨'},
+  shooting: {name:'클레이 사격', icon:'🎯'},
+  mole:     {name:'두더지 잡기', icon:'🔨'},
 };
 
 let gameData = {};
@@ -371,7 +374,10 @@ function renderGames() {
       ${gameCard('slot')}
       ${gameCard('timer')}
       ${gameCard('card')}
-      ${gameCard('memory', true)}
+      ${gameCard('memory')}
+      ${gameCard('shooting')}
+      ${gameCard('mole', true)}
+      ${gameCard('rsp', true)}
     </div>`;
 }
 
@@ -408,6 +414,9 @@ function startGame(key) {
   else if(key==='card') initCard(d);
   else if(key==='timer') initTimer(d);
   else if(key==='memory') initMemory(d);
+  else if(key==='shooting') initShooting(d);
+  else if(key==='mole') initMole(d);
+  else if(key==='rsp') initRSP(d);
 }
 
 function closeGame() {
@@ -1028,6 +1037,407 @@ function finishMemory(score) {
   btn.textContent='✓ 완료 (닫기)';
   btn.setAttribute('onclick','closeGame()');
   checkLeader('memory');
+}
+
+// ===== 클레이 사격 =====
+let shootingRunning=false, shootingScore=0, shootingTimeLeft=30, shootingIv=null, shootingAnimId=null;
+let discs=[];
+
+function initShooting(d) {
+  document.getElementById('shooting-prize-label').textContent=`🎁 ${d.prize||''}`;
+  shootingRunning=false; shootingScore=0;
+  document.getElementById('shooting-score').textContent='점수: 0';
+  document.getElementById('shooting-timer').textContent='30초';
+  document.getElementById('shooting-btn').textContent='🎯 시작!';
+  document.getElementById('shooting-btn').setAttribute('onclick','startShooting()');
+  document.getElementById('shooting-btn').disabled=false;
+  updateScoreBoard('shooting-scores', d.scores||{}, false);
+  const ctx=document.getElementById('shooting-canvas').getContext('2d');
+  ctx.fillStyle='#1a2235'; ctx.fillRect(0,0,360,280);
+  ctx.fillStyle='#64748b'; ctx.font='16px Noto Sans KR'; ctx.textAlign='center';
+  ctx.fillText('시작 버튼을 누르세요!',180,140);
+}
+
+function startShooting() {
+  shootingRunning=true; shootingScore=0; shootingTimeLeft=30; discs=[];
+  document.getElementById('shooting-btn').style.display='none';
+  document.getElementById('shoot-left').disabled=false;
+  document.getElementById('shoot-right').disabled=false;
+
+  // 키보드 이벤트
+  window._shootKey = (e)=>{
+    if(e.key==='ArrowLeft') shootDir('left');
+    if(e.key==='ArrowRight') shootDir('right');
+  };
+  window.addEventListener('keydown', window._shootKey);
+
+  // 타이머
+  shootingIv=setInterval(()=>{
+    shootingTimeLeft--;
+    document.getElementById('shooting-timer').textContent=shootingTimeLeft+'초';
+    if(shootingTimeLeft<=0){
+      clearInterval(shootingIv); shootingRunning=false;
+      window.removeEventListener('keydown', window._shootKey);
+      if(shootingAnimId){cancelAnimationFrame(shootingAnimId);shootingAnimId=null;}
+      if(!gameData['shooting']) gameData['shooting']={};
+      if(!gameData['shooting'].scores) gameData['shooting'].scores={};
+      gameData['shooting'].scores[myNick]=shootingScore;
+      saveGameData();
+      updateScoreBoard('shooting-scores', gameData['shooting'].scores, false);
+      showToast(`🎯 ${shootingScore}점!`,'success');
+      const btn=document.getElementById('shooting-btn');
+      btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
+      btn.setAttribute('onclick','closeGame()');
+      checkLeader('shooting');
+    }
+    // 원반 추가
+    if(Math.random()<0.4){
+      const dir=Math.random()<0.5?'left':'right';
+      const size=20+Math.floor(Math.random()*30); // 20~50px
+      const speed=(2+Math.random()*4)*(dir==='left'?1:-1);
+      const y=60+Math.random()*120;
+      const pts=Math.round((50-size)/5)+5; // 작을수록 점수 높음
+      discs.push({x:dir==='left'?-size:360+size,y,size,speed,dir,pts,hit:false,opacity:1});
+    }
+  },1000);
+
+  // 원반 더 자주 추가
+  setInterval(()=>{ if(!shootingRunning) return;
+    if(Math.random()<0.3){
+      const dir=Math.random()<0.5?'left':'right';
+      const size=15+Math.floor(Math.random()*35);
+      const speed=(3+Math.random()*5)*(dir==='left'?1:-1);
+      const y=40+Math.random()*160;
+      const pts=Math.round((50-size)/5)+3;
+      discs.push({x:dir==='left'?-size:360+size,y,size,speed,dir,pts,hit:false,opacity:1});
+    }
+  },500);
+
+  animShooting();
+}
+
+function animShooting() {
+  const canvas=document.getElementById('shooting-canvas');
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#0d1829'; ctx.fillRect(0,0,360,280);
+  // 배경 라인
+  ctx.strokeStyle='rgba(240,165,0,.1)'; ctx.lineWidth=1;
+  for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(0,i*40);ctx.lineTo(360,i*40);ctx.stroke();}
+  // 방향 힌트
+  ctx.fillStyle='rgba(255,255,255,.15)'; ctx.font='40px sans-serif';
+  ctx.textAlign='left'; ctx.fillText('←',10,270);
+  ctx.textAlign='right'; ctx.fillText('→',350,270);
+  // 원반
+  discs=discs.filter(d=>d.opacity>0&&d.x>-100&&d.x<460);
+  discs.forEach(d=>{
+    d.x+=d.speed;
+    if(d.hit){ d.opacity-=0.1; }
+    ctx.globalAlpha=d.opacity;
+    // 원반 그리기
+    ctx.beginPath(); ctx.ellipse(d.x,d.y,d.size,d.size*0.4,0.3,0,Math.PI*2);
+    ctx.fillStyle=d.hit?'#ef4444':'#f0a500'; ctx.fill();
+    ctx.strokeStyle=d.hit?'#fca5a5':'#fbbf24'; ctx.lineWidth=2; ctx.stroke();
+    // 점수 표시
+    ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(10,d.size*0.5)}px Black Han Sans`;
+    ctx.textAlign='center'; ctx.fillText(d.pts+'P',d.x,d.y+4);
+    ctx.globalAlpha=1;
+  });
+  // 총구
+  ctx.fillStyle='#94a3b8'; ctx.fillRect(170,255,20,20);
+  ctx.fillStyle='#64748b'; ctx.fillRect(175,240,10,20);
+  if(shootingRunning) shootingAnimId=requestAnimationFrame(animShooting);
+}
+
+let lastShootDir=null, lastShootTime=0;
+function shootDir(dir) {
+  if(!shootingRunning) return;
+  const now=Date.now();
+  if(now-lastShootTime<200) return; // 연사 방지
+  lastShootTime=now; lastShootDir=dir;
+  // 해당 방향 원반 중 가장 가까운 것 맞추기
+  const targets=discs.filter(d=>!d.hit&&(dir==='left'?d.x<180:d.x>=180));
+  if(targets.length>0){
+    const closest=targets.reduce((a,b)=>Math.abs(a.x-180)<Math.abs(b.x-180)?a:b);
+    closest.hit=true;
+    shootingScore+=closest.pts;
+    document.getElementById('shooting-score').textContent='점수: '+shootingScore;
+    showToast(`🎯 +${closest.pts}점!`,'success');
+  }
+}
+
+// ===== 두더지 잡기 =====
+let moleRunning=false, moleScore=0, moleMiss=0, moleTimeLeft=20, moleIv=null, moleHoleIv=null;
+let moleHoles=Array(9).fill(false);
+
+function initMole(d) {
+  document.getElementById('mole-prize-label').textContent=`🎁 ${d.prize||''}`;
+  moleRunning=false; moleScore=0; moleMiss=0; moleTimeLeft=20;
+  moleHoles=Array(9).fill(false);
+  renderMoleGrid();
+  document.getElementById('mole-score').textContent='0점';
+  document.getElementById('mole-timer').textContent='20초';
+  document.getElementById('mole-miss').textContent='미스: 0';
+  document.getElementById('mole-btn').textContent='🔨 시작!';
+  document.getElementById('mole-btn').setAttribute('onclick','startMole()');
+  document.getElementById('mole-btn').disabled=false;
+  updateScoreBoard('mole-scores', d.scores||{}, false);
+}
+
+function renderMoleGrid() {
+  document.getElementById('mole-grid').innerHTML=moleHoles.map((up,i)=>`
+    <div onclick="hitMole(${i})" style="width:90px;height:90px;border-radius:50%;background:${up?'rgba(34,197,94,.2)':'rgba(30,45,69,.6)'};border:3px solid ${up?'var(--green)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:${up?'44px':'28px'};cursor:pointer;transition:all .15s;user-select:none">
+      ${up?'🐹':'🕳️'}
+    </div>`).join('');
+}
+
+function startMole() {
+  moleRunning=true; moleScore=0; moleMiss=0; moleTimeLeft=20;
+  document.getElementById('mole-btn').style.display='none';
+  moleIv=setInterval(()=>{
+    moleTimeLeft--;
+    document.getElementById('mole-timer').textContent=moleTimeLeft+'초';
+    if(moleTimeLeft<=0){
+      clearInterval(moleIv); clearInterval(moleHoleIv);
+      moleRunning=false; moleHoles=Array(9).fill(false); renderMoleGrid();
+      if(!gameData['mole']) gameData['mole']={};
+      if(!gameData['mole'].scores) gameData['mole'].scores={};
+      gameData['mole'].scores[myNick]=moleScore;
+      saveGameData();
+      updateScoreBoard('mole-scores', gameData['mole'].scores, false);
+      showToast(`🔨 ${moleScore}점!`,'success');
+      const btn=document.getElementById('mole-btn');
+      btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
+      btn.setAttribute('onclick','closeGame()');
+      checkLeader('mole');
+    }
+  },1000);
+  // 두더지 랜덤 등장
+  moleHoleIv=setInterval(()=>{
+    if(!moleRunning) return;
+    // 기존 두더지 내리기
+    moleHoles=moleHoles.map(()=>false);
+    // 새 두더지 1~2마리
+    const cnt=Math.random()<0.3?2:1;
+    for(let i=0;i<cnt;i++){
+      const idx=Math.floor(Math.random()*9);
+      moleHoles[idx]=true;
+    }
+    renderMoleGrid();
+  },700);
+}
+
+function hitMole(i) {
+  if(!moleRunning) return;
+  if(moleHoles[i]){
+    moleHoles[i]=false;
+    moleScore+=10;
+    document.getElementById('mole-score').textContent=moleScore+'점';
+    renderMoleGrid();
+  } else {
+    moleMiss++;
+    document.getElementById('mole-miss').textContent='미스: '+moleMiss;
+  }
+}
+
+// ===== 토너먼트 가위바위보 =====
+const RSP_CHOICES=['🪨','✂️','📄'];
+const RSP_NAMES=['바위','가위','보'];
+
+function initRSP(d) {
+  document.getElementById('rsp-prize-label').textContent=`🎁 ${d.prize||''}`;
+  renderRSP(d);
+}
+
+function renderRSP(d) {
+  const rspData = gameData['rsp']||{};
+  const tournament = rspData.tournament||null;
+  const admin = isAdmin();
+  let html='';
+
+  if(!tournament) {
+    // 대기 화면
+    html=`<div style="text-align:center;padding:20px">
+      <div style="font-size:40px;margin-bottom:12px">🪨✂️📄</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+        16강 토너먼트 가위바위보!<br>
+        각 라운드마다 5번 순서 미리 입력<br>
+        2시간 내 미입력 시 자동 탈락
+      </div>
+      ${admin?`<button class="btn btn-p" onclick="startRSPTournament()" style="width:100%">🏆 토너먼트 시작!</button>`:'<div style="color:var(--text2);font-size:13px">관리자가 시작할 때까지 대기하세요</div>'}
+    </div>`;
+  } else {
+    // 토너먼트 진행 중
+    const round = tournament.round||1;
+    const myMatch = findMyMatch(tournament);
+    const roundName = round===1?'16강':round===2?'8강':round===3?'4강':'결승';
+    const myInputs = tournament.inputs?.[myNick]||[];
+    const myElim = tournament.eliminated?.includes(myNick);
+    const deadline = tournament.deadline;
+    const timeLeft = deadline ? Math.max(0, Math.floor((deadline-Date.now())/1000)) : 0;
+    const mins = Math.floor(timeLeft/60), secs = timeLeft%60;
+
+    html=`<div style="text-align:center">
+      <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px">🏆 ${roundName}</div>
+      <div style="font-size:12px;color:var(--red);margin-bottom:12px">⏰ ${mins}분 ${String(secs).padStart(2,'0')}초 남음</div>`;
+
+    if(myElim) {
+      html+=`<div style="font-size:14px;color:var(--red);margin-bottom:12px">❌ 탈락했습니다</div>`;
+    } else if(myMatch) {
+      html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">내 대진</div>
+        <div style="font-size:16px;font-weight:700">${myNick} vs ${myMatch.opp||'?'}</div>
+      </div>`;
+
+      if(myInputs.length<5){
+        html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:8px">5번 순서 입력 (${myInputs.length}/5)</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:8px">
+          ${RSP_CHOICES.map((c,i)=>`<button onclick="addRSPChoice('${c}')" style="width:72px;height:72px;border-radius:12px;font-size:32px;background:var(--bg3);border:2px solid var(--border);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">${c}</button>`).join('')}
+        </div>
+        <div style="font-size:14px;color:var(--accent);margin-bottom:8px">입력: ${myInputs.join(' ')||'없음'}</div>
+        ${myInputs.length>0?`<button class="btn btn-s btn-sm" onclick="undoRSPChoice()">↩ 취소</button>`:''}`;
+      } else {
+        html+=`<div style="font-size:13px;color:var(--green);margin-bottom:8px">✅ 입력 완료: ${myInputs.join(' ')}</div>`;
+      }
+    }
+
+    // 대진표
+    html+=`<div style="margin-top:12px;text-align:left">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">대진표</div>
+      ${(tournament.matches||[]).map(m=>`
+        <div style="background:var(--bg3);border-radius:8px;padding:8px;margin-bottom:4px;font-size:12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="${m.p1===myNick?'color:var(--accent);font-weight:700':''}">${m.p1}</span>
+          <span style="color:var(--text2)">vs</span>
+          <span style="${m.p2===myNick?'color:var(--accent);font-weight:700':''}">${m.p2||'TBD'}</span>
+          ${m.winner?`<span style="color:var(--green);font-size:10px">→ ${m.winner}</span>`:''}
+        </div>`).join('')}
+    </div>`;
+
+    if(admin){
+      html+=`<div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn btn-p btn-sm" onclick="processRSPRound()" style="flex:1">⚡ 결과 처리</button>
+        <button class="btn btn-d btn-sm" onclick="if(confirm('토너먼트 초기화?'))resetRSP()">🔄 초기화</button>
+      </div>`;
+    }
+    html+='</div>';
+  }
+
+  document.getElementById('rsp-content').innerHTML=html;
+
+  // 타이머 업데이트
+  if(tournament?.deadline) {
+    clearTimeout(window._rspTimerTick);
+    window._rspTimerTick=setTimeout(()=>renderRSP(gameData['rsp']||{}), 1000);
+  }
+}
+
+function findMyMatch(tournament) {
+  if(!tournament?.matches) return null;
+  return tournament.matches.find(m=>(m.p1===myNick||m.p2===myNick)&&!m.winner)||null;
+}
+
+function startRSPTournament() {
+  fbGet('members', fbMembers => {
+    const allMembers = fbMembers ? (Array.isArray(fbMembers)?fbMembers:Object.values(fbMembers)) : members;
+    const excluded=['도를아십니까','인상참좋으시네요'];
+    const players=[...allMembers.map(m=>m.nick).filter(n=>!excluded.includes(n))];
+    // 랜덤 섞기
+    for(let i=players.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[players[i],players[j]]=[players[j],players[i]];}
+    // 16강 대진
+    const matches=[];
+    for(let i=0;i<Math.min(16,players.length);i+=2){
+      matches.push({p1:players[i],p2:players[i+1]||'BYE',winner:null});
+    }
+    if(!gameData['rsp']) gameData['rsp']={};
+    gameData['rsp'].tournament={
+      round:1, matches,
+      inputs:{},
+      eliminated:[],
+      deadline: Date.now()+2*60*60*1000, // 2시간
+    };
+    gameData['rsp'].prize = gameData['rsp']?.prize||'';
+    saveGameData();
+    renderRSP(gameData['rsp']);
+    showToast('🏆 토너먼트 시작!','success');
+  });
+}
+
+function addRSPChoice(c) {
+  if(!gameData['rsp']?.tournament) return;
+  if(!gameData['rsp'].tournament.inputs) gameData['rsp'].tournament.inputs={};
+  const inputs=gameData['rsp'].tournament.inputs[myNick]||[];
+  if(inputs.length>=5) return;
+  inputs.push(c);
+  gameData['rsp'].tournament.inputs[myNick]=inputs;
+  saveGameData();
+  renderRSP(gameData['rsp']);
+}
+
+function undoRSPChoice() {
+  if(!gameData['rsp']?.tournament) return;
+  const inputs=gameData['rsp'].tournament.inputs[myNick]||[];
+  if(inputs.length>0){ inputs.pop(); gameData['rsp'].tournament.inputs[myNick]=inputs; saveGameData(); renderRSP(gameData['rsp']); }
+}
+
+function processRSPRound() {
+  const t=gameData['rsp']?.tournament; if(!t) return;
+  const inputs=t.inputs||{};
+  const eliminated=t.eliminated||[];
+  const winners=[];
+
+  t.matches.forEach(m=>{
+    if(m.winner) return; // 이미 처리됨
+    const i1=inputs[m.p1]||[];
+    const i2=inputs[m.p2]||[];
+    // 미입력자 탈락
+    if(i1.length===0&&m.p1!=='BYE'){ m.winner=m.p2; eliminated.push(m.p1); winners.push(m.p2); return; }
+    if(i2.length===0&&m.p2!=='BYE'){ m.winner=m.p1; eliminated.push(m.p2); winners.push(m.p1); return; }
+    if(m.p2==='BYE'){ m.winner=m.p1; winners.push(m.p1); return; }
+    // 가위바위보 판정
+    let w1=0,w2=0;
+    const n=Math.min(i1.length,i2.length,5);
+    for(let i=0;i<n;i++){
+      const r=rspResult(i1[i],i2[i]);
+      if(r===1) w1++; else if(r===2) w2++;
+    }
+    if(w1>w2){ m.winner=m.p1; eliminated.push(m.p2); winners.push(m.p1); }
+    else if(w2>w1){ m.winner=m.p2; eliminated.push(m.p1); winners.push(m.p2); }
+    else { m.winner=null; showToast(`${m.p1} vs ${m.p2} 무승부! 재입력 필요`,'error'); }
+  });
+
+  // 모든 매치 완료되면 다음 라운드
+  if(t.matches.every(m=>m.winner)){
+    if(winners.length===1){
+      showToast(`🏆 우승: ${winners[0]}!`,'success');
+    } else {
+      // 다음 라운드
+      t.round++;
+      const newMatches=[];
+      for(let i=0;i<winners.length;i+=2){
+        newMatches.push({p1:winners[i],p2:winners[i+1]||'BYE',winner:null});
+      }
+      t.matches=newMatches;
+      t.inputs={};
+      t.deadline=Date.now()+2*60*60*1000;
+      showToast(`다음 라운드 시작!`,'success');
+    }
+  }
+  t.eliminated=eliminated;
+  saveGameData();
+  renderRSP(gameData['rsp']);
+}
+
+function rspResult(a,b) {
+  // 1=a승, 2=b승, 0=무
+  if(a===b) return 0;
+  if((a==='🪨'&&b==='✂️')||(a==='✂️'&&b==='📄')||(a==='📄'&&b==='🪨')) return 1;
+  return 2;
+}
+
+function resetRSP() {
+  if(!gameData['rsp']) gameData['rsp']={};
+  gameData['rsp'].tournament=null;
+  saveGameData();
+  renderRSP({});
 }
 
 function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
