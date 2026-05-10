@@ -392,13 +392,12 @@ function renderGames() {
       </div>`;
     }
 
-    const noNeedPrize = ['rsp','shooting','mole'].includes(key);
+    const noNeedPrize = ['rsp'].includes(key);
     const isDone = key==='card' ? myCardDone : myDone;
-    // rsp/shooting/mole은 항상 플레이 가능
-    const alwaysPlay = ['rsp','shooting'].includes(key);
+    const alwaysPlay = ['rsp'].includes(key);
     const btnText = (!prize&&!noNeedPrize) ? '상품 미설정' : (isDone&&!alwaysPlay) ? '✓ 완료' : '▶ 플레이';
     const btnClass = (!prize&&!noNeedPrize) ? 'no-prize' : (isDone&&!alwaysPlay) ? 'done' : '';
-    const canPlay = (prize||noNeedPrize);
+    const canPlay = (prize||noNeedPrize) && (!isDone||alwaysPlay);
 
     return `<div class="game-card${wide?' wide':''}" style="${!canPlay?'cursor:default':''}">
       <div class="game-header">
