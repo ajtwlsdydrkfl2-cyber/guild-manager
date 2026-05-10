@@ -1217,7 +1217,7 @@ let moleHoles=Array(9).fill(false);
 function initMole(d) {
   document.getElementById('mole-prize-label').textContent=`🎁 ${d.prize||''}`;
   moleRunning=false; moleScore=0; moleMiss=0; moleTimeLeft=20;
-  moleHoles=Array(9).fill(false);
+  moleHoles=Array(9).fill(null);
   renderMoleGrid();
   document.getElementById('mole-score').textContent='0점';
   document.getElementById('mole-timer').textContent='20초';
@@ -1229,9 +1229,10 @@ function initMole(d) {
 }
 
 function renderMoleGrid() {
-  document.getElementById('mole-grid').innerHTML=moleHoles.map((up,i)=>`
-    <div onclick="hitMole(${i})" style="width:90px;height:90px;border-radius:50%;background:${up?'rgba(34,197,94,.2)':'rgba(30,45,69,.6)'};border:3px solid ${up?'var(--green)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:${up?'44px':'28px'};cursor:pointer;transition:all .15s;user-select:none">
-      ${up?'🐹':'🕳️'}
+  document.getElementById('mole-grid').innerHTML=moleHoles.map((m,i)=>`
+    <div onclick="hitMole(${i})" style="width:90px;height:90px;border-radius:50%;background:${m?m.color+'33':'rgba(30,45,69,.6)'};border:3px solid ${m?m.color:'var(--border)'};display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;box-shadow:${m?'0 0 12px '+m.color+'66':'none'}">
+      <span style="font-size:${m?'36px':'24px'}">${m?'🐹':'🕳️'}</span>
+      ${m?`<span style="font-size:10px;font-weight:700;color:${m.color}">+${m.pts}</span>`:''}
     </div>`).join('');
 }
 
@@ -1250,27 +1251,35 @@ function startMole() {
       saveGameData();
       updateScoreBoard('mole-scores', gameData['mole'].scores, false);
       showToast(`🔨 ${moleScore}점!`,'success');
-      const btn=document.getElementById('mole-btn');
-      btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
-      btn.setAttribute('onclick','closeGame()');
-      checkLeader('mole');
-      // 1판 완료 처리
       if(!gameData['mole']) gameData['mole']={};
       if(!gameData['mole'].scores) gameData['mole'].scores={};
       gameData['mole'].scores[myNick]=moleScore;
       saveGameData();
+      updateScoreBoard('mole-scores', gameData['mole'].scores, false);
+      showToast(`🔨 ${moleScore}점!`,'success');
+      checkLeader('mole');
+      const btn=document.getElementById('mole-btn');
+      btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
+      btn.setAttribute('onclick','closeGame()');
     }
   },1000);
   // 두더지 랜덤 등장
   moleHoleIv=setInterval(()=>{
     if(!moleRunning) return;
     // 기존 두더지 내리기
-    moleHoles=moleHoles.map(()=>false);
+    moleHoles=moleHoles.map(()=>null);
     // 새 두더지 1~2마리
     const cnt=Math.random()<0.3?2:1;
+    const moleTypes=[
+      {color:'#22c55e',pts:10,emoji:'🐹'},
+      {color:'#3b82f6',pts:20,emoji:'🐹'},
+      {color:'#a855f7',pts:30,emoji:'🐹'},
+      {color:'#eab308',pts:40,emoji:'🐹'},
+      {color:'#ef4444',pts:50,emoji:'🐹'},
+    ];
     for(let i=0;i<cnt;i++){
       const idx=Math.floor(Math.random()*9);
-      moleHoles[idx]=true;
+      moleHoles[idx]=moleTypes[Math.floor(Math.random()*moleTypes.length)];
     }
     renderMoleGrid();
   },700);
@@ -1279,8 +1288,9 @@ function startMole() {
 function hitMole(i) {
   if(!moleRunning) return;
   if(moleHoles[i]){
-    moleHoles[i]=false;
-    moleScore+=10;
+    const pts=moleHoles[i].pts;
+    moleHoles[i]=null;
+    moleScore+=pts;
     document.getElementById('mole-score').textContent=moleScore+'점';
     renderMoleGrid();
   } else {
@@ -1290,8 +1300,9 @@ function hitMole(i) {
 }
 
 // ===== 토너먼트 가위바위보 =====
-const RSP_CHOICES=['🪨','✂️','📄'];
+const RSP_CHOICES=['rock','scissors','paper'];
 const RSP_NAMES=['바위','가위','보'];
+const RSP_IMGS={'rock':'rsp_rock.png','scissors':'rsp_scissors.png','paper':'rsp_paper.png'};
 
 function initRSP(d) {
   document.getElementById('rsp-prize-label').textContent=`🎁 ${d.prize||''}`;
@@ -1341,9 +1352,12 @@ function renderRSP(d) {
       if(myInputs.length<5){
         html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:8px">5번 순서 입력 (${myInputs.length}/5)</div>
         <div style="display:flex;gap:8px;justify-content:center;margin-bottom:8px">
-          ${RSP_CHOICES.map((c,i)=>`<button onclick="addRSPChoice('${c}')" style="width:72px;height:72px;border-radius:12px;font-size:32px;background:var(--bg3);border:2px solid var(--border);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">${c}</button>`).join('')}
+          ${RSP_CHOICES.map((c,i)=>`<button onclick="addRSPChoice('${c}')" style="width:80px;height:80px;border-radius:12px;background:var(--bg3);border:2px solid var(--border);cursor:pointer;transition:all .15s;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"><img src="${RSP_IMGS[c]}" style="width:52px;height:52px;object-fit:contain"><div style="font-size:10px;color:var(--text2)">${RSP_NAMES[i]}</div></button>`).join('')}
         </div>
-        <div style="font-size:14px;color:var(--accent);margin-bottom:8px">입력: ${myInputs.join(' ')||'없음'}</div>
+        <div style="display:flex;gap:4px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--text2)">입력:</span>
+          ${myInputs.length===0?'<span style="font-size:12px;color:var(--text2)">없음</span>':myInputs.map(c=>`<img src="${RSP_IMGS[c]}" style="width:28px;height:28px;object-fit:contain">`).join('')}
+        </div>
         ${myInputs.length>0?`<button class="btn btn-s btn-sm" onclick="undoRSPChoice()">↩ 취소</button>`:''}`;
       } else {
         html+=`<div style="font-size:13px;color:var(--green);margin-bottom:8px">✅ 입력 완료: ${myInputs.join(' ')}</div>`;
@@ -1385,6 +1399,14 @@ function findMyMatch(tournament) {
   return tournament.matches.find(m=>(m.p1===myNick||m.p2===myNick)&&!m.winner)||null;
 }
 
+function getNext10PM() {
+  const now=new Date();
+  const target=new Date(now);
+  target.setHours(22,0,0,0);
+  if(now>=target) target.setDate(target.getDate()+1);
+  return target.getTime();
+}
+
 function startRSPTournament() {
   fbGet('members', fbMembers => {
     const allMembers = fbMembers ? (Array.isArray(fbMembers)?fbMembers:Object.values(fbMembers)) : members;
@@ -1402,7 +1424,7 @@ function startRSPTournament() {
       round:1, matches,
       inputs:{},
       eliminated:[],
-      deadline: Date.now()+2*60*60*1000, // 2시간
+      deadline: getNext10PM(), // 저녁 10시
     };
     gameData['rsp'].prize = gameData['rsp']?.prize||'';
     saveGameData();
@@ -1467,7 +1489,7 @@ function processRSPRound() {
       }
       t.matches=newMatches;
       t.inputs={};
-      t.deadline=Date.now()+2*60*60*1000;
+      t.deadline=getNext10PM();
       showToast(`다음 라운드 시작!`,'success');
     }
   }
