@@ -296,7 +296,6 @@ const GAMES = {
   card:     {name:'카드 뽑기', icon:'🃏'},
   memory:   {name:'짝 맞추기', icon:'🧩'},
   rsp:      {name:'토너먼트 가위바위보', icon:'🪨'},
-  shooting: {name:'클레이 사격', icon:'🎯'},
   mole:     {name:'두더지 잡기', icon:'🔨'},
 };
 
@@ -423,8 +422,7 @@ function renderGames() {
       ${gameCard('timer')}
       ${gameCard('card')}
       ${gameCard('memory')}
-      ${gameCard('shooting')}
-      ${gameCard('mole', true)}
+      ${gameCard('mole')}
       ${gameCard('rsp', true)}
     </div>`;
 }
@@ -462,7 +460,6 @@ function startGame(key) {
   else if(key==='card') initCard(d);
   else if(key==='timer') initTimer(d);
   else if(key==='memory') initMemory(d);
-  else if(key==='shooting') initShooting(d);
   else if(key==='mole') initMole(d);
   else if(key==='rsp') initRSP(d);
 }
@@ -1257,6 +1254,11 @@ function startMole() {
       btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
       btn.setAttribute('onclick','closeGame()');
       checkLeader('mole');
+      // 1판 완료 처리
+      if(!gameData['mole']) gameData['mole']={};
+      if(!gameData['mole'].scores) gameData['mole'].scores={};
+      gameData['mole'].scores[myNick]=moleScore;
+      saveGameData();
     }
   },1000);
   // 두더지 랜덤 등장
@@ -1386,7 +1388,7 @@ function findMyMatch(tournament) {
 function startRSPTournament() {
   fbGet('members', fbMembers => {
     const allMembers = fbMembers ? (Array.isArray(fbMembers)?fbMembers:Object.values(fbMembers)) : members;
-    const excluded=['도를아십니까','인상참좋으시네요'];
+    const excluded=['인상참좋으시네요'];
     const players=[...allMembers.map(m=>m.nick).filter(n=>!excluded.includes(n))];
     // 랜덤 섞기
     for(let i=players.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[players[i],players[j]]=[players[j],players[i]];}
