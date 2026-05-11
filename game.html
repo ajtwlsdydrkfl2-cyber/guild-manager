@@ -402,7 +402,13 @@ function renderGames() {
 
     return `<div class="game-card${wide?' wide':''}" style="${!canPlay?'cursor:default':''}">
       <div class="game-header">
-        <span class="game-icon">${g.icon}</span>
+        ${key==='rsp'
+          ?`<div style="display:flex;gap:4px;justify-content:center;margin-bottom:6px">
+              <img src="rsp_rock.png" style="width:36px;height:36px;object-fit:contain">
+              <img src="rsp_scissors.png" style="width:36px;height:36px;object-fit:contain">
+              <img src="rsp_paper.png" style="width:36px;height:36px;object-fit:contain">
+            </div>`
+          :`<span class="game-icon">${g.icon}</span>`}
         <div class="game-title">${g.name}</div>
         <div class="game-prize">${prize?`🎁 ${prize}`:'상품 없음'}</div>
         ${scoreBoardHtml}
@@ -917,8 +923,8 @@ function checkLeader(gameKey) {
 
 function showResult(icon, title, prize) {
   document.getElementById('result-icon').textContent = icon;
-  document.getElementById('result-title').textContent = title;
-  document.getElementById('result-name').textContent = '';
+  document.getElementById('result-title').textContent = '';
+  document.getElementById('result-name').textContent = title;
   document.getElementById('result-prize-text').textContent = `🎁 ${prize}`;
   document.getElementById('result-overlay').classList.add('open');
 }
