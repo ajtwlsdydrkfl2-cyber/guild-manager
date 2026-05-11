@@ -1653,9 +1653,10 @@ function processRSPRound() {
 }
 
 function rspResult(a,b) {
-  // 1=a승, 2=b승, 0=무
+  // 1=a승, 2=b승, 0=무 (rock/scissors/paper 문자열 기준)
+  if(!a||!b) return 0;
   if(a===b) return 0;
-  if((a==='🪨'&&b==='✂️')||(a==='✂️'&&b==='📄')||(a==='📄'&&b==='🪨')) return 1;
+  if((a==='rock'&&b==='scissors')||(a==='scissors'&&b==='paper')||(a==='paper'&&b==='rock')) return 1;
   return 2;
 }
 
