@@ -1419,19 +1419,63 @@ function renderRSP(d) {
       });
     }
 
-    // 대진표 & 결과
-    html+=`<div style="margin-top:14px;text-align:left">
-      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">${roundName} 대진표</div>
+    // 우승자
+    if(tournament.champion){
+      html+=`<div style="background:linear-gradient(135deg,rgba(240,165,0,.2),rgba(240,165,0,.05));border:2px solid var(--accent);border-radius:14px;padding:20px;text-align:center;margin-bottom:12px">
+        <div style="font-size:40px;margin-bottom:8px">🏆</div>
+        <div style="font-size:22px;font-weight:700;color:var(--accent)">우승자</div>
+        <div style="font-size:26px;font-weight:900;color:#fff;margin-top:4px">${tournament.champion}</div>
+      </div>`;
+    }
+
+    // 월드컵 대진표
+    html+=`<div style="margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-align:center">🏆 토너먼트 대진표</div>
       ${(tournament.matches||[]).map(m=>{
         const p1sub=tournament.submitted?.includes(m.p1);
         const p2sub=tournament.submitted?.includes(m.p2);
-        return `<div style="background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:4px;font-size:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="${m.p1===myNick?'color:var(--accent);font-weight:700':''}">${m.p1} ${p1sub?'✅':''}</span>
-            <span style="color:var(--text2)">vs</span>
-            <span style="${m.p2===myNick?'color:var(--accent);font-weight:700':''}">${m.p2||'BYE'} ${m.p2&&m.p2!=='BYE'&&p2sub?'✅':''}</span>
+        const p1win=m.winner===m.p1;
+        const p2win=m.winner===m.p2;
+        // 해당 라운드 입력값
+        const ri=tournament.round-1;
+        const i1=tournament.allInputs?.[m.p1]?.[ri]||[];
+        const i2=tournament.allInputs?.[m.p2]?.[ri]||[];
+        // 라운드별 승패 계산
+        let roundResults='';
+        if(m.winner&&i1.length>0&&i2.length>0){
+          let w1=0,w2=0;
+          const rounds=i1.map((c,idx)=>{
+            const r=rspResult(c,i2[idx]);
+            if(r===1)w1++; else if(r===2)w2++;
+            const color=r===1?'#22c55e':r===2?'#ef4444':'#64748b';
+            return `<span style="font-size:14px" title="${RSP_NAMES[RSP_CHOICES.indexOf(c)]} vs ${RSP_NAMES[RSP_CHOICES.indexOf(i2[idx])]}">${RSP_IMGS[c]?`<img src="${RSP_IMGS[c]}" style="width:20px;height:20px;object-fit:contain;border:1px solid ${color};border-radius:4px">`:c}</span>`;
+          }).join('');
+          roundResults=`<div style="padding:8px 12px;border-top:1px solid var(--border);background:rgba(0,0,0,.2)">
+            <div style="display:flex;gap:4px;align-items:center;justify-content:space-between;margin-bottom:4px">
+              <div style="display:flex;gap:3px;align-items:center">
+                ${i1.map((c,idx)=>{const r=rspResult(c,i2[idx]);const color=r===1?'#22c55e':r===2?'#ef4444':'#64748b';return `<img src="${RSP_IMGS[c]}" style="width:22px;height:22px;object-fit:contain;border:2px solid ${color};border-radius:4px">`; }).join('')}
+              </div>
+              <div style="font-size:10px;color:var(--text2)">vs</div>
+              <div style="display:flex;gap:3px;align-items:center">
+                ${i2.map((c,idx)=>{const r=rspResult(i1[idx],c);const color=r===2?'#22c55e':r===1?'#ef4444':'#64748b';return `<img src="${RSP_IMGS[c]}" style="width:22px;height:22px;object-fit:contain;border:2px solid ${color};border-radius:4px">`; }).join('')}
+              </div>
+            </div>
+          </div>`;
+        }
+        return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:6px">
+          <div style="display:flex;align-items:stretch">
+            <div style="flex:1;padding:10px 12px;background:${p1win?'rgba(34,197,94,.15)':p2win?'rgba(239,68,68,.08)':'var(--bg3)'};border-right:1px solid var(--border)">
+              <div style="font-size:13px;font-weight:${m.p1===myNick?'700':'600'};color:${p1win?'var(--green)':p2win?'var(--text2)':m.p1===myNick?'var(--accent)':'var(--text)'}">${p1win?'🏆 ':''} ${m.p1}</div>
+              <div style="font-size:10px;color:var(--text2);margin-top:2px">${p1sub?'✅ 제출완료':'⏳ 대기중'}</div>
+            </div>
+            <div style="display:flex;align-items:center;padding:0 10px;font-size:11px;color:var(--text2);font-weight:700">VS</div>
+            <div style="flex:1;padding:10px 12px;background:${p2win?'rgba(34,197,94,.15)':p1win?'rgba(239,68,68,.08)':'var(--bg3)'}">
+              <div style="font-size:13px;font-weight:${m.p2===myNick?'700':'600'};color:${p2win?'var(--green)':p1win?'var(--text2)':m.p2===myNick?'var(--accent)':'var(--text)'}">${p2win?'🏆 ':''} ${m.p2||'BYE'}</div>
+              <div style="font-size:10px;color:var(--text2);margin-top:2px">${m.p2&&m.p2!=='BYE'?(p2sub?'✅ 제출완료':'⏳ 대기중'):'부전승'}</div>
+            </div>
           </div>
-          ${m.winner?`<div style="text-align:center;font-size:11px;color:var(--green);margin-top:4px">🏆 승자: ${m.winner}</div>`:''}
+          ${roundResults}
+          ${m.winner?`<div style="text-align:center;font-size:11px;color:var(--green);font-weight:700;padding:4px;background:rgba(34,197,94,.08);border-top:1px solid rgba(34,197,94,.2)">🏆 ${m.winner} 승리!</div>`:'<div style="text-align:center;font-size:10px;color:var(--text2);padding:3px">결과 대기중</div>'}
         </div>`;
       }).join('')}
     </div>`;
@@ -1456,10 +1500,12 @@ function findMyMatch(tournament) {
 }
 
 function getNext10PM() {
+  // KST = UTC+9
   const now=new Date();
-  const target=new Date(now);
-  target.setHours(22,0,0,0);
-  if(now>=target) target.setDate(target.getDate()+1);
+  const kst=new Date(now.getTime()+9*60*60*1000);
+  const target=new Date(kst);
+  target.setUTCHours(13,0,0,0); // UTC 13시 = KST 22시
+  if(kst>=target) target.setUTCDate(target.getUTCDate()+1);
   return target.getTime();
 }
 
