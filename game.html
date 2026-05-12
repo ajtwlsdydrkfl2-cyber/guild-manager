@@ -1500,12 +1500,22 @@ function findMyMatch(tournament) {
 }
 
 function getNext10PM() {
-  // KST = UTC+9
+  // KST 기준 오늘 22:00
   const now=new Date();
-  const kst=new Date(now.getTime()+9*60*60*1000);
-  const target=new Date(kst);
-  target.setUTCHours(13,0,0,0); // UTC 13시 = KST 22시
-  if(kst>=target) target.setUTCDate(target.getUTCDate()+1);
+  // KST offset: UTC+9
+  const kstOffset=9*60*60*1000;
+  const kstNow=new Date(now.getTime()+kstOffset);
+  // 오늘 KST 22:00 (UTC 13:00)
+  const target=new Date(Date.UTC(
+    kstNow.getUTCFullYear(),
+    kstNow.getUTCMonth(),
+    kstNow.getUTCDate(),
+    13,0,0,0
+  ));
+  // 이미 지났으면 내일
+  if(now.getTime()>=target.getTime()){
+    target.setUTCDate(target.getUTCDate()+1);
+  }
   return target.getTime();
 }
 
