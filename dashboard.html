@@ -682,9 +682,9 @@ function renderHistory() {
     }).join('')}
   `;
 
-  // Firebase에서도 로드
+  // Firebase에서도 로드 (탭 체크 추가)
   fbGet('weeklyHistory', data => {
-    if (data) {
+    if (data && curTab==='history') {
       setData('weeklyHistory', data);
       renderHistory();
     }
