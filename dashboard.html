@@ -181,6 +181,7 @@ function loadData() {
     if (data) {
       setData('eqData', data);
       if (curTab==='dash') renderDash();
+      // 다른 탭이면 무시
     }
   });
   fbListen('attend', data => {
@@ -189,7 +190,8 @@ function loadData() {
       attend = newAttend;
       setData('attend', attend);
       if (curTab==='dash') renderDash();
-      if (curTab==='boss') renderBoss();
+      else if (curTab==='boss') renderBoss();
+      // history 탭이면 아무것도 안함
     }
   });
 }

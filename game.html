@@ -563,7 +563,7 @@ function stopR(i) {
     updateScoreBoard('roulette-scores', gameData['roulette'].scores, false);
     document.getElementById('roulette-btn').textContent='✓ 완료 (닫기)';
     document.getElementById('roulette-btn').disabled=false;
-    document.getElementById('roulette-btn').setAttribute('onclick','closeGame()');
+    document.getElementById('roulette-btn').onclick=closeGame;
     checkLeader('roulette');
     rRunning=false;
   }
@@ -682,9 +682,7 @@ function stopSlot() {
   showToast(`${score}점 획득!`, 'success');
   updateScoreBoard('slot-scores', gameData['slot'].scores, false);
   document.getElementById('slot-btn').textContent = '✓ 완료 (닫기)';
-  document.getElementById('slot-btn').style.background='var(--accent2)';
-  document.getElementById('slot-btn').style.color='#000';
-  document.getElementById('slot-btn').setAttribute('onclick','closeGame()');
+  document.getElementById('slot-btn').onclick=closeGame;
   checkLeader('slot');
 }
 
@@ -1144,7 +1142,7 @@ function startShooting() {
       showToast(`🎯 ${shootingScore}점!`,'success');
       const btn=document.getElementById('shooting-btn');
       btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
-      btn.setAttribute('onclick','closeGame()');
+      btn.onclick=closeGame;
       checkLeader('shooting');
     }
     // 원반 추가
@@ -1272,7 +1270,7 @@ function startMole() {
       checkLeader('mole');
       const btn=document.getElementById('mole-btn');
       btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
-      btn.setAttribute('onclick','closeGame()');
+      btn.onclick=closeGame;
     }
   },1000);
   // 두더지 랜덤 등장
