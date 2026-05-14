@@ -384,10 +384,13 @@ function renderGames() {
       const carryText = d.carryOver>1?` · 이월 ${d.carryOver}배`:'';
       const winner = Object.entries(cardPlays).find(([,v])=>v.win);
       const players = Object.keys(cardPlays);
+      // win 체크 - {win:true} 또는 {idx,win:true} 구조 모두 처리
+      const winnerEntry = Object.entries(cardPlays).find(([,v])=>v===true||v?.win===true);
       scoreBoardHtml = `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
         <div style="font-size:11px;color:var(--text2);margin-bottom:4px">남은 카드: ${remain}/20${carryText}</div>
-        ${winner?`<div style="font-size:12px;color:var(--accent);font-weight:700">🎉 당첨: ${winner[0]}</div>`:''}
-        ${players.length>0&&!winner?`<div style="font-size:11px;color:var(--text2)">${players.slice(0,3).join(', ')}${players.length>3?` 외 ${players.length-3}명`:''} 참여</div>`:''}
+        ${winnerEntry?`<div style="font-size:13px;color:var(--accent);font-weight:700;margin-top:4px">🎉 당첨자: ${winnerEntry[0]}</div>`:''}
+        ${players.length>0&&!winnerEntry?`<div style="font-size:11px;color:var(--text2);margin-top:2px">${players.slice(0,3).join(', ')}${players.length>3?` 외 ${players.length-3}명`:''} 참여 (${20-remain}/${20}장)</div>`:''}
+        ${!winnerEntry&&remain===0?`<div style="font-size:11px;color:var(--accent2)">20장 모두 꽝! 이월 ${(d.carryOver||1)+1}배</div>`:''}
       </div>`;
     } else if(scoreArr.length > 0) {
       scoreBoardHtml = `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
@@ -1367,7 +1370,11 @@ function renderRSP(d) {
     const timeLeft = deadline ? Math.max(0,Math.floor((deadline-Date.now())/1000)) : 0;
     const mins = Math.floor(timeLeft/60), secs = timeLeft%60;
     const myAllInputs = tournament.allInputs?.[myNick]||{};
-    const mySubmitted = tournament.submitted?.includes(myNick);
+    const ri_cur = tournament.round-1;
+    // 현재 라운드에 제출했거나 allInputs에 데이터 있으면 제출완료
+    const mySubmitted = tournament.submitted?.includes(myNick) ||
+      (tournament.submittedByRound?.[ri_cur]?.includes(myNick)) ||
+      ((myAllInputs[ri_cur]||[]).length===5 && tournament.submitted?.includes(myNick));
 
     html=`<div style="text-align:center">
       ${imgBar}
@@ -1498,23 +1505,17 @@ function findMyMatch(tournament) {
 }
 
 function getNext10PM() {
-  // KST 기준 오늘 22:00
+  // 한국시간(KST) 22:00 계산
   const now=new Date();
-  // KST offset: UTC+9
-  const kstOffset=9*60*60*1000;
-  const kstNow=new Date(now.getTime()+kstOffset);
-  // 오늘 KST 22:00 (UTC 13:00)
-  const target=new Date(Date.UTC(
-    kstNow.getUTCFullYear(),
-    kstNow.getUTCMonth(),
-    kstNow.getUTCDate(),
-    13,0,0,0
-  ));
-  // 이미 지났으면 내일
-  if(now.getTime()>=target.getTime()){
-    target.setUTCDate(target.getUTCDate()+1);
-  }
-  return target.getTime();
+  const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const target=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  target.setHours(22,0,0,0);
+  // 이미 22시 지났으면 내일
+  if(kst.getHours()>=22) target.setDate(target.getDate()+1);
+  // KST → UTC 변환
+  const utcTarget=new Date(target.toLocaleString('en-US',{timeZone:'UTC'}));
+  const diff=target-kst;
+  return now.getTime()+diff;
 }
 
 function startRSPTournament() {
@@ -1570,10 +1571,16 @@ function submitAllRSP() {
   const myAllInputs=t.allInputs?.[myNick]||{};
   const allDone=RSP_ROUNDS.every((_,ri)=>(myAllInputs[ri]||[]).length===5);
   if(!allDone){showToast('모든 라운드 5번씩 입력해주세요!','error');return;}
+  // 라운드별 submitted 관리
+  if(!t.submittedByRound) t.submittedByRound={};
+  RSP_ROUNDS.forEach((_,ri)=>{
+    if(!t.submittedByRound[ri]) t.submittedByRound[ri]=[];
+    if(!t.submittedByRound[ri].includes(myNick)) t.submittedByRound[ri].push(myNick);
+  });
+  // 현재 라운드 submitted도 업데이트
   if(!t.submitted) t.submitted=[];
   if(!t.submitted.includes(myNick)) t.submitted.push(myNick);
   saveGameData();
-  // 즉시 결과 체크
   checkAndProcessMatches();
   renderRSP(gameData['rsp']);
   showToast('✅ 제출 완료!','success');
@@ -1585,8 +1592,8 @@ function checkAndProcessMatches() {
   t.matches.forEach(m=>{
     if(m.winner) return;
     if(m.p2==='BYE'){m.winner=m.p1;changed=true;return;}
-    const p1sub=t.submitted?.includes(m.p1);
-    const p2sub=t.submitted?.includes(m.p2);
+    const p1sub=(t.submitted?.includes(m.p1))||(t.submittedByRound?.[ri]?.includes(m.p1))||((t.allInputs?.[m.p1]?.[ri]||[]).length===5);
+    const p2sub=(t.submitted?.includes(m.p2))||(t.submittedByRound?.[ri]?.includes(m.p2))||((t.allInputs?.[m.p2]?.[ri]||[]).length===5);
     if(p1sub&&p2sub){
       // 둘다 제출했으면 해당 라운드 결과 계산
       const ri=t.round-1;
@@ -1632,8 +1639,8 @@ function processRSPRound() {
   t.matches.forEach(m=>{
     if(m.winner) return;
     if(m.p2==='BYE'){m.winner=m.p1;return;}
-    const p1sub=t.submitted?.includes(m.p1);
-    const p2sub=t.submitted?.includes(m.p2);
+    const p1sub=(t.submitted?.includes(m.p1))||(t.submittedByRound?.[ri]?.includes(m.p1))||((t.allInputs?.[m.p1]?.[ri]||[]).length===5);
+    const p2sub=(t.submitted?.includes(m.p2))||(t.submittedByRound?.[ri]?.includes(m.p2))||((t.allInputs?.[m.p2]?.[ri]||[]).length===5);
     if(!p1sub&&!p2sub){ // 둘다 미제출 - 랜덤
       m.winner=Math.random()<0.5?m.p1:m.p2;
     } else if(!p1sub){ m.winner=m.p2; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1); }
@@ -1655,6 +1662,7 @@ function processRSPRound() {
     const nm=[];
     for(let i=0;i<winners.length;i+=2)nm.push({p1:winners[i],p2:winners[i+1]||'BYE',winner:null});
     t.matches=nm; t.submitted=[]; t.deadline=getNext10PM();
+    // submittedByRound는 유지 (이미 전체 제출했으므로)
     showToast(`🏆 ${RSP_ROUNDS[t.round-1]} 시작!`,'success');
   }
   saveGameData(); renderRSP(gameData['rsp']);
