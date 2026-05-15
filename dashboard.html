@@ -187,10 +187,7 @@ function loadData() {
     if (data) { bosses = Array.isArray(data) ? data : Object.values(data); setData('bosses', bosses); }
     else { bosses = DEFAULT_BOSSES; }
   });
-  fbListen('regenTimes', data => {
-    if(data) { regenTimes = data; setData('regenTimes', regenTimes); }
-  });
-  regenTimes = getData('regenTimes', {});
+
   fbListen('eqData', data => {
     if (data) {
       setData('eqData', data);
@@ -381,27 +378,43 @@ function groupBossByJamo(bosses) {
 }
 
 // ===== 예상 보스 =====
-// Firebase에 리젠 보스 마지막 잡은 시간 저장
-let regenTimes = getData('regenTimes', {});
+
+function getLastKillTime(bossName) {
+  // attend 데이터에서 해당 보스의 가장 최근 회차 시간을 실시간으로 읽음
+  // 항상 최신 attend 데이터 사용 (캐시 없음)
+  const currentAttend = getData('attend', {});
+  let lastTime = 0;
+  Object.values(currentAttend).forEach(wkData => {
+    const bossRounds = wkData[bossName];
+    if(!bossRounds) return;
+    Object.values(bossRounds).forEach(round => {
+      const t = round.time || parseInt(Object.keys(bossRounds).find(k=>bossRounds[k]===round)||0);
+      if(t > lastTime) lastTime = t;
+    });
+  });
+  return lastTime || null;
+}
 
 function getNextSpawn(boss) {
   const sp = boss.spawn;
   if(!sp) return null;
-  const now = new Date();
-  const kst = new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const now = Date.now();
 
   if(sp.type === 'fixed') {
-    // 고정 보스: 오늘/내일 중 가장 가까운 시간
+    // 고정 보스: 다음 고정 시간 계산 (KST 기준)
     const candidates = [];
     for(let dayOffset = 0; dayOffset <= 7; dayOffset++) {
-      const d = new Date(kst);
-      d.setDate(d.getDate() + dayOffset);
-      const dow = d.getDay(); // 0=일,1=월,...,6=토
+      const d = new Date(now + dayOffset * 86400000);
+      // KST로 변환
+      const kstD = new Date(d.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+      const dow = kstD.getDay();
       if(sp.days.includes(dow)) {
-        d.setHours(sp.hour, sp.min, 0, 0);
-        // kst 기준 시간을 UTC로 변환
-        const utcMs = d.getTime() - 9*60*60*1000;
-        if(utcMs > now.getTime() - 10*60*1000) { // 10분 전까지 포함
+        // KST 기준 목표 시간 설정
+        const target = new Date(kstD);
+        target.setHours(sp.hour, sp.min, 0, 0);
+        // UTC로 변환
+        const utcMs = target.getTime() - (kstD.getTime() - d.getTime());
+        if(utcMs > now - 10*60*1000) {
           candidates.push(utcMs);
         }
       }
@@ -409,10 +422,11 @@ function getNextSpawn(boss) {
     if(candidates.length === 0) return null;
     return Math.min(...candidates);
   } else {
-    // 리젠 보스: 마지막 잡은 시간 + 리젠 시간
-    const lastKill = regenTimes[boss.name];
+    // 리젠 보스: attend에서 마지막 회차 시간 읽어서 계산
+    const lastKill = getLastKillTime(boss.name);
     if(!lastKill) return null;
-    return lastKill + sp.hours * 60 * 60 * 1000;
+    const nextSpawn = lastKill + sp.hours * 60 * 60 * 1000;
+    return nextSpawn;
   }
 }
 
@@ -474,12 +488,7 @@ function addRoundFromPred(bossName, spawnMs, isFixed) {
   setData('attend', attend);
   fbSet('attend', attend);
 
-  // 리젠 보스면 잡은 시간 기록
-  if(!isFixed) {
-    regenTimes[bossName] = Date.now();
-    setData('regenTimes', regenTimes);
-    fbSet('regenTimes', regenTimes);
-  }
+  // 리젠 보스 시간은 attend에서 자동으로 읽음 (별도 저장 불필요)
 
   addBossLog('추가', bossName, rk);
   showToast(`${bossName} 회차 추가됨`, 'success');
@@ -630,13 +639,7 @@ function addRound() {
   attend[wk][bn][rk]={time:Date.now(),nightBonus:isNightBonus(),attendance:defaultAtt,addedBy:sess?.serverName||'길드원'};
   setData('attend',attend);
   fbSet('attend', attend);
-  // 리젠 보스 시간 기록
-  const bossInfo = bosses.find(x=>x.name===bn);
-  if(bossInfo?.spawn?.type==='regen') {
-    regenTimes[bn] = Date.now();
-    setData('regenTimes', regenTimes);
-    fbSet('regenTimes', regenTimes);
-  }
+  // 리젠 보스 시간은 attend에서 자동으로 읽음
   // 로그 기록
   addBossLog('추가', bn, rk);
   showToast(`${bn} 회차 추가됨`,'success');
