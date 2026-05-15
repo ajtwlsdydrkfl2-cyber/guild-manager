@@ -1640,37 +1640,45 @@ function checkAndProcessMatches() {
 
 function processRSPRound() {
   const t=gameData['rsp']?.tournament; if(!t) return;
-  const ri=t.round-1;
-  // 미제출자 탈락 처리
-  t.matches.forEach(m=>{
-    if(m.winner) return;
-    if(m.p2==='BYE'){m.winner=m.p1;return;}
-    const p1sub=(t.submitted?.includes(m.p1))||(t.submittedByRound?.[ri]?.includes(m.p1))||((t.allInputs?.[m.p1]?.[ri]||[]).length===5);
-    const p2sub=(t.submitted?.includes(m.p2))||(t.submittedByRound?.[ri]?.includes(m.p2))||((t.allInputs?.[m.p2]?.[ri]||[]).length===5);
-    if(!p1sub&&!p2sub){ // 둘다 미제출 - 랜덤
-      m.winner=Math.random()<0.5?m.p1:m.p2;
-    } else if(!p1sub){ m.winner=m.p2; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1); }
-    else if(!p2sub){ m.winner=m.p1; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2); }
-    else {
-      const i1=t.allInputs?.[m.p1]?.[ri]||[];
-      const i2=t.allInputs?.[m.p2]?.[ri]||[];
-      let w1=0,w2=0;
-      for(let i=0;i<5;i++){const r=rspResult(i1[i],i2[i]);if(r===1)w1++;else if(r===2)w2++;}
-      if(w1>w2){m.winner=m.p1;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2);}
-      else if(w2>w1){m.winner=m.p2;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1);}
-      else{m.winner=Math.random()<0.5?m.p1:m.p2;} // 무승부 랜덤
+
+  // 우승자 나올 때까지 모든 라운드 한번에 처리
+  while(!t.champion) {
+    const ri=t.round-1;
+    t.matches.forEach(m=>{
+      if(m.winner) return;
+      if(m.p2==='BYE'){m.winner=m.p1;return;}
+      const p1sub=(t.submitted?.includes(m.p1))||(t.submittedByRound?.[ri]?.includes(m.p1))||((t.allInputs?.[m.p1]?.[ri]||[]).length===5);
+      const p2sub=(t.submitted?.includes(m.p2))||(t.submittedByRound?.[ri]?.includes(m.p2))||((t.allInputs?.[m.p2]?.[ri]||[]).length===5);
+      if(!p1sub&&!p2sub){
+        m.winner=Math.random()<0.5?m.p1:m.p2;
+      } else if(!p1sub){ m.winner=m.p2; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1); }
+      else if(!p2sub){ m.winner=m.p1; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2); }
+      else {
+        const i1=t.allInputs?.[m.p1]?.[ri]||[];
+        const i2=t.allInputs?.[m.p2]?.[ri]||[];
+        let w1=0,w2=0;
+        for(let i=0;i<5;i++){const r=rspResult(i1[i],i2[i]);if(r===1)w1++;else if(r===2)w2++;}
+        if(w1>w2){m.winner=m.p1;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2);}
+        else if(w2>w1){m.winner=m.p2;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1);}
+        else{m.winner=Math.random()<0.5?m.p1:m.p2;}
+      }
+    });
+
+    const winners=t.matches.map(m=>m.winner).filter(Boolean);
+    if(winners.length<=1){
+      t.champion=winners[0]||t.matches[0]?.p1;
+      showToast(`🏆 우승: ${t.champion}!`,'success');
+      break;
+    } else {
+      t.round++;
+      const nm=[];
+      for(let i=0;i<winners.length;i+=2)nm.push({p1:winners[i],p2:winners[i+1]||'BYE',winner:null});
+      t.matches=nm;
+      t.submitted=[];
     }
-  });
-  const winners=t.matches.map(m=>m.winner).filter(Boolean);
-  if(winners.length===1){t.champion=winners[0];showToast(`🏆 우승: ${winners[0]}!`,'success');}
-  else{
-    t.round++;
-    const nm=[];
-    for(let i=0;i<winners.length;i+=2)nm.push({p1:winners[i],p2:winners[i+1]||'BYE',winner:null});
-    t.matches=nm; t.submitted=[]; t.deadline=getNext10PM();
-    // submittedByRound는 유지 (이미 전체 제출했으므로)
-    showToast(`🏆 ${RSP_ROUNDS[t.round-1]} 시작!`,'success');
   }
+
+  t.deadline=null; // 마감 시간 제거
   saveGameData(); renderRSP(gameData['rsp']);
 }
 
