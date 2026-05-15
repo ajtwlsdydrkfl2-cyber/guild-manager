@@ -67,6 +67,40 @@
   </div>
 </div>
 
+<!-- 일괄차감 모달 -->
+<div class="modal-ov" id="modal-deduct">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">➖ 일괄 차감</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7">
+      차감할 아이템을 입력하세요.<br>
+      형식: <span style="color:var(--accent)">아이템명 수량</span> (수량 없으면 1개 차감)<br>
+      쉼표 또는 줄바꿈으로 구분<br>
+      <span style="color:var(--red)">수량이 0이 되면 자동 삭제됩니다</span>
+    </div>
+    <div class="fg">
+      <label>등급</label>
+      <select class="sel" id="deduct-grade" style="width:100%">
+        <option value="myth">🔴 신화</option>
+        <option value="legend">🟡 전설</option>
+        <option value="hero">🟣 영웅</option>
+        <option value="rare">🔵 희귀</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>차감할 아이템 목록</label>
+      <textarea class="inp" id="deduct-text" rows="8"
+        placeholder="엘 세라 귀걸이 2&#10;잿빛 여명 팔찌&#10;검은 가시 반지 3"
+        style="width:100%;resize:vertical;line-height:1.8;font-size:13px"
+        onkeydown="event.stopPropagation()"></textarea>
+    </div>
+    <div id="deduct-preview" style="font-size:12px;color:var(--text2);margin-bottom:8px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('deduct')">취소</button>
+      <button class="btn btn-d" onclick="saveDeduct()">➖ 차감하기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 일괄입력 모달 -->
 <div class="modal-ov" id="modal-bulk">
   <div class="modal" style="max-width:520px">
@@ -123,8 +157,9 @@ window.addEventListener('load', () => {
 
   if(isAdmin()) {
     document.getElementById('adminBtns').innerHTML = `
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-s btn-sm" onclick="openModal('bulk')">📋 일괄입력</button>
+        <button class="btn btn-d btn-sm" onclick="openModal('deduct')">➖ 일괄차감</button>
         <button class="btn btn-p btn-sm" onclick="openAddItem()">+ 추가</button>
         <button class="btn btn-d btn-sm" onclick="clearAll()">🗑️ 전체삭제</button>
       </div>`;
@@ -266,6 +301,47 @@ function saveBulk() {
   saveWarehouse();
   closeModal('bulk');
   showToast(`${added}개 아이템 등록됨!`,'success');
+}
+
+function saveDeduct() {
+  const text = document.getElementById('deduct-text').value.trim();
+  const grade = document.getElementById('deduct-grade').value;
+  if(!text) return;
+
+  const lines = text.split(/[,
+]/).map(l=>l.trim()).filter(l=>l);
+  let deducted = 0, notFound = [];
+
+  lines.forEach(line => {
+    const match = line.match(/^(.+?)\s+(\d+)$/);
+    let name, qty;
+    if(match) { name=match[1].trim(); qty=parseInt(match[2]); }
+    else { name=line; qty=1; }
+    if(!name) return;
+
+    // 같은 이름+등급 찾기
+    const item = warehouseItems.find(x=>x.name===name&&x.grade===grade);
+    if(item) {
+      item.qty = Math.max(0, item.qty - qty);
+      if(item.qty <= 0) {
+        warehouseItems = warehouseItems.filter(x=>x.id!==item.id);
+        showToast(`${name} 삭제됨`);
+      }
+      deducted++;
+    } else {
+      notFound.push(name);
+    }
+  });
+
+  saveWarehouse();
+  closeModal('deduct');
+  document.getElementById('deduct-text').value = '';
+
+  if(notFound.length > 0) {
+    showToast(`${deducted}개 차감 완료. 미발견: ${notFound.join(', ')}`, 'error');
+  } else {
+    showToast(`${deducted}개 아이템 차감 완료!`, 'success');
+  }
 }
 
 function saveWarehouse() {
