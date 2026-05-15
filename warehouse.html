@@ -308,8 +308,7 @@ function saveDeduct() {
   const grade = document.getElementById('deduct-grade').value;
   if(!text) return;
 
-  const lines = text.split(/[,
-]/).map(l=>l.trim()).filter(l=>l);
+  const lines = text.split(/[,\n]/).map(l=>l.trim()).filter(l=>l);
   let deducted = 0, notFound = [];
 
   lines.forEach(line => {
