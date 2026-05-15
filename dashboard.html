@@ -22,6 +22,16 @@
 .sort-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
 .sort-btn.on{border-color:var(--accent);color:var(--accent);}
 .night-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.25);color:var(--accent2);font-size:12px;font-weight:600;}
+.pred-section{background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.25);border-radius:10px;padding:10px 12px;margin-bottom:12px;}
+.pred-title{font-size:11px;font-weight:700;color:rgba(240,165,0,.7);margin-bottom:8px;letter-spacing:.05em;}
+.pred-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(240,165,0,.1);}
+.pred-row:last-child{border-bottom:none;}
+.pred-time{font-size:12px;font-weight:700;color:var(--accent);min-width:42px;}
+.pred-name{font-size:13px;font-weight:600;flex:1;}
+.pred-add{padding:4px 10px;border-radius:6px;background:rgba(34,197,94,.15);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.pred-add:hover{background:rgba(34,197,94,.3);}
+.pred-skip{padding:4px 10px;border-radius:6px;background:rgba(239,68,68,.1);border:1px solid var(--red);color:var(--red);font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.pred-skip:hover{background:rgba(239,68,68,.2);}
 .boss-ctrl{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
 .round-boss{font-weight:700;font-size:11px;color:var(--accent);}
 .round-time{font-size:10px;color:var(--text2);}
@@ -177,6 +187,10 @@ function loadData() {
     if (data) { bosses = Array.isArray(data) ? data : Object.values(data); setData('bosses', bosses); }
     else { bosses = DEFAULT_BOSSES; }
   });
+  fbListen('regenTimes', data => {
+    if(data) { regenTimes = data; setData('regenTimes', regenTimes); }
+  });
+  regenTimes = getData('regenTimes', {});
   fbListen('eqData', data => {
     if (data) {
       setData('eqData', data);
@@ -317,6 +331,148 @@ function countRounds(){
 // ===== 보스 =====
 let selBoss='';
 
+// ===== 자음 그룹핑 =====
+function getJamo(name) {
+  const code = name.charCodeAt(0) - 0xAC00;
+  if(code < 0) return name[0];
+  const idx = Math.floor(code / 28 / 21);
+  return ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'][idx]||name[0];
+}
+
+function groupBossByJamo(bosses) {
+  const groups = {};
+  bosses.forEach(b => {
+    const j = getJamo(b.name);
+    if(!groups[j]) groups[j] = [];
+    groups[j].push(b);
+  });
+  return Object.entries(groups).map(([j, list]) =>
+    `<optgroup label="${j}">${list.map(b=>`<option value="${b.name}">${b.name} (${b.pts}pt)</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
+// ===== 예상 보스 =====
+// Firebase에 리젠 보스 마지막 잡은 시간 저장
+let regenTimes = getData('regenTimes', {});
+
+function getNextSpawn(boss) {
+  const sp = boss.spawn;
+  if(!sp) return null;
+  const now = new Date();
+  const kst = new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+
+  if(sp.type === 'fixed') {
+    // 고정 보스: 오늘/내일 중 가장 가까운 시간
+    const candidates = [];
+    for(let dayOffset = 0; dayOffset <= 7; dayOffset++) {
+      const d = new Date(kst);
+      d.setDate(d.getDate() + dayOffset);
+      const dow = d.getDay(); // 0=일,1=월,...,6=토
+      if(sp.days.includes(dow)) {
+        d.setHours(sp.hour, sp.min, 0, 0);
+        // kst 기준 시간을 UTC로 변환
+        const utcMs = d.getTime() - 9*60*60*1000;
+        if(utcMs > now.getTime() - 10*60*1000) { // 10분 전까지 포함
+          candidates.push(utcMs);
+        }
+      }
+    }
+    if(candidates.length === 0) return null;
+    return Math.min(...candidates);
+  } else {
+    // 리젠 보스: 마지막 잡은 시간 + 리젠 시간
+    const lastKill = regenTimes[boss.name];
+    if(!lastKill) return null;
+    return lastKill + sp.hours * 60 * 60 * 1000;
+  }
+}
+
+function renderPredBosses() {
+  if(!isAdmin()) return ''; // 관리자만 표시
+  const now = Date.now();
+  const SHOW_BEFORE = 5 * 60 * 1000;  // 5분 전
+  const HIDE_AFTER  = 10 * 60 * 1000; // 10분 후
+
+  const bosses = getData('bosses', DEFAULT_BOSSES);
+  const preds = [];
+
+  bosses.forEach(b => {
+    const spawnMs = getNextSpawn(b);
+    if(!spawnMs) return;
+    const diff = spawnMs - now;
+    // 5분 전 ~ 출현 후 10분 안에만 표시
+    if(diff <= SHOW_BEFORE && diff >= -HIDE_AFTER) {
+      preds.push({boss:b, spawnMs, diff});
+    }
+  });
+
+  if(preds.length === 0) return '';
+
+  // 시간순 정렬, 최대 5개
+  preds.sort((a,b) => a.spawnMs - b.spawnMs);
+  const top5 = preds.slice(0, 5);
+
+  const rows = top5.map(p => {
+    const kstDate = new Date(p.spawnMs + 9*60*60*1000);
+    const hh = String(kstDate.getUTCHours()).padStart(2,'0');
+    const mm = String(kstDate.getUTCMinutes()).padStart(2,'0');
+    const diffMin = Math.round(p.diff / 60000);
+    const diffTxt = diffMin >= 0 ? `${diffMin}분 후` : `${Math.abs(diffMin)}분 경과`;
+    const isFixed = p.boss.spawn?.type === 'fixed';
+    return `<div class="pred-row">
+      <div class="pred-time">${hh}:${mm}</div>
+      <div class="pred-name">${p.boss.name}<span style="font-size:10px;color:var(--text2);margin-left:5px">${isFixed?'📌':'🔄'} ${diffTxt}</span></div>
+      <button class="pred-add" onclick="addRoundFromPred('${p.boss.name}',${p.spawnMs},${isFixed})">추가</button>
+      <button class="pred-skip" onclick="skipPred('${p.boss.name}',${p.spawnMs})">미추가</button>
+    </div>`;
+  }).join('');
+
+  return `<div class="pred-section">
+    <div class="pred-title">⏰ 예상 보스 (5분 전 ~ 출현 후 10분)</div>
+    ${rows}
+  </div>`;
+}
+
+function addRoundFromPred(bossName, spawnMs, isFixed) {
+  const wk = getWeekKey();
+  attend = getData('attend', {});
+  if(!attend[wk]) attend[wk] = {};
+  if(!attend[wk][bossName]) attend[wk][bossName] = {};
+  const rk = Date.now().toString();
+  const defaultAtt = {};
+  members.forEach(m => { defaultAtt[m.id] = '미참'; });
+  attend[wk][bossName][rk] = {time:Date.now(), nightBonus:isNightBonus(), attendance:defaultAtt, addedBy:sess?.serverName||'길드원'};
+  setData('attend', attend);
+  fbSet('attend', attend);
+
+  // 리젠 보스면 잡은 시간 기록
+  if(!isFixed) {
+    regenTimes[bossName] = Date.now();
+    setData('regenTimes', regenTimes);
+    fbSet('regenTimes', regenTimes);
+  }
+
+  addBossLog('추가', bossName, rk);
+  showToast(`${bossName} 회차 추가됨`, 'success');
+  sendPush(`⚔️ ${bossName} 출현!`, '보스 참여 체크를 해주세요');
+  sendDiscord(bossName);
+  renderBoss();
+}
+
+function skipPred(bossName, spawnMs) {
+  // 미추가 처리 - skipped 목록에 기록 (10분 후 자동으로 사라짐)
+  const skipped = getData('skippedPreds', {});
+  skipped[bossName + '_' + spawnMs] = Date.now();
+  setData('skippedPreds', skipped);
+  showToast(`${bossName} 미추가 처리`, 'error');
+  renderBoss();
+}
+
+// 1분마다 예상 보스 새로고침
+setInterval(() => {
+  if(curTab === 'boss') renderBoss();
+}, 60000);
+
 function renderBoss() {
   const wk=getWeekKey(), wkData=attend[wk]||{};
   const sortedBosses=[...bosses].sort((a,b)=>a.name.localeCompare(b.name,'ko'));
@@ -326,11 +482,15 @@ function renderBoss() {
   rounds.sort((a,b)=>b.time-a.time);
   const admin=isAdmin();
 
+  // 예상 보스 렌더
+  const predHtml = renderPredBosses();
+
   document.getElementById('content').innerHTML=`
+    ${predHtml}
     <div class="boss-ctrl">
       <select class="sel" id="bossSelEl">
         <option value="">보스 선택 (ㄱㄴㄷ순)</option>
-        ${sortedBosses.map(b=>`<option value="${b.name}">${b.name} (${b.pts}pt)</option>`).join('')}
+        ${groupBossByJamo(sortedBosses)}
       </select>
       <button class="btn btn-p" onclick="addRound()">+ 회차 추가</button>
       ${isNightBonus()?`<div class="night-badge">🌙 새벽 보너스 +20% 적용 중</div>`:''}
@@ -441,6 +601,13 @@ function addRound() {
   attend[wk][bn][rk]={time:Date.now(),nightBonus:isNightBonus(),attendance:defaultAtt,addedBy:sess?.serverName||'길드원'};
   setData('attend',attend);
   fbSet('attend', attend);
+  // 리젠 보스 시간 기록
+  const bossInfo = bosses.find(x=>x.name===bn);
+  if(bossInfo?.spawn?.type==='regen') {
+    regenTimes[bn] = Date.now();
+    setData('regenTimes', regenTimes);
+    fbSet('regenTimes', regenTimes);
+  }
   // 로그 기록
   addBossLog('추가', bn, rk);
   showToast(`${bn} 회차 추가됨`,'success');
