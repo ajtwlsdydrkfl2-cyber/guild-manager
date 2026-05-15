@@ -93,6 +93,7 @@
         <button class="ham" onclick="toggleSb()">☰</button>
         <div class="topbar-title">🎮 길드 게임</div>
       </div>
+      <div id="discordBtn"></div>
     </div>
     <div class="content" id="content"></div>
   </div>
@@ -339,6 +340,10 @@ window.addEventListener('load', () => {
   initFirebase();
   watchServerName();
   renderSidebar('game');
+  if(isAdmin()) {
+    document.getElementById('discordBtn').innerHTML =
+      `<button class="btn btn-s btn-sm" onclick="sendDailyResults()" style="background:rgba(88,101,242,.2);border-color:#5865F2;color:#5865F2">📢 결과전송</button>`;
+  }
   members = getData('members', []);
   warehouseItems = getData('warehouseItems', []);
 
