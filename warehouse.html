@@ -175,37 +175,74 @@ window.addEventListener('load', () => {
   renderWarehouse();
 });
 
+// 아이템 자동 분류
+const CATS = [
+  {key:'weapon', icon:'⚔️', label:'무기',
+   keywords:['석궁','활','전투봉','마법봉','사이드','단검','대검','전투방패','검/방패','권갑','지팡이']},
+  {key:'armor',  icon:'🛡️', label:'방어구',
+   keywords:['그리브','건틀렛','두건','로브','투구','갑옷','바지','장갑','부츠','각반','조끼','아대','가죽','장화']},
+  {key:'cloak',  icon:'🧣', label:'망토',
+   keywords:['망토']},
+  {key:'acc',    icon:'💍', label:'장신구',
+   keywords:['팔찌','목걸이','반지','귀걸이','허리띠']},
+  {key:'etc',    icon:'📦', label:'기타', keywords:[]},
+];
+
+function getCategory(name) {
+  for(const cat of CATS) {
+    if(cat.key==='etc') continue;
+    if(cat.keywords.some(k=>name.includes(k))) return cat.key;
+  }
+  return 'etc';
+}
+
 function renderWarehouse() {
   const admin = isAdmin();
-  const total = warehouseItems.length;
-
-  // 2x2 그리드로 항상 표시
   let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
 
   GRADES.forEach(g => {
-    const items = warehouseItems
+    const gradeItems = warehouseItems
       .filter(i=>(i.grade||'myth')===g.key)
       .sort((a,b)=>a.name.localeCompare(b.name,'ko'));
 
-    const totalQty = items.reduce((s,i)=>s+i.qty,0);
+    const totalQty = gradeItems.reduce((s,i)=>s+i.qty,0);
+
+    // 소분류별 그룹핑
+    const catGroups = {};
+    CATS.forEach(c=>catGroups[c.key]=[]);
+    gradeItems.forEach(item=>{
+      const cat = getCategory(item.name);
+      catGroups[cat].push(item);
+    });
+
+    const catHtml = CATS.map(cat=>{
+      const items = catGroups[cat.key];
+      if(items.length===0) return '';
+      return `<div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.08)">
+          ${cat.icon} ${cat.label} <span style="font-weight:400">(${items.length}종)</span>
+        </div>
+        <div class="item-grid">
+          ${items.map(item=>`
+            <div class="item-chip">
+              <span>${item.name}${item.memo?` <span style="font-size:11px;color:var(--text2)">(${item.memo})</span>`:''}</span>
+              ${item.qty>1?`<span class="qty">×${item.qty}</span>`:''}
+              ${admin?`<button onclick="openEditItem(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:12px;padding:0 2px">✏️</button>
+              <button onclick="delItem(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px">✕</button>`:''}
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
 
     html += `<div class="grade-section ${g.cls}">
       <div class="grade-header">
         ${g.icon} ${g.label}
-        <span style="font-size:12px;font-weight:400;opacity:.7">${items.length}종 / ${totalQty}개</span>
+        <span style="font-size:12px;font-weight:400;opacity:.7">${gradeItems.length}종 / ${totalQty}개</span>
       </div>
       <div class="grade-body" style="min-height:80px">
-        ${items.length===0
+        ${gradeItems.length===0
           ?`<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0">비어있음</div>`
-          :`<div class="item-grid">
-            ${items.map(item=>`
-              <div class="item-chip">
-                <span>${item.name}${item.memo?` <span style="font-size:11px;color:var(--text2)">(${item.memo})</span>`:''}</span>
-                ${item.qty>1?`<span class="qty">×${item.qty}</span>`:''}
-                ${admin?`<button onclick="openEditItem(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:12px;padding:0 2px">✏️</button>
-                <button onclick="delItem(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px">✕</button>`:''}
-              </div>`).join('')}
-          </div>`}
+          :catHtml}
       </div>
     </div>`;
   });
