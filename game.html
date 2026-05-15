@@ -398,6 +398,20 @@ function renderGames() {
         ${players.length>0&&!winnerEntry?`<div style="font-size:11px;color:var(--text2);margin-top:2px">${players.slice(0,3).join(', ')}${players.length>3?` 외 ${players.length-3}명`:''} 참여 (${20-remain}/${20}장)</div>`:''}
         ${!winnerEntry&&remain===0?`<div style="font-size:11px;color:var(--accent2)">20장 모두 꽝! 이월 ${(d.carryOver||1)+1}배</div>`:''}
       </div>`;
+    } else if(key==='rsp') {
+      const t=d.tournament;
+      if(t?.champion){
+        scoreBoardHtml=`<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;text-align:center">
+          <div style="font-size:13px;color:var(--accent);font-weight:700">🏆 우승: ${t.champion}</div>
+        </div>`;
+      } else if(t) {
+        const roundName=RSP_ROUNDS[t.round-1]||'진행중';
+        const submitted=(t.submitted||[]).length;
+        const total=(t.matches||[]).filter(m=>m.p2!=='BYE').length*2;
+        scoreBoardHtml=`<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
+          <div style="font-size:11px;color:var(--text2)">${roundName} 진행중 · 제출 ${submitted}명</div>
+        </div>`;
+      }
     } else if(scoreArr.length > 0) {
       scoreBoardHtml = `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
         ${scoreArr.map(([nick,score],i)=>`
@@ -918,6 +932,65 @@ function timerAction() {
 }
 
 // ===== 공통 =====
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1504731456096702464/VuVcBFJlFblzCwplMkqy07cijjuGuw9OxPjD9VBO6c-Z-hEd4L5E1dHJOg57DGfWDCRq';
+
+async function sendDailyResults() {
+  const gd = gameData;
+  const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const today = kst.toISOString().slice(0,10);
+  const GAME_NAMES = {roulette:'🎡 룰렛', slot:'🎰 슬롯머신', timer:'⏱ 10초챌린지', card:'🃏 카드뽑기', memory:'🧩 짝맞추기', mole:'🔨 두더지잡기', rsp:'🪨 가위바위보'};
+
+  let lines = [`**🎮 ${today} 길드 게임 결과!**`, '───────────────────'];
+
+  Object.entries(GAME_NAMES).forEach(([key,name]) => {
+    const d = gd[key]||{};
+    if(key==='card') {
+      const winner = Object.entries(d.cardPlays||{}).find(([,v])=>v===true||v?.win===true);
+      lines.push(`${name}: ${winner?`**${winner[0]}** 🎉 당첨!`:'당첨자 없음'}`);
+    } else if(key==='rsp') {
+      const t = d.tournament;
+      if(t?.champion) lines.push(`${name}: **${t.champion}** 🏆 우승!`);
+      else if(t) lines.push(`${name}: ${RSP_ROUNDS[t.round-1]||''} 진행중`);
+      else lines.push(`${name}: 미진행`);
+    } else if(key==='timer') {
+      const sorted = Object.entries(d.scores||{}).sort((a,b)=>a[1]-b[1]);
+      lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (${sorted[0][1].toFixed(2)}초)`:'참여자 없음'}`);
+    } else {
+      const sorted = Object.entries(d.scores||{}).sort((a,b)=>b[1]-a[1]);
+      lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (${sorted[0][1].toLocaleString()}점)`:'참여자 없음'}`);
+    }
+  });
+
+  lines.push('───────────────────');
+  lines.push('*고물상길드 자동 발송*');
+
+  try {
+    const res = await fetch(DISCORD_WEBHOOK, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({content:lines.join('\n')})
+    });
+    if(res.ok) showToast('📢 디스코드 전송 완료!','success');
+    else showToast('❌ 전송 실패! ('+res.status+')','error');
+  } catch(e) {
+    showToast('❌ 전송 실패!','error');
+    console.error(e);
+  }
+}
+
+// 매일 23:59 자동 전송 체크
+function checkDailyDiscordPost() {
+  const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const h=kst.getHours(), m=kst.getMinutes();
+  const todayKey=kst.toISOString().slice(0,10);
+  const lastPost=localStorage.getItem('lastDiscordPost');
+  if(h===23&&m===59&&lastPost!==todayKey){
+    localStorage.setItem('lastDiscordPost',todayKey);
+    sendDailyResults();
+  }
+}
+setInterval(checkDailyDiscordPost, 60000);
+
 function updateScoreBoard(elId, scores, lowerBetter) {
   const el = document.getElementById(elId); if(!el) return;
   const arr = Object.entries(scores).sort((a,b)=>lowerBetter?a[1]-b[1]:b[1]-a[1]);
