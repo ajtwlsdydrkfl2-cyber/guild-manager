@@ -339,16 +339,45 @@ function getJamo(name) {
   return ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'][idx]||name[0];
 }
 
+function getStars(pts) {
+  if(pts >= 4) return '⭐⭐⭐⭐ ';
+  if(pts >= 3) return '⭐⭐⭐ ';
+  if(pts >= 2) return '⭐⭐ ';
+  if(pts >= 1.5) return '⭐✨ ';
+  if(pts >= 1.2) return '⭐· ';
+  return '⭐ ';
+}
+
+function getMoonSun() {
+  const h = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})).getHours();
+  return h >= 12 ? '🌙 ' : '';
+}
+
 function groupBossByJamo(bosses) {
+  const moon = getMoonSun();
+  // 오프런 맨 위 별도 처리
+  const offrun = bosses.find(b=>b.name.includes('오프런'));
+  const rest = bosses.filter(b=>!b.name.includes('오프런'));
+
   const groups = {};
-  bosses.forEach(b => {
+  rest.forEach(b => {
     const j = getJamo(b.name);
     if(!groups[j]) groups[j] = [];
     groups[j].push(b);
   });
-  return Object.entries(groups).map(([j, list]) =>
-    `<optgroup label="${j}">${list.map(b=>`<option value="${b.name}">${b.name} (${b.pts}pt)</option>`).join('')}</optgroup>`
+
+  // 각 그룹 안에서 pts 내림차순 정렬
+  Object.values(groups).forEach(list => list.sort((a,b)=>b.pts-a.pts));
+
+  const offrunHtml = offrun
+    ? `<option value="${offrun.name}" style="color:#ef4444;font-weight:700">🔴 오프런 25pt</option>`
+    : '';
+
+  const groupHtml = Object.entries(groups).map(([j, list]) =>
+    `<optgroup label="${j}">${list.map(b=>`<option value="${b.name}">${moon}${getStars(b.pts)}${b.name} (${b.pts}pt)</option>`).join('')}</optgroup>`
   ).join('');
+
+  return offrunHtml + groupHtml;
 }
 
 // ===== 예상 보스 =====
