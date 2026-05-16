@@ -395,7 +395,7 @@ tr:hover .sc{background:#101c2e;}
 `;
 
 // ===== 길드 게임 결과 자동 디스코드 전송 =====
-const GUILD_DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1504731456096702464/VuVcBFJlFblzCwplMkqy07cijjuGuw9OxPjD9VBO6c-Z-hEd4L5E1dHJOg57DGfWDCRq';
+const GUILD_DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1505266643293569268/G0VJghqRfFpTPGTMuKiJP13IOUFw9WBNH0bE8Y3GWJ4dp__rMeqKU1HvPVuux8KZSP8N';
 
 async function sendGameResultsToDiscord() {
   try {
