@@ -438,8 +438,8 @@ function getNextSpawn(boss) {
 function renderPredBosses() {
   // 모든 길드원 표시 (추가는 누구나 가능)
   const now = Date.now();
-  const SHOW_BEFORE = 5 * 60 * 1000;  // 5분 전
-  const HIDE_AFTER  = 10 * 60 * 1000; // 10분 후
+  const SHOW_BEFORE = 10 * 60 * 1000;  // 10분 전
+  const HIDE_AFTER  = 20 * 60 * 1000;  // 20분 후
 
   // Firebase 보스에 spawn 정보 없을 수 있으니 DEFAULT_BOSSES에서 매핑
   const fbBosses = getData('bosses', DEFAULT_BOSSES);
@@ -480,11 +480,11 @@ function renderPredBosses() {
     const diffTxt = diffMin >= 0 ? `${diffMin}분 후` : `${Math.abs(diffMin)}분 경과`;
     const isFixed = p.boss.spawn?.type === 'fixed';
     return `<div class="pred-row">
-      <div class="pred-time">${hh}:${mm}</div>
-      <div class="pred-name">${isFixed?'📌':'🔄'} ${p.boss.name}</div>
-      <span style="font-size:11px;color:var(--text2);margin-right:4px">${diffTxt}</span>
       <button class="pred-add" onclick="addRoundFromPred('${p.boss.name}',${p.spawnMs},${isFixed})">추가</button>
       <button class="pred-skip" onclick="skipPred('${p.boss.name}',${p.spawnMs})">미추가</button>
+      <div class="pred-time">${hh}:${mm}</div>
+      <div class="pred-name">${isFixed?'📌':'🔄'} ${p.boss.name}</div>
+      <span style="font-size:11px;color:var(--text2)">${diffTxt}</span>
     </div>`;
   }).join('');
 
