@@ -393,3 +393,65 @@ tr:hover .sc{background:#101c2e;}
   .main{width:100%;}
 }
 `;
+
+// ===== 길드 게임 결과 자동 디스코드 전송 =====
+const GUILD_DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1504731456096702464/VuVcBFJlFblzCwplMkqy07cijjuGuw9OxPjD9VBO6c-Z-hEd4L5E1dHJOg57DGfWDCRq';
+
+async function sendGameResultsToDiscord() {
+  try {
+    const gd = getData('gameData', {});
+    const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const today = kst.toISOString().slice(0,10);
+    const GAME_NAMES = {
+      roulette:'🎡 룰렛', slot:'🎰 슬롯머신', timer:'⏱ 10초챌린지',
+      card:'🃏 카드뽑기', memory:'🧩 짝맞추기', mole:'🔨 두더지잡기', rsp:'🪨 가위바위보'
+    };
+    const RSP_ROUNDS_NAMES = ['16강','8강','4강','결승'];
+
+    let lines = [`**🎮 ${today} 고물상길드 게임 결과!**`, '───────────────────'];
+
+    Object.entries(GAME_NAMES).forEach(([key,name]) => {
+      const d = gd[key]||{};
+      if(key==='card') {
+        const winner = Object.entries(d.cardPlays||{}).find(([,v])=>v===true||v?.win===true);
+        lines.push(`${name}: ${winner?`**${winner[0]}** 🎉 당첨!`:'당첨자 없음'}`);
+      } else if(key==='rsp') {
+        const t = d.tournament;
+        if(t?.champion) lines.push(`${name}: **${t.champion}** 🏆 우승!`);
+        else if(t) lines.push(`${name}: ${RSP_ROUNDS_NAMES[t.round-1]||''} 진행중`);
+        else lines.push(`${name}: 미진행`);
+      } else if(key==='timer') {
+        const sorted = Object.entries(d.scores||{}).sort((a,b)=>a[1]-b[1]);
+        lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (${sorted[0][1].toFixed(2)}초)`:'참여자 없음'}`);
+      } else {
+        const sorted = Object.entries(d.scores||{}).sort((a,b)=>b[1]-a[1]);
+        lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (${sorted[0][1].toLocaleString()}점)`:'참여자 없음'}`);
+      }
+    });
+
+    lines.push('───────────────────');
+    lines.push('*고물상길드 자동 발송*');
+
+    const res = await fetch(GUILD_DISCORD_WEBHOOK, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({content:lines.join('\n')})
+    });
+    if(res.ok) console.log('Discord 자동 전송 완료!');
+    else console.error('Discord 전송 실패:', res.status);
+  } catch(e) {
+    console.error('Discord 전송 오류:', e);
+  }
+}
+
+// 1분마다 23:59 KST 체크 - 어느 탭이든 작동
+setInterval(() => {
+  const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const h = kst.getHours(), m = kst.getMinutes();
+  const todayKey = kst.toISOString().slice(0,10);
+  const lastPost = localStorage.getItem('lastAutoDiscord');
+  if(h===23 && m===59 && lastPost!==todayKey) {
+    localStorage.setItem('lastAutoDiscord', todayKey);
+    sendGameResultsToDiscord();
+  }
+}, 60000);
