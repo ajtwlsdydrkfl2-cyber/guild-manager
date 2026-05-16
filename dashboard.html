@@ -480,12 +480,11 @@ function renderPredBosses() {
     const diffTxt = diffMin >= 0 ? `${diffMin}분 후` : `${Math.abs(diffMin)}분 경과`;
     const isFixed = p.boss.spawn?.type === 'fixed';
     return `<div class="pred-row">
-      <div style="display:flex;align-items:center;gap:6px;flex:1">
-        <div class="pred-time">${hh}:${mm}</div>
-        <button class="pred-add" onclick="addRoundFromPred('${p.boss.name}',${p.spawnMs},${isFixed})">추가</button>
-        <button class="pred-skip" onclick="skipPred('${p.boss.name}',${p.spawnMs})">미추가</button>
-        <div class="pred-name">${p.boss.name}<span style="font-size:10px;color:var(--text2);margin-left:4px">${isFixed?'📌':'🔄'} ${diffTxt}</span></div>
-      </div>
+      <div class="pred-time">${hh}:${mm}</div>
+      <div class="pred-name">${isFixed?'📌':'🔄'} ${p.boss.name}</div>
+      <span style="font-size:11px;color:var(--text2);margin-right:4px">${diffTxt}</span>
+      <button class="pred-add" onclick="addRoundFromPred('${p.boss.name}',${p.spawnMs},${isFixed})">추가</button>
+      <button class="pred-skip" onclick="skipPred('${p.boss.name}',${p.spawnMs})">미추가</button>
     </div>`;
   }).join('');
 
