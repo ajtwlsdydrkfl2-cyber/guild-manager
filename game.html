@@ -350,9 +350,8 @@ window.addEventListener('load', () => {
   fbListen('gameData', data => {
     gameData = data || {};
     // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
-  const gameSess = requireLogin();
-  if(gameSess?.serverName) {
-    myNick = gameSess.serverName;
+  if(sess?.serverName) {
+    myNick = sess.serverName;
     document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
   }
   renderGames();
@@ -366,9 +365,8 @@ window.addEventListener('load', () => {
 
   gameData = getData('gameData', {});
   // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
-  const gameSess = requireLogin();
-  if(gameSess?.serverName) {
-    myNick = gameSess.serverName;
+  if(sess?.serverName) {
+    myNick = sess.serverName;
     document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
   }
   renderGames();
@@ -520,9 +518,8 @@ function closeGame() {
   if(slotInterval) { clearInterval(slotInterval); slotInterval=null; }
   if(timerAnimId) { cancelAnimationFrame(timerAnimId); timerAnimId=null; }
   // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
-  const gameSess = requireLogin();
-  if(gameSess?.serverName) {
-    myNick = gameSess.serverName;
+  if(sess?.serverName) {
+    myNick = sess.serverName;
     document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
   }
   renderGames();
