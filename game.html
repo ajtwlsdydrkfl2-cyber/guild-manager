@@ -305,7 +305,7 @@ const GAMES = {
 let gameData = {};
 let members = [];
 let warehouseItems = [];
-let myNick = localStorage.getItem('gm_gameNick') || '';
+let myNick = '';
 let pendingGame = '';
 let currentGame = '';
 
@@ -349,7 +349,13 @@ window.addEventListener('load', () => {
 
   fbListen('gameData', data => {
     gameData = data || {};
-    renderGames();
+    // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
+  const gameSess = requireLogin();
+  if(gameSess?.serverName) {
+    myNick = gameSess.serverName;
+    document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
+  }
+  renderGames();
   });
   fbListen('warehouseItems', data => {
     warehouseItems = data ? (Array.isArray(data)?data:Object.values(data)) : [];
@@ -359,6 +365,12 @@ window.addEventListener('load', () => {
   });
 
   gameData = getData('gameData', {});
+  // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
+  const gameSess = requireLogin();
+  if(gameSess?.serverName) {
+    myNick = gameSess.serverName;
+    document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
+  }
   renderGames();
 });
 
@@ -480,7 +492,6 @@ function confirmNick() {
   const v = document.getElementById('nick-select').value;
   if(!v) { showToast('닉네임을 선택해주세요','error'); return; }
   myNick = v;
-  localStorage.setItem('gm_gameNick', v);
   closeModal('nick');
   startGame(pendingGame);
 }
@@ -508,6 +519,12 @@ function closeGame() {
   if(ballTimerInterval) { clearInterval(ballTimerInterval); ballTimerInterval=null; }
   if(slotInterval) { clearInterval(slotInterval); slotInterval=null; }
   if(timerAnimId) { cancelAnimationFrame(timerAnimId); timerAnimId=null; }
+  // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
+  const gameSess = requireLogin();
+  if(gameSess?.serverName) {
+    myNick = gameSess.serverName;
+    document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
+  }
   renderGames();
 }
 
@@ -1162,6 +1179,8 @@ function flipMemCard(i) {
         document.getElementById(`mc_${b}`).classList.add('hidden');
         document.getElementById(`mc_${b}`).classList.remove('selected');
         memSelected=[]; memLocked=false;
+        // 틀리면 -3점
+        if(memTimerVal>0){ showToast('❌ -3점!','error'); }
       },800);
     }
   }
@@ -1392,7 +1411,9 @@ function hitMole(i) {
     renderMoleGrid();
   } else {
     moleMiss++;
-    document.getElementById('mole-miss').textContent='미스: '+moleMiss;
+    moleScore = Math.max(0, moleScore - 5);
+    document.getElementById('mole-score').textContent=moleScore+'점';
+    document.getElementById('mole-miss').textContent='미스: '+moleMiss+' (-5점)';
   }
 }
 
