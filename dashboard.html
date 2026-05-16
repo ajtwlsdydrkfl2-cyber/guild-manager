@@ -449,13 +449,20 @@ function renderPredBosses() {
   });
   const preds = [];
 
+  const skipped = getData('skippedPreds', {});
+  // 오래된 skipped 정리 (1시간 지나면 삭제)
+  Object.keys(skipped).forEach(k => {
+    if(Date.now() - skipped[k] > 60*60*1000) delete skipped[k];
+  });
+
   bosses.forEach(b => {
     const spawnMs = getNextSpawn(b);
     if(!spawnMs) return;
     const diff = spawnMs - now;
-    // 5분 전 ~ 출현 후 10분 안에만 표시
     if(diff <= SHOW_BEFORE && diff >= -HIDE_AFTER) {
-      preds.push({boss:b, spawnMs, diff});
+      // skipped 체크
+      const skipKey = b.name + '_' + spawnMs;
+      if(!skipped[skipKey]) preds.push({boss:b, spawnMs, diff});
     }
   });
 
@@ -473,10 +480,12 @@ function renderPredBosses() {
     const diffTxt = diffMin >= 0 ? `${diffMin}분 후` : `${Math.abs(diffMin)}분 경과`;
     const isFixed = p.boss.spawn?.type === 'fixed';
     return `<div class="pred-row">
-      <div class="pred-time">${hh}:${mm}</div>
-      <div class="pred-name">${p.boss.name}<span style="font-size:10px;color:var(--text2);margin-left:5px">${isFixed?'📌':'🔄'} ${diffTxt}</span></div>
-      <button class="pred-add" onclick="addRoundFromPred('${p.boss.name}',${p.spawnMs},${isFixed})">추가</button>
-      <button class="pred-skip" onclick="skipPred('${p.boss.name}',${p.spawnMs})">미추가</button>
+      <div style="display:flex;align-items:center;gap:6px;flex:1">
+        <div class="pred-time">${hh}:${mm}</div>
+        <button class="pred-add" onclick="addRoundFromPred('${p.boss.name}',${p.spawnMs},${isFixed})">추가</button>
+        <button class="pred-skip" onclick="skipPred('${p.boss.name}',${p.spawnMs})">미추가</button>
+        <div class="pred-name">${p.boss.name}<span style="font-size:10px;color:var(--text2);margin-left:4px">${isFixed?'📌':'🔄'} ${diffTxt}</span></div>
+      </div>
     </div>`;
   }).join('');
 
