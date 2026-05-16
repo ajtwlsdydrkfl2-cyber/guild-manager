@@ -401,21 +401,26 @@ function getNextSpawn(boss) {
   const now = Date.now();
 
   if(sp.type === 'fixed') {
-    // 고정 보스: 다음 고정 시간 계산 (KST 기준)
+    // 고정 보스: KST 기준 다음 출현 시간 계산
+    // KST = UTC+9, 한국 날짜/시간 기준
+    const KST_OFFSET = 9 * 60 * 60 * 1000;
+    const nowKst = new Date(now + KST_OFFSET); // KST 현재 시간 (UTC 기준 Date 객체)
     const candidates = [];
     for(let dayOffset = 0; dayOffset <= 7; dayOffset++) {
-      const d = new Date(now + dayOffset * 86400000);
-      // KST로 변환
-      const kstD = new Date(d.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-      const dow = kstD.getDay();
+      // KST 기준 날짜
+      const kstDay = new Date(nowKst.getTime() + dayOffset * 86400000);
+      const dow = kstDay.getUTCDay(); // KST 요일
       if(sp.days.includes(dow)) {
-        // KST 기준 목표 시간 설정
-        const target = new Date(kstD);
-        target.setHours(sp.hour, sp.min, 0, 0);
-        // UTC로 변환
-        const utcMs = target.getTime() - (kstD.getTime() - d.getTime());
-        if(utcMs > now - 10*60*1000) {
-          candidates.push(utcMs);
+        // KST 기준 목표 시간 (UTC로 저장)
+        const spawnUtcMs = Date.UTC(
+          kstDay.getUTCFullYear(),
+          kstDay.getUTCMonth(),
+          kstDay.getUTCDate(),
+          sp.hour - 9, // KST → UTC (9시간 빼기)
+          sp.min, 0, 0
+        );
+        if(spawnUtcMs > now - 10*60*1000) {
+          candidates.push(spawnUtcMs);
         }
       }
     }
@@ -431,7 +436,7 @@ function getNextSpawn(boss) {
 }
 
 function renderPredBosses() {
-  if(!isAdmin()) return ''; // 관리자만 표시
+  // 모든 길드원 표시 (추가는 누구나 가능)
   const now = Date.now();
   const SHOW_BEFORE = 5 * 60 * 1000;  // 5분 전
   const HIDE_AFTER  = 10 * 60 * 1000; // 10분 후
@@ -470,8 +475,8 @@ function renderPredBosses() {
     </div>`;
   }).join('');
 
-  return `<div class="pred-section">
-    <div class="pred-title">⏰ 예상 보스 (5분 전 ~ 출현 후 10분)</div>
+  return `<div class="pred-section" id="pred-section-wrap">
+    <div class="pred-title">⏰ 예상 보스 (출현 5분 전 ~ 10분 후 자동표시)</div>
     ${rows}
   </div>`;
 }
@@ -506,10 +511,15 @@ function skipPred(bossName, spawnMs) {
   renderBoss();
 }
 
-// 1분마다 예상 보스 새로고침
+// 30초마다 예상 보스 새로고침
 setInterval(() => {
-  if(curTab === 'boss') renderBoss();
-}, 60000);
+  if(curTab === 'boss') {
+    // 예상 보스 섹션만 업데이트
+    const predEl = document.getElementById('pred-section-wrap');
+    if(predEl) predEl.innerHTML = renderPredBosses();
+    else renderBoss(); // 없으면 전체 재렌더
+  }
+}, 30000);
 
 function renderBoss() {
   const wk=getWeekKey(), wkData=attend[wk]||{};
@@ -524,7 +534,7 @@ function renderBoss() {
   const predHtml = renderPredBosses();
 
   document.getElementById('content').innerHTML=`
-    ${predHtml}
+    <div id="pred-section-wrap">${predHtml}</div>
     <div class="boss-ctrl">
       <select class="sel" id="bossSelEl">
         <option value="">보스 선택 (ㄱㄴㄷ순)</option>
