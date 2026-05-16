@@ -441,7 +441,12 @@ function renderPredBosses() {
   const SHOW_BEFORE = 5 * 60 * 1000;  // 5분 전
   const HIDE_AFTER  = 10 * 60 * 1000; // 10분 후
 
-  const bosses = getData('bosses', DEFAULT_BOSSES);
+  // Firebase 보스에 spawn 정보 없을 수 있으니 DEFAULT_BOSSES에서 매핑
+  const fbBosses = getData('bosses', DEFAULT_BOSSES);
+  const bosses = fbBosses.map(b => {
+    const def = DEFAULT_BOSSES.find(d=>d.name===b.name);
+    return def ? {...b, spawn: def.spawn} : b;
+  });
   const preds = [];
 
   bosses.forEach(b => {
@@ -475,7 +480,7 @@ function renderPredBosses() {
     </div>`;
   }).join('');
 
-  return `<div class="pred-section" id="pred-section-wrap">
+  return `<div class="pred-section">
     <div class="pred-title">⏰ 예상 보스 (출현 5분 전 ~ 10분 후 자동표시)</div>
     ${rows}
   </div>`;
@@ -511,15 +516,14 @@ function skipPred(bossName, spawnMs) {
   renderBoss();
 }
 
-// 30초마다 예상 보스 새로고침
+// 10초마다 예상 보스 새로고침
 setInterval(() => {
   if(curTab === 'boss') {
-    // 예상 보스 섹션만 업데이트
     const predEl = document.getElementById('pred-section-wrap');
     if(predEl) predEl.innerHTML = renderPredBosses();
-    else renderBoss(); // 없으면 전체 재렌더
+    else renderBoss();
   }
-}, 30000);
+}, 10000);
 
 function renderBoss() {
   const wk=getWeekKey(), wkData=attend[wk]||{};
