@@ -93,6 +93,7 @@
         <button class="ham" onclick="toggleSb()">☰</button>
         <div class="topbar-title">🎮 길드 게임</div>
       </div>
+      <span id="myNickDisplay" style="font-size:12px;color:var(--accent2)"></span>
       <div id="discordBtn"></div>
     </div>
     <div class="content" id="content"></div>
@@ -352,7 +353,7 @@ window.addEventListener('load', () => {
     // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
   if(sess?.serverName) {
     myNick = sess.serverName;
-    document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
+    const nd=document.getElementById('myNickDisplay');if(nd)nd.textContent=`👤 ${myNick}`;
   }
   renderGames();
   });
@@ -367,7 +368,7 @@ window.addEventListener('load', () => {
   // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
   if(sess?.serverName) {
     myNick = sess.serverName;
-    document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
+    const nd2=document.getElementById('myNickDisplay');if(nd2)nd2.textContent=`👤 ${myNick}`;
   }
   renderGames();
 });
