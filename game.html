@@ -306,7 +306,7 @@ const GAMES = {
 let gameData = {};
 let members = [];
 let warehouseItems = [];
-let myNick = '';
+let myNick = localStorage.getItem('gm_gameNick') || '';
 let pendingGame = '';
 let currentGame = '';
 
