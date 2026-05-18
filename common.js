@@ -229,7 +229,7 @@ const DEFAULT_BOSSES = [
   {name:'장군 아쿨레우스',pts:1,records:['심장','다리'],spawn:{type:'regen',hours:22}},
   {name:'카말리아',pts:2,records:['심장','날개'],spawn:{type:'fixed',days:[3],hour:22,min:0}},
   {name:'카테나',pts:1.2,records:['영혼','파편'],spawn:{type:'regen',hours:26}},
-  {name:'클레멘티스',pts:2,records:['심장','뿔'],spawn:{type:'regen',hours:46}},
+  {name:'클레멘티스',pts:2,records:['심장','뿔'],spawn:{type:'fixed',days:[1,5],hour:12,min:30}},
   {name:'셀페리온',pts:3,records:['심장','파편'],spawn:{type:'fixed',days:[0],hour:21,min:30}},
   {name:'투미어',pts:2,records:['심장','두건'],spawn:{type:'fixed',days:[0],hour:21,min:0}},
   {name:'튀멜레',pts:2,records:['심장','등불'],spawn:{type:'fixed',days:[1,5],hour:18,min:30}},
@@ -399,7 +399,10 @@ const GUILD_DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1505266643293569
 
 async function sendGameResultsToDiscord() {
   try {
-    const gd = getData('gameData', {});
+    // localStorage 대신 Firebase에서 직접 최신 데이터 읽기
+    const gd = await new Promise(resolve => {
+      fbGet('gameData', data => resolve(data || {}));
+    });
     const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
     const today = kst.toISOString().slice(0,10);
     const GAME_NAMES = {
@@ -444,14 +447,25 @@ async function sendGameResultsToDiscord() {
   }
 }
 
-// 1분마다 23:59 KST 체크 - 어느 탭이든 작동
-setInterval(() => {
+// 1분마다 23:59 KST 체크
+setInterval(async () => {
   const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
   const h = kst.getHours(), m = kst.getMinutes();
-  const todayKey = kst.toISOString().slice(0,10);
+  // KST 날짜 기준 (YYYY-MM-DD)
+  const todayKey = `${kst.getFullYear()}-${String(kst.getMonth()+1).padStart(2,'0')}-${String(kst.getDate()).padStart(2,'0')}`;
   const lastPost = localStorage.getItem('lastAutoDiscord');
   if(h===23 && m===59 && lastPost!==todayKey) {
     localStorage.setItem('lastAutoDiscord', todayKey);
-    sendGameResultsToDiscord();
+    // 1. 결과 전송
+    await sendGameResultsToDiscord();
+    // 2. 전송 후 게임 데이터 초기화 (Firebase + 로컬 둘 다)
+    fbGet('gameData', curGd => {
+      const newGd = {};
+      // 가위바위보 토너먼트는 유지
+      if(curGd?.rsp) newGd.rsp = curGd.rsp;
+      setData('gameData', newGd);
+      if(typeof fbSet === 'function') fbSet('gameData', newGd);
+      console.log('게임 데이터 자동 초기화 완료');
+    });
   }
 }, 60000);
