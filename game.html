@@ -350,12 +350,7 @@ window.addEventListener('load', () => {
 
   fbListen('gameData', data => {
     gameData = data || {};
-    // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
-  if(sess?.serverName) {
-    myNick = sess.serverName;
-    const nd=document.getElementById('myNickDisplay');if(nd)nd.textContent=`👤 ${myNick}`;
-  }
-  renderGames();
+    renderGames();
   });
   fbListen('warehouseItems', data => {
     warehouseItems = data ? (Array.isArray(data)?data:Object.values(data)) : [];
@@ -365,12 +360,19 @@ window.addEventListener('load', () => {
   });
 
   gameData = getData('gameData', {});
-  // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
-  if(sess?.serverName) {
-    myNick = sess.serverName;
-    const nd2=document.getElementById('myNickDisplay');if(nd2)nd2.textContent=`👤 ${myNick}`;
-  }
-  renderGames();
+
+  // myNick 유효성 검사 - 현재 서버 길드원 닉네임인지 확인
+  fbGet('members', mData => {
+    if(mData) {
+      const mList = Array.isArray(mData) ? mData : Object.values(mData);
+      const validNick = mList.find(m => m.nick === myNick);
+      if(!validNick) {
+        myNick = '';
+        localStorage.removeItem('gm_gameNick');
+      }
+    }
+    renderGames();
+  });
 });
 
 function saveGameData() {
@@ -1475,9 +1477,7 @@ function renderRSP(d) {
     const myAllInputs = tournament.allInputs?.[myNick]||{};
     const ri_cur = tournament.round-1;
     // 현재 라운드에 제출했거나 allInputs에 데이터 있으면 제출완료
-    const mySubmitted = tournament.submitted?.includes(myNick) ||
-      (tournament.submittedByRound?.[ri_cur]?.includes(myNick)) ||
-      ((myAllInputs[ri_cur]||[]).length===5 && tournament.submitted?.includes(myNick));
+    const mySubmitted = (myAllInputs[ri_cur]||[]).length >= 5;
 
     html=`<div style="text-align:center">
       ${imgBar}
@@ -1540,8 +1540,9 @@ function renderRSP(d) {
     html+=`<div style="margin-top:12px">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-align:center">🏆 토너먼트 대진표</div>
       ${(tournament.matches||[]).map(m=>{
-        const p1sub=tournament.submitted?.includes(m.p1);
-        const p2sub=tournament.submitted?.includes(m.p2);
+        const ri2=tournament.round-1;
+        const p1sub=(tournament.allInputs?.[m.p1]?.[ri2]||[]).length>=5;
+        const p2sub=(tournament.allInputs?.[m.p2]?.[ri2]||[]).length>=5;
         const p1win=m.winner===m.p1;
         const p2win=m.winner===m.p2;
         // 해당 라운드 입력값
@@ -1695,8 +1696,8 @@ function checkAndProcessMatches() {
   t.matches.forEach(m=>{
     if(m.winner) return;
     if(m.p2==='BYE'){m.winner=m.p1;changed=true;return;}
-    const p1sub=(t.submitted?.includes(m.p1))||(t.submittedByRound?.[ri]?.includes(m.p1))||((t.allInputs?.[m.p1]?.[ri]||[]).length===5);
-    const p2sub=(t.submitted?.includes(m.p2))||(t.submittedByRound?.[ri]?.includes(m.p2))||((t.allInputs?.[m.p2]?.[ri]||[]).length===5);
+    const p1sub = (t.allInputs?.[m.p1]?.[ri]||[]).length >= 5;
+    const p2sub = (t.allInputs?.[m.p2]?.[ri]||[]).length >= 5;
     if(p1sub&&p2sub){
       // 둘다 제출했으면 해당 라운드 결과 계산
       const ri=t.round-1;
@@ -1744,12 +1745,26 @@ function processRSPRound() {
     t.matches.forEach(m=>{
       if(m.winner) return;
       if(m.p2==='BYE'){m.winner=m.p1;return;}
-      const p1sub=(t.submitted?.includes(m.p1))||(t.submittedByRound?.[ri]?.includes(m.p1))||((t.allInputs?.[m.p1]?.[ri]||[]).length===5);
-      const p2sub=(t.submitted?.includes(m.p2))||(t.submittedByRound?.[ri]?.includes(m.p2))||((t.allInputs?.[m.p2]?.[ri]||[]).length===5);
-      if(!p1sub&&!p2sub){
-        m.winner=Math.random()<0.5?m.p1:m.p2;
-      } else if(!p1sub){ m.winner=m.p2; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1); }
-      else if(!p2sub){ m.winner=m.p1; if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2); }
+      // 제출 여부: allInputs에 해당 라운드 5개 입력 있으면 제출
+      const p1sub = (t.allInputs?.[m.p1]?.[ri]||[]).length >= 5;
+      const p2sub = (t.allInputs?.[m.p2]?.[ri]||[]).length >= 5;
+      if(!p1sub && !p2sub){
+        // 둘 다 미제출 - 둘 다 탈락, winner 없음으로 처리
+        if(!t.eliminated)t.eliminated=[];
+        t.eliminated.push(m.p1);
+        t.eliminated.push(m.p2);
+        m.winner = '부전승(미제출)';
+      } else if(!p1sub){
+        // p1 미제출 → p2 승리
+        m.winner=m.p2;
+        if(!t.eliminated)t.eliminated=[];
+        t.eliminated.push(m.p1);
+      } else if(!p2sub){
+        // p2 미제출 → p1 승리
+        m.winner=m.p1;
+        if(!t.eliminated)t.eliminated=[];
+        t.eliminated.push(m.p2);
+      }
       else {
         const i1=t.allInputs?.[m.p1]?.[ri]||[];
         const i2=t.allInputs?.[m.p2]?.[ri]||[];
@@ -1761,9 +1776,10 @@ function processRSPRound() {
       }
     });
 
-    const winners=t.matches.map(m=>m.winner).filter(Boolean);
+    // 부전승(미제출) 제외하고 실제 승자만
+    const winners=t.matches.map(m=>m.winner).filter(w=>w&&w!=='부전승(미제출)');
     if(winners.length<=1){
-      t.champion=winners[0]||t.matches[0]?.p1;
+      t.champion=winners[0]||null;
       showToast(`🏆 우승: ${t.champion}!`,'success');
       break;
     } else {
