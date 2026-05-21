@@ -210,12 +210,29 @@
   <button class="btn btn-p" id="mole-btn" onclick="startMole()" style="font-size:15px;padding:12px 32px">🔨 시작!</button>
 </div>
 
-<!-- 토너먼트 가위바위보 -->
-<div class="game-screen" id="screen-rsp">
+<!-- 숫자 카드 -->
+<div class="game-screen" id="screen-numcard">
   <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🪨✂️📄 토너먼트</div>
-  <div class="game-screen-prize" id="rsp-prize-label"></div>
-  <div id="rsp-content" style="width:100%;max-width:420px;overflow-y:auto;max-height:70vh"></div>
+  <div class="game-screen-title">🎴 숫자 카드</div>
+  <div class="game-screen-prize" id="numcard-prize-label"></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">0~100 중 가장 높은 숫자를 뽑으세요!</div>
+  <div style="font-size:80px;font-weight:900;color:var(--accent);letter-spacing:4px;margin:10px 0;min-height:100px;display:flex;align-items:center;justify-content:center" id="numcard-result">?</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px" id="numcard-msg"></div>
+  <div class="score-board" id="numcard-scores"></div>
+  <button class="btn btn-p" id="numcard-btn" onclick="drawNumcard()" style="font-size:16px;padding:14px 40px">🎴 카드 뽑기!</button>
+</div>
+
+<!-- 숫자 맞추기 -->
+<div class="game-screen" id="screen-guess">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🎯 숫자 맞추기</div>
+  <div class="game-screen-prize" id="guess-prize-label"></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:8px">1~999 사이의 숫자를 맞춰보세요!</div>
+  <div style="font-size:64px;font-weight:900;color:var(--accent);letter-spacing:8px;margin:10px 0">???</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">입력한 숫자: <span id="guess-input" style="color:var(--accent);font-weight:700;font-size:20px">---</span></div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:300px;margin-bottom:10px" id="guess-keypad"></div>
+  <div class="score-board" id="guess-scores"></div>
+  <button class="btn btn-p" id="guess-btn" onclick="submitGuess()" style="font-size:15px;padding:12px 32px" disabled>🎯 제출!</button>
 </div>
 
 <!-- 타이머 -->
@@ -299,14 +316,15 @@ const GAMES = {
   timer:    {name:'10초 챌린지', icon:'⏱'},
   card:     {name:'카드 뽑기', icon:'🃏'},
   memory:   {name:'짝 맞추기', icon:'🧩'},
-  rsp:      {name:'토너먼트 가위바위보', icon:'🪨'},
   mole:     {name:'두더지 잡기', icon:'🔨'},
+  numcard:  {name:'숫자 카드', icon:'🎴'},
+  guess:    {name:'숫자 맞추기', icon:'🎯'},
 };
 
 let gameData = {};
 let members = [];
 let warehouseItems = [];
-let myNick = localStorage.getItem('gm_gameNick') || '';
+let myNick = '';  // 매번 선택
 let pendingGame = '';
 let currentGame = '';
 
@@ -361,18 +379,7 @@ window.addEventListener('load', () => {
 
   gameData = getData('gameData', {});
 
-  // myNick 유효성 검사 - 현재 서버 길드원 닉네임인지 확인
-  fbGet('members', mData => {
-    if(mData) {
-      const mList = Array.isArray(mData) ? mData : Object.values(mData);
-      const validNick = mList.find(m => m.nick === myNick);
-      if(!validNick) {
-        myNick = '';
-        localStorage.removeItem('gm_gameNick');
-      }
-    }
-    renderGames();
-  });
+  renderGames();
 });
 
 function saveGameData() {
@@ -473,7 +480,8 @@ function renderGames() {
       ${gameCard('card')}
       ${gameCard('memory')}
       ${gameCard('mole')}
-      ${gameCard('rsp', true)}
+      ${gameCard('numcard')}
+      ${gameCard('guess', true)}
     </div>`;
 }
 
@@ -510,7 +518,8 @@ function startGame(key) {
   else if(key==='timer') initTimer(d);
   else if(key==='memory') initMemory(d);
   else if(key==='mole') initMole(d);
-  else if(key==='rsp') initRSP(d);
+  else if(key==='numcard') initNumcard(d);
+  else if(key==='guess') initGuess(d);
 }
 
 function closeGame() {
@@ -1417,397 +1426,122 @@ function hitMole(i) {
   }
 }
 
-// ===== 토너먼트 가위바위보 =====
-const RSP_CHOICES=['rock','scissors','paper'];
-const RSP_NAMES=['바위','가위','보'];
-const RSP_IMGS={rock:'rsp_rock.png',scissors:'rsp_scissors.png',paper:'rsp_paper.png'};
-const RSP_ROUNDS=['16강','8강','4강','결승'];
-
-function initRSP(d) {
-  document.getElementById('rsp-prize-label').textContent=`🎁 ${d.prize||''}`;
-  renderRSP(d);
-  // 10시 자동 처리 체크
-  checkRSPAutoProcess();
+// ===== 숫자 카드 게임 =====
+function initNumcard(d) {
+  document.getElementById('numcard-prize-label').textContent = `🎁 ${d.prize||''}`;
+  document.getElementById('numcard-result').textContent = '?';
+  document.getElementById('numcard-msg').textContent = '';
+  document.getElementById('numcard-btn').textContent = '🎴 카드 뽑기!';
+  document.getElementById('numcard-btn').disabled = false;
+  document.getElementById('numcard-btn').onclick = drawNumcard;
+  updateScoreBoard('numcard-scores', d.scores||{}, false);
 }
 
-function checkRSPAutoProcess() {
-  const t=gameData['rsp']?.tournament;
-  if(!t||!t.deadline) return;
-  const now=Date.now();
-  if(now>=t.deadline) {
-    // 마감 시간 지났으면 자동 처리
-    processRSPRound();
-  } else {
-    // 1분마다 체크
-    clearTimeout(window._rspAutoTimer);
-    window._rspAutoTimer=setTimeout(checkRSPAutoProcess, 30000);
-  }
-}
-
-function renderRSP(d) {
-  const rspData = gameData['rsp']||{};
-  const tournament = rspData.tournament||null;
-  const admin = isAdmin();
-  const imgBar = `<div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px">
-    <img src="rsp_rock.png" style="width:52px;height:52px;object-fit:contain">
-    <img src="rsp_scissors.png" style="width:52px;height:52px;object-fit:contain">
-    <img src="rsp_paper.png" style="width:52px;height:52px;object-fit:contain">
-  </div>`;
-  let html='';
-
-  if(!tournament) {
-    html=`<div style="text-align:center;padding:16px">
-      ${imgBar}
-      <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:8px">토너먼트 가위바위보!</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.8">
-        16강 ~ 결승까지 모든 라운드 가위바위보를<br>처음에 미리 입력합니다.<br>
-        두 선수 모두 입력하면 즉시 결과 공개!<br>
-        저녁 10시 미입력 시 자동 탈락
-      </div>
-      ${admin?`<button class="btn btn-p" onclick="startRSPTournament()" style="width:100%;font-size:15px;padding:12px">🏆 토너먼트 시작!</button>`
-      :`<div style="color:var(--text2);font-size:13px;padding:20px;background:var(--bg3);border-radius:10px">관리자가 토너먼트를 시작하면<br>바로 입력할 수 있어요!</div>`}
-    </div>`;
-  } else {
-    const round = tournament.round||1;
-    const roundName = RSP_ROUNDS[round-1]||'결승';
-    const myElim = tournament.eliminated?.includes(myNick);
-    const deadline = tournament.deadline;
-    const timeLeft = deadline ? Math.max(0,Math.floor((deadline-Date.now())/1000)) : 0;
-    const mins = Math.floor(timeLeft/60), secs = timeLeft%60;
-    const myAllInputs = tournament.allInputs?.[myNick]||{};
-    const ri_cur = tournament.round-1;
-    // 현재 라운드에 제출했거나 allInputs에 데이터 있으면 제출완료
-    const mySubmitted = (myAllInputs[ri_cur]||[]).length >= 5;
-
-    html=`<div style="text-align:center">
-      ${imgBar}
-      <div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:4px">🏆 현재: ${roundName}</div>
-      <div style="font-size:11px;color:var(--red);margin-bottom:12px">⏰ 마감까지 ${mins}분 ${String(secs).padStart(2,'0')}초</div>`;
-
-    if(myElim) {
-      html+=`<div style="font-size:15px;color:var(--red);padding:20px;background:rgba(239,68,68,.1);border-radius:10px">❌ 탈락했습니다</div>`;
-    } else if(!mySubmitted) {
-      // 입력 화면 - 모든 라운드 한번에
-      html+=`<div style="font-size:12px;color:var(--text2);margin-bottom:12px">16강 ~ 결승 가위바위보를 미리 입력하세요!</div>`;
-      RSP_ROUNDS.forEach((rname,ri)=>{
-        const inputs = myAllInputs[ri]||[];
-        html+=`<div style="background:var(--bg3);border:1px solid ${inputs.length===5?'var(--green)':'var(--border)'};border-radius:10px;padding:10px;margin-bottom:8px;text-align:left">
-          <div style="font-size:12px;font-weight:700;color:${inputs.length===5?'var(--green)':'var(--accent)'};margin-bottom:6px">
-            ${rname} ${inputs.length===5?'✅':'('+inputs.length+'/5)'}
-          </div>
-          <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;min-height:36px;align-items:center">
-            ${inputs.length===0?'<span style="font-size:11px;color:var(--text2)">선택하세요</span>':inputs.map(c=>`<img src="${RSP_IMGS[c]}" style="width:32px;height:32px;object-fit:contain">`).join('')}
-            ${inputs.length>0&&inputs.length<5?`<button onclick="undoRSPChoice(${ri})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;padding:2px 6px;cursor:pointer">↩</button>`:''}
-          </div>
-          ${inputs.length<5?`<div style="display:flex;gap:6px">
-            ${RSP_CHOICES.map(c=>`<button onclick="addRSPChoice('${c}',${ri})" style="width:56px;height:56px;border-radius:10px;background:var(--bg2);border:2px solid var(--border);cursor:pointer;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
-              <img src="${RSP_IMGS[c]}" style="width:34px;height:34px;object-fit:contain">
-              <span style="font-size:9px;color:var(--text2)">${RSP_NAMES[RSP_CHOICES.indexOf(c)]}</span>
-            </button>`).join('')}
-          </div>`:''}
-        </div>`;
-      });
-      const allDone = RSP_ROUNDS.every((_,ri)=>(myAllInputs[ri]||[]).length===5);
-      html+=`<button class="btn btn-p" onclick="submitAllRSP()" style="width:100%;margin-top:4px;font-size:14px;padding:12px" ${allDone?'':'disabled'}>
-        ${allDone?'✅ 제출하기!':'모든 라운드 5번씩 입력 후 제출'}
-      </button>`;
-    } else {
-      // 이미 제출함 - 결과 대기
-      html+=`<div style="background:rgba(34,197,94,.1);border:1px solid var(--green);border-radius:10px;padding:14px;margin-bottom:12px">
-        <div style="font-size:14px;color:var(--green);font-weight:700;margin-bottom:4px">✅ 제출 완료!</div>
-        <div style="font-size:12px;color:var(--text2)">상대방 제출 시 즉시 결과 공개<br>저녁 10시 미제출자 자동 탈락</div>
-      </div>`;
-      // 내 입력 보여주기
-      RSP_ROUNDS.forEach((rname,ri)=>{
-        const inputs=myAllInputs[ri]||[];
-        html+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="font-size:11px;color:var(--text2);min-width:30px">${rname}</span>
-          <div style="display:flex;gap:3px">${inputs.map(c=>`<img src="${RSP_IMGS[c]}" style="width:24px;height:24px;object-fit:contain">`).join('')}</div>
-        </div>`;
-      });
+function drawNumcard() {
+  const btn = document.getElementById('numcard-btn');
+  btn.disabled = true;
+  const el = document.getElementById('numcard-result');
+  // 애니메이션
+  let cnt = 0;
+  const iv = setInterval(()=>{
+    el.textContent = Math.floor(Math.random()*101);
+    if(++cnt >= 20) {
+      clearInterval(iv);
+      const num = Math.floor(Math.random()*101);
+      el.textContent = num;
+      // 저장
+      if(!gameData['numcard']) gameData['numcard'] = {};
+      if(!gameData['numcard'].scores) gameData['numcard'].scores = {};
+      gameData['numcard'].scores[myNick] = num;
+      saveGameData();
+      updateScoreBoard('numcard-scores', gameData['numcard'].scores, false);
+      // 1등 확인
+      const sorted = Object.entries(gameData['numcard'].scores).sort((a,b)=>b[1]-a[1]);
+      document.getElementById('numcard-msg').textContent = sorted[0][0]===myNick ? '🎉 현재 1등!' : `현재 1등: ${sorted[0][0]} (${sorted[0][1]})`;
+      showToast(`🎴 ${num}점!`, 'success');
+      checkLeader('numcard');
+      btn.textContent = '✓ 완료 (닫기)';
+      btn.onclick = closeGame;
+      btn.disabled = false;
     }
-
-    // 우승자
-    if(tournament.champion){
-      html+=`<div style="background:linear-gradient(135deg,rgba(240,165,0,.2),rgba(240,165,0,.05));border:2px solid var(--accent);border-radius:14px;padding:20px;text-align:center;margin-bottom:12px">
-        <div style="font-size:40px;margin-bottom:8px">🏆</div>
-        <div style="font-size:22px;font-weight:700;color:var(--accent)">우승자</div>
-        <div style="font-size:26px;font-weight:900;color:#fff;margin-top:4px">${tournament.champion}</div>
-      </div>`;
-    }
-
-    // 월드컵 대진표
-    html+=`<div style="margin-top:12px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-align:center">🏆 토너먼트 대진표</div>
-      ${(tournament.matches||[]).map(m=>{
-        const ri2=tournament.round-1;
-        const p1sub=(tournament.allInputs?.[m.p1]?.[ri2]||[]).length>=5;
-        const p2sub=(tournament.allInputs?.[m.p2]?.[ri2]||[]).length>=5;
-        const p1win=m.winner===m.p1;
-        const p2win=m.winner===m.p2;
-        // 해당 라운드 입력값
-        const ri=tournament.round-1;
-        const i1=tournament.allInputs?.[m.p1]?.[ri]||[];
-        const i2=tournament.allInputs?.[m.p2]?.[ri]||[];
-        // 라운드별 승패 계산
-        let roundResults='';
-        if(m.winner&&i1.length>0&&i2.length>0){
-          let w1=0,w2=0;
-          const rounds=i1.map((c,idx)=>{
-            const r=rspResult(c,i2[idx]);
-            if(r===1)w1++; else if(r===2)w2++;
-            const color=r===1?'#22c55e':r===2?'#ef4444':'#64748b';
-            return `<span style="font-size:14px" title="${RSP_NAMES[RSP_CHOICES.indexOf(c)]} vs ${RSP_NAMES[RSP_CHOICES.indexOf(i2[idx])]}">${RSP_IMGS[c]?`<img src="${RSP_IMGS[c]}" style="width:20px;height:20px;object-fit:contain;border:1px solid ${color};border-radius:4px">`:c}</span>`;
-          }).join('');
-          roundResults=`<div style="padding:8px 12px;border-top:1px solid var(--border);background:rgba(0,0,0,.2)">
-            <div style="display:flex;gap:4px;align-items:center;justify-content:space-between;margin-bottom:4px">
-              <div style="display:flex;gap:3px;align-items:center">
-                ${i1.map((c,idx)=>{const r=rspResult(c,i2[idx]);const color=r===1?'#22c55e':r===2?'#ef4444':'#64748b';return `<img src="${RSP_IMGS[c]}" style="width:22px;height:22px;object-fit:contain;border:2px solid ${color};border-radius:4px">`; }).join('')}
-              </div>
-              <div style="font-size:10px;color:var(--text2)">vs</div>
-              <div style="display:flex;gap:3px;align-items:center">
-                ${i2.map((c,idx)=>{const r=rspResult(i1[idx],c);const color=r===2?'#22c55e':r===1?'#ef4444':'#64748b';return `<img src="${RSP_IMGS[c]}" style="width:22px;height:22px;object-fit:contain;border:2px solid ${color};border-radius:4px">`; }).join('')}
-              </div>
-            </div>
-          </div>`;
-        }
-        return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:6px">
-          <div style="display:flex;align-items:stretch">
-            <div style="flex:1;padding:10px 12px;background:${p1win?'rgba(34,197,94,.15)':p2win?'rgba(239,68,68,.08)':'var(--bg3)'};border-right:1px solid var(--border)">
-              <div style="font-size:13px;font-weight:${m.p1===myNick?'700':'600'};color:${p1win?'var(--green)':p2win?'var(--text2)':m.p1===myNick?'var(--accent)':'var(--text)'}">${p1win?'🏆 ':''} ${m.p1}</div>
-              <div style="font-size:10px;color:var(--text2);margin-top:2px">${p1sub?'✅ 제출완료':'⏳ 대기중'}</div>
-            </div>
-            <div style="display:flex;align-items:center;padding:0 10px;font-size:11px;color:var(--text2);font-weight:700">VS</div>
-            <div style="flex:1;padding:10px 12px;background:${p2win?'rgba(34,197,94,.15)':p1win?'rgba(239,68,68,.08)':'var(--bg3)'}">
-              <div style="font-size:13px;font-weight:${m.p2===myNick?'700':'600'};color:${p2win?'var(--green)':p1win?'var(--text2)':m.p2===myNick?'var(--accent)':'var(--text)'}">${p2win?'🏆 ':''} ${m.p2||'BYE'}</div>
-              <div style="font-size:10px;color:var(--text2);margin-top:2px">${m.p2&&m.p2!=='BYE'?(p2sub?'✅ 제출완료':'⏳ 대기중'):'부전승'}</div>
-            </div>
-          </div>
-          ${roundResults}
-          ${m.winner?`<div style="text-align:center;font-size:11px;color:var(--green);font-weight:700;padding:4px;background:rgba(34,197,94,.08);border-top:1px solid rgba(34,197,94,.2)">🏆 ${m.winner} 승리!</div>`:'<div style="text-align:center;font-size:10px;color:var(--text2);padding:3px">결과 대기중</div>'}
-        </div>`;
-      }).join('')}
-    </div>`;
-
-    if(admin){
-      html+=`<div style="margin-top:10px;display:flex;gap:8px">
-        <button class="btn btn-p btn-sm" onclick="if(confirm('지금 바로 결과 처리?'))processRSPRound()" style="flex:1">⚡ 조기 종료</button>
-        <button class="btn btn-d btn-sm" onclick="if(confirm('토너먼트 초기화?'))resetRSP()">🔄 초기화</button>
-      </div>`;
-    }
-    html+='</div>';
-  }
-
-  document.getElementById('rsp-content').innerHTML=html;
-  clearTimeout(window._rspTimerTick);
-  if(tournament?.deadline) window._rspTimerTick=setTimeout(()=>renderRSP(gameData['rsp']||{}),1000);
+  }, 80);
 }
 
-function findMyMatch(tournament) {
-  if(!tournament?.matches) return null;
-  return tournament.matches.find(m=>(m.p1===myNick||m.p2===myNick)&&!m.winner)||null;
-}
+// ===== 숫자 맞추기 게임 =====
+let guessTarget = 0;
+let guessInput = '';
 
-function getNext10PM() {
-  // 한국시간(KST) 22:00 계산
-  const now=new Date();
-  const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-  const target=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-  target.setHours(22,0,0,0);
-  // 이미 22시 지났으면 내일
-  if(kst.getHours()>=22) target.setDate(target.getDate()+1);
-  // KST → UTC 변환
-  const utcTarget=new Date(target.toLocaleString('en-US',{timeZone:'UTC'}));
-  const diff=target-kst;
-  return now.getTime()+diff;
-}
+function initGuess(d) {
+  document.getElementById('guess-prize-label').textContent = `🎁 ${d.prize||''}`;
+  guessInput = '';
+  document.getElementById('guess-input').textContent = '---';
+  document.getElementById('guess-btn').disabled = true;
+  document.getElementById('guess-btn').textContent = '🎯 제출!';
+  document.getElementById('guess-btn').onclick = submitGuess;
 
-function startRSPTournament() {
-  fbGet('members', fbMembers => {
-    const allMembers = fbMembers ? (Array.isArray(fbMembers)?fbMembers:Object.values(fbMembers)) : members;
-    const excluded=['인상참좋으시네요'];
-    const players=[...allMembers.map(m=>m.nick).filter(n=>!excluded.includes(n))];
-    // 랜덤 섞기
-    for(let i=players.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[players[i],players[j]]=[players[j],players[i]];}
-    // 16강 대진
-    const matches=[];
-    for(let i=0;i<Math.min(16,players.length);i+=2){
-      matches.push({p1:players[i],p2:players[i+1]||'BYE',winner:null});
-    }
-    if(!gameData['rsp']) gameData['rsp']={};
-    gameData['rsp'].tournament={
-      round:1, matches,
-      inputs:{},
-      eliminated:[],
-      deadline: getNext10PM(), // 저녁 10시
-    };
-    gameData['rsp'].prize = gameData['rsp']?.prize||'';
+  // 관리자가 설정한 target 또는 새로 생성
+  if(d.target) {
+    guessTarget = d.target;
+  } else if(isAdmin()) {
+    guessTarget = Math.floor(Math.random()*999)+1;
+    if(!gameData['guess']) gameData['guess'] = {};
+    gameData['guess'].target = guessTarget;
     saveGameData();
-    renderRSP(gameData['rsp']);
-    showToast('🏆 토너먼트 시작!','success');
-  });
-}
-
-function addRSPChoice(c, ri) {
-  if(!gameData['rsp']?.tournament) return;
-  if(!gameData['rsp'].tournament.allInputs) gameData['rsp'].tournament.allInputs={};
-  if(!gameData['rsp'].tournament.allInputs[myNick]) gameData['rsp'].tournament.allInputs[myNick]={};
-  const inputs=gameData['rsp'].tournament.allInputs[myNick][ri]||[];
-  if(inputs.length>=5) return;
-  inputs.push(c);
-  gameData['rsp'].tournament.allInputs[myNick][ri]=inputs;
-  saveGameData();
-  renderRSP(gameData['rsp']);
-}
-
-function undoRSPChoice(ri) {
-  if(!gameData['rsp']?.tournament) return;
-  const inputs=gameData['rsp'].tournament.allInputs?.[myNick]?.[ri]||[];
-  if(inputs.length>0){
-    inputs.pop();
-    gameData['rsp'].tournament.allInputs[myNick][ri]=inputs;
-    saveGameData(); renderRSP(gameData['rsp']);
-  }
-}
-
-function submitAllRSP() {
-  const t=gameData['rsp']?.tournament; if(!t) return;
-  const myAllInputs=t.allInputs?.[myNick]||{};
-  const allDone=RSP_ROUNDS.every((_,ri)=>(myAllInputs[ri]||[]).length===5);
-  if(!allDone){showToast('모든 라운드 5번씩 입력해주세요!','error');return;}
-  // 라운드별 submitted 관리
-  if(!t.submittedByRound) t.submittedByRound={};
-  RSP_ROUNDS.forEach((_,ri)=>{
-    if(!t.submittedByRound[ri]) t.submittedByRound[ri]=[];
-    if(!t.submittedByRound[ri].includes(myNick)) t.submittedByRound[ri].push(myNick);
-  });
-  // 현재 라운드 submitted도 업데이트
-  if(!t.submitted) t.submitted=[];
-  if(!t.submitted.includes(myNick)) t.submitted.push(myNick);
-  saveGameData();
-  checkAndProcessMatches();
-  renderRSP(gameData['rsp']);
-  showToast('✅ 제출 완료!','success');
-}
-
-function checkAndProcessMatches() {
-  const t=gameData['rsp']?.tournament; if(!t) return;
-  let changed=false;
-  t.matches.forEach(m=>{
-    if(m.winner) return;
-    if(m.p2==='BYE'){m.winner=m.p1;changed=true;return;}
-    const p1sub = (t.allInputs?.[m.p1]?.[ri]||[]).length >= 5;
-    const p2sub = (t.allInputs?.[m.p2]?.[ri]||[]).length >= 5;
-    if(p1sub&&p2sub){
-      // 둘다 제출했으면 해당 라운드 결과 계산
-      const ri=t.round-1;
-      const i1=t.allInputs?.[m.p1]?.[ri]||[];
-      const i2=t.allInputs?.[m.p2]?.[ri]||[];
-      let w1=0,w2=0;
-      for(let i=0;i<5;i++){
-        const r=rspResult(i1[i],i2[i]);
-        if(r===1)w1++; else if(r===2)w2++;
-      }
-      if(w1>w2){m.winner=m.p1;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2);}
-      else if(w2>w1){m.winner=m.p2;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1);}
-      // 무승부면 winner 없음 유지
-      changed=true;
-    }
-  });
-  // 모든 매치 완료시 다음 라운드
-  if(t.matches.every(m=>m.winner)){
-    const winners=t.matches.map(m=>m.winner).filter(Boolean);
-    if(winners.length===1){
-      t.champion=winners[0];
-      showToast(`🏆 우승: ${winners[0]}!`,'success');
-    } else {
-      t.round++;
-      const newMatches=[];
-      for(let i=0;i<winners.length;i+=2){
-        newMatches.push({p1:winners[i],p2:winners[i+1]||'BYE',winner:null});
-      }
-      t.matches=newMatches;
-      t.submitted=[];
-      t.deadline=getNext10PM();
-      showToast(`🏆 ${RSP_ROUNDS[t.round-1]} 시작!`,'success');
-    }
-    changed=true;
-  }
-  if(changed) saveGameData();
-}
-
-function processRSPRound() {
-  const t=gameData['rsp']?.tournament; if(!t) return;
-
-  // 우승자 나올 때까지 모든 라운드 한번에 처리
-  while(!t.champion) {
-    const ri=t.round-1;
-    t.matches.forEach(m=>{
-      if(m.winner) return;
-      if(m.p2==='BYE'){m.winner=m.p1;return;}
-      // 제출 여부: allInputs에 해당 라운드 5개 입력 있으면 제출
-      const p1sub = (t.allInputs?.[m.p1]?.[ri]||[]).length >= 5;
-      const p2sub = (t.allInputs?.[m.p2]?.[ri]||[]).length >= 5;
-      if(!p1sub && !p2sub){
-        // 둘 다 미제출 - 둘 다 탈락, winner 없음으로 처리
-        if(!t.eliminated)t.eliminated=[];
-        t.eliminated.push(m.p1);
-        t.eliminated.push(m.p2);
-        m.winner = '부전승(미제출)';
-      } else if(!p1sub){
-        // p1 미제출 → p2 승리
-        m.winner=m.p2;
-        if(!t.eliminated)t.eliminated=[];
-        t.eliminated.push(m.p1);
-      } else if(!p2sub){
-        // p2 미제출 → p1 승리
-        m.winner=m.p1;
-        if(!t.eliminated)t.eliminated=[];
-        t.eliminated.push(m.p2);
-      }
-      else {
-        const i1=t.allInputs?.[m.p1]?.[ri]||[];
-        const i2=t.allInputs?.[m.p2]?.[ri]||[];
-        let w1=0,w2=0;
-        for(let i=0;i<5;i++){const r=rspResult(i1[i],i2[i]);if(r===1)w1++;else if(r===2)w2++;}
-        if(w1>w2){m.winner=m.p1;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p2);}
-        else if(w2>w1){m.winner=m.p2;if(!t.eliminated)t.eliminated=[];t.eliminated.push(m.p1);}
-        else{m.winner=Math.random()<0.5?m.p1:m.p2;}
-      }
-    });
-
-    // 부전승(미제출) 제외하고 실제 승자만
-    const winners=t.matches.map(m=>m.winner).filter(w=>w&&w!=='부전승(미제출)');
-    if(winners.length<=1){
-      t.champion=winners[0]||null;
-      showToast(`🏆 우승: ${t.champion}!`,'success');
-      break;
-    } else {
-      t.round++;
-      const nm=[];
-      for(let i=0;i<winners.length;i+=2)nm.push({p1:winners[i],p2:winners[i+1]||'BYE',winner:null});
-      t.matches=nm;
-      t.submitted=[];
-    }
   }
 
-  t.deadline=null; // 마감 시간 제거
-  saveGameData(); renderRSP(gameData['rsp']);
+  // 키패드 생성
+  const kp = document.getElementById('guess-keypad');
+  kp.innerHTML = '';
+  // 숫자 버튼 0~9 + 지우기
+  for(let i=1; i<=9; i++) {
+    kp.innerHTML += `<button onclick="guessKey(${i})" style="height:52px;border-radius:8px;background:var(--bg3);border:2px solid var(--border);color:var(--text);font-size:20px;font-weight:700;cursor:pointer">${i}</button>`;
+  }
+  kp.innerHTML += `<button onclick="guessDel()" style="height:52px;border-radius:8px;background:rgba(239,68,68,.15);border:2px solid var(--red);color:var(--red);font-size:16px;font-weight:700;cursor:pointer">←</button>`;
+  kp.innerHTML += `<button onclick="guessKey(0)" style="height:52px;border-radius:8px;background:var(--bg3);border:2px solid var(--border);color:var(--text);font-size:20px;font-weight:700;cursor:pointer">0</button>`;
+  kp.innerHTML += `<button onclick="submitGuess()" style="height:52px;border-radius:8px;background:rgba(240,165,0,.2);border:2px solid var(--accent);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer" id="guess-enter">확인</button>`;
+
+  updateScoreBoard('guess-scores', d.scores||{}, false);
 }
 
-function rspResult(a,b) {
-  // 1=a승, 2=b승, 0=무 (rock/scissors/paper 문자열 기준)
-  if(!a||!b) return 0;
-  if(a===b) return 0;
-  if((a==='rock'&&b==='scissors')||(a==='scissors'&&b==='paper')||(a==='paper'&&b==='rock')) return 1;
-  return 2;
+function guessKey(n) {
+  if(guessInput.length >= 3) return;
+  guessInput += n;
+  updateGuessDisplay();
 }
 
-function resetRSP() {
-  if(!gameData['rsp']) gameData['rsp']={};
-  gameData['rsp'].tournament=null;
+function guessDel() {
+  guessInput = guessInput.slice(0,-1);
+  updateGuessDisplay();
+}
+
+function updateGuessDisplay() {
+  const display = guessInput.padStart(3,'_').split('').join(' ');
+  document.getElementById('guess-input').textContent = guessInput || '---';
+  document.getElementById('guess-btn').disabled = guessInput.length === 0;
+}
+
+function submitGuess() {
+  if(!guessInput) return;
+  const num = parseInt(guessInput);
+  if(num < 1 || num > 999) { showToast('1~999 사이 숫자를 입력하세요','error'); return; }
+
+  if(!gameData['guess']) gameData['guess'] = {};
+  if(!gameData['guess'].scores) gameData['guess'].scores = {};
+  // 차이값 저장 (낮을수록 1등)
+  const diff = Math.abs(guessTarget - num);
+  gameData['guess'].scores[myNick] = {input:num, diff};
   saveGameData();
-  renderRSP({});
+
+  // 결과 표시
+  const sorted = Object.entries(gameData['guess'].scores).sort((a,b)=>a[1].diff-b[1].diff);
+  showToast(`🎯 입력: ${num} / 차이: ${diff}`, 'success');
+  updateScoreBoard('guess-scores', gameData['guess'].scores, false);
+  checkLeader('guess');
+
+  const btn = document.getElementById('guess-btn');
+  btn.textContent = '✓ 완료 (닫기)';
+  btn.onclick = closeGame;
+  btn.disabled = false;
 }
 
 function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
