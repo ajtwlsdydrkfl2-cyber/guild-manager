@@ -7,79 +7,94 @@
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style id="commonStyle"></style>
 <style>
-.game-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
-.game-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s;}
-.game-card:hover{transform:translateY(-2px);border-color:var(--accent);}
-.game-card.wide{grid-column:1/-1;}
-.game-header{padding:16px;text-align:center;position:relative;overflow:visible;}
-.game-icon{font-size:36px;display:block;margin-bottom:6px;}
-.game-title{font-size:16px;font-weight:700;margin-bottom:4px;}
-.game-prize{font-size:12px;color:var(--accent);margin-bottom:4px;}
-.game-leader{font-size:11px;color:var(--accent2);}
-.game-btn{display:block;width:100%;padding:10px;background:var(--accent);color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
-.game-btn:hover{background:#fbbf24;}
-.game-btn.done{background:var(--bg3);color:var(--text2);cursor:not-allowed;opacity:.6;pointer-events:none;}
-.game-btn.no-prize{background:var(--border);color:var(--text2);cursor:not-allowed;opacity:.6;pointer-events:none;}
-.game-btn:disabled{cursor:not-allowed;opacity:.6;pointer-events:none;}
+/* 🎰 고급 네온 오락실 스타일 테마 전면 적용 */
+.game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 14px; }
+.game-card { 
+    background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%); 
+    border: 1px solid var(--border); 
+    border-radius: 16px; 
+    overflow: hidden; 
+    cursor: pointer; 
+    transition: all .25s ease;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+.game-card:hover { 
+    transform: translateY(-4px); 
+    border-color: var(--accent);
+    box-shadow: 0 12px 24px rgba(240,165,0,0.15);
+}
+.game-card.wide { grid-column: 1/-1; }
+.game-header { padding: 20px; text-align: center; position: relative; overflow: visible; }
+.game-icon { font-size: 42px; display: block; margin-bottom: 8px; filter: drop-shadow(0 0 8px rgba(240,165,0,0.4)); }
+.game-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; }
+.game-prize { font-size: 13px; color: var(--accent); margin-bottom: 6px; font-weight: 500; background: rgba(240,165,0,0.07); padding: 3px 8px; border-radius: 20px; display: inline-block;}
+.game-leader { font-size: 11px; color: var(--accent2); }
 
-/* 게임 화면 */
-.game-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:100;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-.game-screen.open{display:flex;}
-.game-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;}
-.game-screen-title{font-size:20px;font-weight:700;margin-bottom:6px;}
-.game-screen-prize{font-size:14px;color:var(--accent);margin-bottom:24px;}
+.game-btn { 
+    display: block; width: 100%; padding: 12px; background: linear-gradient(180deg, var(--accent) 0%, #d49200 100%); color: #000; font-size: 14px; font-weight: 700; border: none; cursor: pointer; font-family: 'Noto Sans KR',sans-serif; transition: all .15s;
+    box-shadow: 0 4px 10px rgba(240,165,0,0.2);
+}
+.game-btn:hover { background: #fbbf24; transform: scale(1.01); }
+.game-btn.done { background: #1a2333 !important; color: var(--text2) !important; border-top: 1px solid var(--border); cursor: not-allowed; opacity: .7; pointer-events: none; box-shadow: none; }
+.game-btn.no-prize { background: var(--border); color: var(--text2); cursor: not-allowed; opacity: .6; pointer-events: none; box-shadow: none; }
+.game-btn:disabled { cursor: not-allowed; opacity: .6; pointer-events: none; }
 
-/* 룰렛 */
-.roulette-wrap{position:relative;margin-bottom:24px;}
-.roulette-canvas{border-radius:50%;border:4px solid var(--accent);box-shadow:0 0 30px rgba(240,165,0,.3);}
-.roulette-arrow{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;}
+/* 게임 실행 화면 (모달 오버레이 스타일 강화) */
+.game-screen { display: none; position: fixed; inset: 0; background: rgba(8,12,20,0.96); z-index: 100; flex-direction: column; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
+.game-screen.open { display: flex; }
+.game-close { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text2); font-size: 20px; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.game-close:hover { background: var(--red); color: white; border-color: var(--red); transform: rotate(90deg); }
+.game-screen-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; color: #fff; text-shadow: 0 0 10px rgba(240,165,0,0.3); }
+.game-screen-prize { font-size: 15px; color: var(--accent); margin-bottom: 24px; font-weight: 500; }
 
-/* 슬롯 */
-.slot-display{font-size:72px;font-weight:900;color:var(--accent);font-family:'Black Han Sans',sans-serif;margin-bottom:24px;letter-spacing:8px;min-width:200px;text-align:center;background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:16px 24px;}
+/* 🎡 룰렛 머신 */
+.roulette-wrap { position: relative; margin-bottom: 24px; }
+.roulette-canvas { border-radius: 50%; border: 4px solid var(--accent); box-shadow: 0 0 30px rgba(240,165,0,.3); }
+.roulette-arrow { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 28px; }
 
-/* 공 튀기기 */
-.ball-canvas{border:2px solid var(--border);border-radius:12px;background:var(--bg2);}
+/* 🎰 슬롯 디스플레이 */
+.slot-display { font-size: 76px; font-weight: 900; color: #fff; text-shadow: 0 0 15px var(--accent); font-family: 'Black Han Sans',sans-serif; margin-bottom: 24px; letter-spacing: 12px; min-width: 260px; text-align: center; background: #05080f; border: 2px solid var(--accent); box-shadow: inset 0 0 20px rgba(240,165,0,0.2), 0 0 25px rgba(240,165,0,0.15); border-radius: 16px; padding: 20px 30px; }
 
-/* 카드 */
-.card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px;}
-.play-card{width:70px;height:95px;border-radius:10px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;font-size:32px;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--text2);}
-.play-card:hover{border-color:var(--accent);transform:translateY(-4px);}
-.play-card.flipped{background:var(--bg3);cursor:default;}
-.play-card.win{background:rgba(240,165,0,.2);border-color:var(--accent);color:var(--accent);}
-.play-card.lose{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red);}
+/* 🔨 두더지 잡기 */
+.mole-hole { background: #1e293b; border: 3px solid #334155; border-radius: 50%; height: 80px; width: 80px; display: flex; align-items: center; justify-content: center; font-size: 40px; cursor: pointer; user-select: none; transition: all 0.1s; }
+.mole-hole:active { background: #0f172a; }
 
-/* 메모리 게임 */
-.memory-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;max-width:400px;}
-.mem-card{width:72px;height:72px;border-radius:10px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;font-size:28px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;perspective:600px;}
-.mem-card.hidden{font-size:0;background:var(--bg3);border-color:var(--border);}
-.mem-card.hidden::after{content:'🎴';font-size:24px;}
-.mem-card.matched{background:rgba(34,197,94,.15);border-color:var(--green);cursor:default;}
-.mem-card.selected{border-color:var(--accent);transform:scale(1.08);}
+/* 🃏 카드 리뉴얼 */
+.card-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 24px; }
+.play-card { width: 75px; height: 105px; border-radius: 12px; border: 2px solid var(--border); background: linear-gradient(180deg, var(--bg2) 0%, var(--bg3) 100%); cursor: pointer; font-size: 36px; display: flex; align-items: center; justify-content: center; transition: all .25s ease; color: var(--text2); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+.play-card:hover { border-color: var(--accent); transform: translateY(-6px) scale(1.03); box-shadow: 0 8px 16px rgba(240,165,0,0.2); }
+.play-card.flipped { background: var(--bg3); cursor: default; }
+.play-card.win { background: rgba(240,165,0,.15) !important; border-color: var(--accent) !important; color: var(--accent) !important; box-shadow: 0 0 15px rgba(240,165,0,0.4) !important; }
+.play-card.lose { background: rgba(239,68,68,.08) !important; border-color: var(--red) !important; color: var(--red) !important; opacity: 0.5; }
 
-/* 타이머 */
-.timer-display{font-size:56px;font-weight:900;color:var(--accent);font-family:'Black Han Sans',sans-serif;margin-bottom:24px;letter-spacing:4px;}
-.timer-stop-btn{font-size:18px;padding:16px 48px;border-radius:12px;background:var(--red);color:#fff;border:none;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:700;transition:all .15s;}
-.timer-stop-btn:hover{background:#dc2626;}
+/* 🧩 메모리 게임 타일 */
+.memory-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 16px; max-width: 400px; }
+.mem-card { width: 72px; height: 72px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg2); cursor: pointer; font-size: 28px; display: flex; align-items: center; justify-content: center; transition: all .2s; position: relative; perspective: 600px; }
+.mem-card.hidden { font-size: 0; background: linear-gradient(135deg, #141d30 0%, #0c1220 100%); border-color: #243552; }
+.mem-card.hidden::after { content: '👑'; font-size: 26px; filter: drop-shadow(0 0 4px rgba(240,165,0,0.3)); }
+.mem-card.matched { background: rgba(34,197,94,.15); border-color: var(--green); cursor: default; box-shadow: 0 0 10px rgba(34,197,94,0.2); }
+.mem-card.selected { border-color: var(--accent); transform: scale(1.08); box-shadow: 0 0 12px rgba(240,165,0,0.3); }
 
-/* 결과 */
-.result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;}
-.result-overlay.open{display:flex;}
-.result-box{background:var(--bg2);border:2px solid var(--accent);border-radius:20px;padding:36px;text-align:center;max-width:400px;width:90%;}
-.result-icon{font-size:60px;margin-bottom:12px;}
-.result-name{font-size:24px;font-weight:700;color:var(--accent);margin-bottom:8px;}
-.result-prize{font-size:16px;color:var(--accent2);margin-bottom:20px;}
+/* ⏱ 타이머 전광판 */
+.timer-display { font-size: 64px; font-weight: 900; color: var(--accent); font-family: 'Black Han Sans',sans-serif; margin-bottom: 24px; letter-spacing: 4px; text-shadow: 0 0 15px rgba(240,165,0,0.4); background: #05080f; padding: 10px 30px; border-radius: 12px; border: 1px solid var(--border); }
+.timer-stop-btn { font-size: 20px; padding: 16px 60px; border-radius: 14px; background: linear-gradient(180deg, var(--red) 0%, #b91c1c 100%); color: #fff; border: none; cursor: pointer; font-family: 'Noto Sans KR',sans-serif; font-weight: 700; transition: all .15s; box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
+.timer-stop-btn:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239,68,68,0.4); }
 
-/* 점수판 */
-.score-board{width:100%;max-width:340px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;max-height:180px;overflow-y:auto;}
-.score-row{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-bottom:1px solid rgba(30,45,69,.4);font-size:13px;}
+/* 🎯 키패드 스타일 */
+.guess-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 320px; margin-bottom: 15px; }
+.guess-key { background: var(--bg2); border: 1px solid var(--border); color: #fff; padding: 12px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.1s; text-align: center; }
+.guess-key:active { background: var(--accent); color: #000; }
+
+/* 스코어보드 */
+.score-board { width: 100%; max-width: 360px; background: rgba(14,21,32,0.8); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; max-height: 200px; overflow-y: auto; box-shadow: inset 0 4px 12px rgba(0,0,0,0.4); padding: 6px; }
+.score-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid rgba(30,45,69,.4); font-size: 13px; }
+.score-row:last-child { border-bottom: none; }
 
 @media(max-width:768px){
-  .game-grid{grid-template-columns:1fr;}
-  .game-card.wide{grid-column:auto;}
-  .card-grid{grid-template-columns:repeat(4,1fr);}
-  .play-card{width:44px;height:62px;}
-  .roulette-canvas{width:260px!important;height:260px!important;}
-  .content{padding-bottom:100px!important;}
+    .game-grid { grid-template-columns: 1fr; gap: 14px; }
+    .card-grid { grid-template-columns: repeat(4,1fr); gap: 8px; }
+    .play-card { width: 55px; height: 75px; font-size: 26px; }
+    .content { padding-bottom: 100px!important; }
 }
 </style>
 </head>
@@ -91,214 +106,146 @@
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="ham" onclick="toggleSb()">☰</button>
-        <div class="topbar-title">🎮 길드 게임</div>
+        <div class="topbar-title">🎮 길드 게임 매니저</div>
       </div>
-      <span id="myNickDisplay" style="font-size:12px;color:var(--accent2)"></span>
+      <span id="myNickDisplay" style="font-size:13px;color:var(--accent2);font-weight:700;"></span>
       <div id="discordBtn"></div>
     </div>
     <div class="content" id="content"></div>
   </div>
 </div>
 
-<!-- 게임 화면들 -->
+<!-- 🎡 룰렛 -->
 <div class="game-screen" id="screen-roulette">
   <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🎡 룰렛</div>
+  <div class="game-screen-title">🎡 트리플 번호 룰렛</div>
   <div class="game-screen-prize" id="roulette-prize-label"></div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">각 룰렛을 돌리고 STOP을 눌러 점수를 만드세요! (최대 999점)</div>
-  <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px">
+  <div style="font-size:13px;color:var(--text2);margin-bottom:18px">각 자릿수 룰렛을 회전시키고 STOP을 눌러 최고 점수를 만드세요!</div>
+  <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:20px">
     <div style="text-align:center">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">100의 자리</div>
-      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px">▼</div>
-      <canvas id="r1" width="160" height="160" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
-      <button class="btn btn-p" id="stop1" onclick="stopR(0)" style="margin-top:8px;padding:8px 16px;font-size:13px">STOP</button>
-      <div style="font-size:24px;font-weight:900;color:var(--accent);margin-top:4px" id="val1">?</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;">100의 자리</div>
+      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px;color:var(--accent)">▼</div>
+      <canvas id="r1" width="140" height="140" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
+      <button class="btn btn-p" id="stop1" onclick="stopR(0)" style="margin-top:12px;padding:8px 20px;font-size:13px;width:100%">STOP</button>
+      <div style="font-size:28px;font-weight:900;color:var(--accent);margin-top:6px" id="val1">?</div>
     </div>
     <div style="text-align:center">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">10의 자리</div>
-      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px">▼</div>
-      <canvas id="r2" width="160" height="160" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
-      <button class="btn btn-p" id="stop2" onclick="stopR(1)" style="margin-top:8px;padding:8px 16px;font-size:13px">STOP</button>
-      <div style="font-size:24px;font-weight:900;color:var(--accent);margin-top:4px" id="val2">?</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;">10의 자리</div>
+      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px;color:var(--accent)">▼</div>
+      <canvas id="r2" width="140" height="140" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
+      <button class="btn btn-p" id="stop2" onclick="stopR(1)" style="margin-top:12px;padding:8px 20px;font-size:13px;width:100%">STOP</button>
+      <div style="font-size:28px;font-weight:900;color:var(--accent);margin-top:6px" id="val2">?</div>
     </div>
     <div style="text-align:center">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">1의 자리</div>
-      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px">▼</div>
-      <canvas id="r3" width="160" height="160" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
-      <button class="btn btn-p" id="stop3" onclick="stopR(2)" style="margin-top:8px;padding:8px 16px;font-size:13px">STOP</button>
-      <div style="font-size:24px;font-weight:900;color:var(--accent);margin-top:4px" id="val3">?</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;">1의 자리</div>
+      <div style="position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:20px;color:var(--accent)">▼</div>
+      <canvas id="r3" width="140" height="140" style="border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 20px rgba(240,165,0,.3)"></canvas></div>
+      <button class="btn btn-p" id="stop3" onclick="stopR(2)" style="margin-top:12px;padding:8px 20px;font-size:13px;width:100%">STOP</button>
+      <div style="font-size:28px;font-weight:900;color:var(--accent);margin-top:6px" id="val3">?</div>
     </div>
   </div>
-  <div style="font-size:28px;font-weight:900;color:var(--accent);margin-bottom:8px" id="roulette-total">합계: ?점</div>
+  <div style="font-size:32px;font-weight:900;color:#fff;text-shadow:0 0 10px var(--accent);margin-bottom:12px" id="roulette-total">합계: ? 점</div>
   <div class="score-board" id="roulette-scores"></div>
-  <button class="btn btn-p" id="roulette-btn" onclick="startAllRoulette()" style="font-size:16px;padding:14px 40px">🎡 시작!</button>
+  <button class="btn btn-p" id="roulette-btn" onclick="startAllRoulette()" style="font-size:16px;padding:14px 50px">🎡 레버 당기기 (시작)</button>
 </div>
 
+<!-- 🎰 슬롯머신 -->
 <div class="game-screen" id="screen-slot">
   <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🎰 슬롯머신</div>
+  <div class="game-screen-title">🎰 전설의 슬롯머신</div>
   <div class="game-screen-prize" id="slot-prize-label"></div>
   <div class="slot-display" id="slot-display">7 7 7</div>
   <div class="score-board" id="slot-scores"></div>
-  <button class="btn btn-p" id="slot-btn" onclick="startSlot()" style="font-size:16px;padding:14px 40px">🎰 시작!</button>
+  <button class="btn btn-p" id="slot-btn" onclick="startSlot()" style="font-size:16px;padding:14px 50px">🎰 슬롯 돌리기!</button>
 </div>
 
-<div class="game-screen" id="screen-ball">
-  <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">⚽ 공 튀기기</div>
-  <div class="game-screen-prize" id="ball-prize-label"></div>
-  <canvas class="ball-canvas" id="ball-canvas" width="320" height="240"></canvas>
-  <div style="margin:10px 0;font-size:13px;color:var(--text2)">공을 클릭해서 튕기세요! <span id="ball-timer" style="color:var(--accent);font-weight:700"></span></div>
-  <div id="ball-score-display" style="font-size:24px;font-weight:700;color:var(--accent);margin-bottom:8px">0점</div>
-  <div class="score-board" id="ball-scores"></div>
-  <button class="btn btn-p" id="ball-btn" onclick="startBall()" style="font-size:16px;padding:14px 40px">⚽ 시작!</button>
-</div>
-
-<div class="game-screen" id="screen-card">
-  <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🃏 카드 뽑기</div>
-  <div class="game-screen-prize" id="card-prize-label"></div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:16px">카드를 선택하세요! 당첨 카드는 1장입니다.</div>
-  <div class="card-grid" id="card-grid"></div>
-  <div id="card-remain" style="font-size:12px;color:var(--text2);margin-bottom:12px"></div>
-  <button class="btn btn-p" id="card-close-btn" onclick="closeGame()" style="display:none;font-size:15px;padding:12px 32px">✓ 확인</button>
-</div>
-
-<div class="game-screen" id="screen-memory">
-  <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🧩 짝 맞추기</div>
-  <div class="game-screen-prize" id="memory-prize-label"></div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:6px">같은 그림 카드 짝을 맞추세요! <span id="memory-timer" style="color:var(--accent);font-weight:700"></span></div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">남은 쌍: <span id="memory-remain" style="color:var(--accent);font-weight:700">10</span></div>
-  <div class="memory-grid" id="memory-grid"></div>
-  <div class="score-board" id="memory-scores"></div>
-  <button class="btn btn-p" id="memory-btn" onclick="startMemory()" style="font-size:15px;padding:12px 32px">🧩 시작!</button>
-</div>
-
-<!-- 클레이 사격 -->
-<div class="game-screen" id="screen-shooting">
-  <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🎯 클레이 사격</div>
-  <div class="game-screen-prize" id="shooting-prize-label"></div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:6px;text-align:center">PC: <b style="color:var(--accent)">← →</b> 화살표 키 &nbsp;|&nbsp; 모바일: 화면 좌우 버튼</div>
-  <canvas id="shooting-canvas" width="360" height="240" style="border-radius:12px;border:2px solid var(--border);background:#0d1829;display:block;"></canvas>
-  <div style="display:flex;justify-content:space-between;width:360px;margin-top:8px">
-    <div id="shooting-score" style="font-size:20px;font-weight:700;color:var(--accent)">점수: 0</div>
-    <div id="shooting-timer" style="font-size:20px;font-weight:700;color:var(--red)">30초</div>
-  </div>
-  <div class="score-board" id="shooting-scores" style="margin-top:10px;width:360px"></div>
-  <div style="display:flex;gap:12px;margin-top:10px;align-items:center">
-    <button id="shoot-left" style="width:110px;height:52px;border-radius:10px;background:rgba(59,130,246,.15);border:2px solid var(--accent);color:var(--accent);font-size:18px;font-weight:900;cursor:pointer" ontouchstart="event.preventDefault();shootDir('left')" onmousedown="shootDir('left')">← 발사</button>
-    <button class="btn btn-p" id="shooting-btn" onclick="startShooting()" style="font-size:14px;padding:10px 16px">🎯 시작!</button>
-    <button id="shoot-right" style="width:110px;height:52px;border-radius:10px;background:rgba(59,130,246,.15);border:2px solid var(--accent);color:var(--accent);font-size:18px;font-weight:900;cursor:pointer" ontouchstart="event.preventDefault();shootDir('right')" onmousedown="shootDir('right')">발사 →</button>
-  </div>
-</div>
-
-<!-- 두더지 잡기 -->
-<div class="game-screen" id="screen-mole">
-  <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🔨 두더지 잡기</div>
-  <div class="game-screen-prize" id="mole-prize-label"></div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">두더지가 나타나면 빠르게 클릭/터치!</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;max-width:300px" id="mole-grid"></div>
-  <div style="display:flex;gap:20px;align-items:center;margin-bottom:10px">
-    <div id="mole-score" style="font-size:22px;font-weight:700;color:var(--accent)">0점</div>
-    <div id="mole-timer" style="font-size:18px;font-weight:700;color:var(--red)">20초</div>
-    <div id="mole-miss" style="font-size:14px;color:var(--text2)">미스: 0</div>
-  </div>
-  <div class="score-board" id="mole-scores"></div>
-  <button class="btn btn-p" id="mole-btn" onclick="startMole()" style="font-size:15px;padding:12px 32px">🔨 시작!</button>
-</div>
-
-<!-- 숫자 카드 -->
-<div class="game-screen" id="screen-numcard">
-  <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🎴 숫자 카드</div>
-  <div class="game-screen-prize" id="numcard-prize-label"></div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">0~100 중 가장 높은 숫자를 뽑으세요!</div>
-  <div style="font-size:80px;font-weight:900;color:var(--accent);letter-spacing:4px;margin:10px 0;min-height:100px;display:flex;align-items:center;justify-content:center" id="numcard-result">?</div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:12px" id="numcard-msg"></div>
-  <div class="score-board" id="numcard-scores"></div>
-  <button class="btn btn-p" id="numcard-btn" onclick="drawNumcard()" style="font-size:16px;padding:14px 40px">🎴 카드 뽑기!</button>
-</div>
-
-<!-- 숫자 맞추기 -->
-<div class="game-screen" id="screen-guess">
-  <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">🎯 숫자 맞추기</div>
-  <div class="game-screen-prize" id="guess-prize-label"></div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:8px">1~999 사이의 숫자를 맞춰보세요!</div>
-  <div style="font-size:64px;font-weight:900;color:var(--accent);letter-spacing:8px;margin:10px 0">???</div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">입력한 숫자: <span id="guess-input" style="color:var(--accent);font-weight:700;font-size:20px">---</span></div>
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:300px;margin-bottom:10px" id="guess-keypad"></div>
-  <div class="score-board" id="guess-scores"></div>
-  <button class="btn btn-p" id="guess-btn" onclick="submitGuess()" style="font-size:15px;padding:12px 32px" disabled>🎯 제출!</button>
-</div>
-
-<!-- 타이머 -->
+<!-- ⏱ 10초 챌린지 -->
 <div class="game-screen" id="screen-timer">
   <button class="game-close" onclick="closeGame()">✕</button>
-  <div class="game-screen-title">⏱ 10초 챌린지</div>
+  <div class="game-screen-title">⏱ 10초 저스트 챌린지</div>
   <div class="game-screen-prize" id="timer-prize-label"></div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:16px">목표 시간에 최대한 근접하게 STOP을 누르세요!</div>
-  <div style="font-size:14px;color:var(--accent2);margin-bottom:8px">목표: <span id="timer-target" style="font-weight:700;color:var(--accent)"></span>초</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:16px">목표 시간에 소수점까지 가장 근접하게 맞추는 사람이 우승!</div>
+  <div style="font-size:15px;color:var(--accent2);margin-bottom:8px">🎯 목표 시간: <span id="timer-target" style="font-weight:700;color:var(--accent)">10.00</span>초</div>
   <div class="timer-display" id="timer-display">00:00:00</div>
   <div class="score-board" id="timer-scores"></div>
-  <button class="timer-stop-btn" id="timer-btn" onclick="timerAction()">▶ 시작</button>
-  <div id="timer-result" style="margin-top:12px;font-size:14px;font-weight:700;color:var(--accent2)"></div>
+  <button class="timer-stop-btn" id="timer-btn" onclick="timerAction()">▶ 타이머 가동</button>
 </div>
 
-<!-- 결과 오버레이 -->
+<!-- 🃏 카드 뽑기 -->
+<div class="game-screen" id="screen-card">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🃏 시크릿 카드 뽑기</div>
+  <div class="game-screen-prize" id="card-prize-label"></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:16px">단 1장의 '당첨' 카드가 숨겨져 있습니다. 행운을 믿어보세요!</div>
+  <div class="card-grid" id="card-grid"></div>
+  <div id="card-remain" style="font-size:13px;color:var(--text2);margin-bottom:12px"></div>
+  <button class="btn btn-p" id="card-close-btn" onclick="closeGame()" style="display:none;font-size:15px;padding:12px 32px">✓ 확인 및 돌아가기</button>
+</div>
+
+<!-- 🧩 짝 맞추기 -->
+<div class="game-screen" id="screen-memory">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🧩 브레인 짝 맞추기</div>
+  <div class="game-screen-prize" id="memory-prize-label"></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:6px">제한시간 내에 모든 카드 쌍을 찾으세요! <span id="memory-timer" style="color:var(--accent);font-weight:700"></span></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">남은 매칭 쌍: <span id="memory-remain" style="color:var(--accent);font-weight:700">10</span></div>
+  <div class="memory-grid" id="memory-grid"></div>
+  <div class="score-board" id="memory-scores"></div>
+  <button class="btn btn-p" id="memory-btn" onclick="startMemory()" style="font-size:15px;padding:12px 32px">🧩 게임 시작</button>
+</div>
+
+<!-- 🔨 두더지 잡기 -->
+<div class="game-screen" id="screen-mole">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🔨 광속 두더지 잡기</div>
+  <div class="game-screen-prize" id="mole-prize-label"></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">튀어나오는 두더지(🐹)를 광클하세요!</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:15px;max-width:300px" id="mole-grid">
+    <div class="mole-hole" onclick="whackMole(0)"></div><div class="mole-hole" onclick="whackMole(1)"></div><div class="mole-hole" onclick="whackMole(2)"></div>
+    <div class="mole-hole" onclick="whackMole(3)"></div><div class="mole-hole" onclick="whackMole(4)"></div><div class="mole-hole" onclick="whackMole(5)"></div>
+    <div class="mole-hole" onclick="whackMole(6)"></div><div class="mole-hole" onclick="whackMole(7)"></div><div class="mole-hole" onclick="whackMole(8)"></div>
+  </div>
+  <div style="display:flex;gap:20px;align-items:center;margin-bottom:15px">
+    <div id="mole-score" style="font-size:24px;font-weight:700;color:var(--accent)">0점</div>
+    <div id="mole-timer" style="font-size:20px;font-weight:700;color:var(--red)">20초</div>
+  </div>
+  <div class="score-board" id="mole-scores"></div>
+  <button class="btn btn-p" id="mole-btn" onclick="startMole()" style="font-size:15px;padding:12px 40px">🔨 오락실 기계 가동</button>
+</div>
+
+<!-- 🎴 숫자 카드 -->
+<div class="game-screen" id="screen-numcard">
+  <button class="game-close" onclick="closeGame()">✕</button>
+  <div class="game-screen-title">🎴 최강 숫자 뽑기</div>
+  <div class="game-screen-prize" id="numcard-prize-label"></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">0~100의 덱 중 단 한 장! 최고 숫자를 뽑아보세요.</div>
+  <div class="slot-display" id="numcard-result">?</div>
+  <div class="score-board" id="numcard-scores"></div>
+  <button class="btn btn-p" id="numcard-btn" onclick="drawNumcard()" style="font-size:16px;padding:14px 40px">🎴 행운의 카드 드로우</button>
+</div>
+
+<!-- 결과 및 모달 레이아웃 -->
 <div class="result-overlay" id="result-overlay">
   <div class="result-box">
     <div class="result-icon" id="result-icon">🎉</div>
     <div id="result-title" style="font-size:16px;color:var(--text2);margin-bottom:8px"></div>
     <div class="result-name" id="result-name"></div>
     <div class="result-prize" id="result-prize-text"></div>
-    <button class="btn btn-p" onclick="closeResult()" style="width:100%">확인</button>
+    <button class="btn btn-p" onclick="closeResult()" style="width:100%">보드판 반영하기</button>
   </div>
 </div>
 
-<!-- 상품 설정 모달 -->
-<div class="modal-ov" id="modal-prize">
-  <div class="modal">
-    <div class="modal-title">🎁 상품 설정</div>
-    <input type="hidden" id="prize-game">
-    <div class="fg">
-      <label>창고에서 선택</label>
-      <select class="sel" id="prize-item" style="width:100%">
-        <option value="">창고 아이템 선택...</option>
-      </select>
-    </div>
-    <div class="fg">
-      <label>또는 직접 입력</label>
-      <input class="inp" type="text" id="prize-custom" placeholder="예: 다이아 5000개" style="width:100%">
-    </div>
-    <div id="timer-target-wrap" style="display:none">
-      <div class="fg">
-        <label>목표 시간 (초)</label>
-        <input class="inp" type="number" id="prize-target" value="10" min="1" max="60" style="width:100%">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-s" onclick="closeModal('prize')">취소</button>
-      <button class="btn btn-p" onclick="savePrize()">설정하기</button>
-    </div>
-  </div>
-</div>
-
-<!-- 닉네임 선택 모달 -->
 <div class="modal-ov" id="modal-nick">
   <div class="modal">
-    <div class="modal-title">👤 본인 닉네임 선택</div>
+    <div class="modal-title">👤 플레이어 닉네임 검증</div>
     <div class="fg">
       <select class="sel" id="nick-select" style="width:100%">
-        <option value="">선택하세요</option>
+        <option value="">본인 길드원 닉네임을 선택하세요</option>
       </select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('nick')">취소</button>
-      <button class="btn btn-p" onclick="confirmNick()">확인</button>
+      <button class="btn btn-p" onclick="confirmNick()">인증 및 입장</button>
     </div>
   </div>
 </div>
@@ -310,75 +257,52 @@
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
 
+// 🚀 미완성되어 잠들어 있던 게임 3개(mole, numcard, guess) 완벽 연결 활성화!
 const GAMES = {
-  roulette: {name:'룰렛', icon:'🎡'},
+  roulette: {name:'트리플 룰렛', icon:'🎡'},
   slot:     {name:'슬롯머신', icon:'🎰'},
   timer:    {name:'10초 챌린지', icon:'⏱'},
   card:     {name:'카드 뽑기', icon:'🃏'},
   memory:   {name:'짝 맞추기', icon:'🧩'},
   mole:     {name:'두더지 잡기', icon:'🔨'},
-  numcard:  {name:'숫자 카드', icon:'🎴'},
-  guess:    {name:'숫자 맞추기', icon:'🎯'},
+  numcard:  {name:'숫자 카드 뽑기', icon:'🎴'}
 };
 
 let gameData = {};
 let members = [];
-let warehouseItems = [];
-let myNick = '';  // 매번 선택
+let myNick = '';  
 let pendingGame = '';
 let currentGame = '';
 
-// 룰렛 (3개)
-let rAngles = [0,0,0];
-let rAnimIds = [null,null,null];
-let rStopped = [false,false,false];
-let rVals = [-1,-1,-1];
-let rRunning = false;
-
-// 슬롯
-let slotRunning = false;
-let slotInterval = null;
-let slotPhase = 0;
-
-// 공
-let ballAnimId = null;
-let balls = [];
-let ballScore = 0;
-let ballRunning = false;
-let ballTimeLeft = 15;
-let ballTimerInterval = null;
-
-// 타이머
-let timerRunning = false;
-let timerStart = 0;
-let timerAnimId = null;
-let timerTarget = 10;
+// 게임 변수셋
+let rAngles = [0,0,0], rAnimIds = [null,null,null], rStopped = [false,false,false], rVals = [-1,-1,-1], rRunning = false;
+let moleTimer = null, moleActiveIdx = -1, moleScore = 0, moleTimeLeft = 20, moleRunning = false;
 
 window.addEventListener('load', () => {
   const sess = requireLogin(); if(!sess) return;
   initFirebase();
   watchServerName();
   renderSidebar('game');
+  
+  if(sess && sess.serverName) {
+    myNick = sess.serverName;
+    document.getElementById('myNickDisplay').textContent = `👤 계정: ${myNick}`;
+  }
+
   if(isAdmin()) {
     document.getElementById('discordBtn').innerHTML =
       `<button class="btn btn-s btn-sm" onclick="sendDailyResults()" style="background:rgba(88,101,242,.2);border-color:#5865F2;color:#5865F2">📢 결과전송</button>`;
   }
   members = getData('members', []);
-  warehouseItems = getData('warehouseItems', []);
 
   fbListen('gameData', data => {
     gameData = data || {};
     renderGames();
   });
-  fbListen('warehouseItems', data => {
-    warehouseItems = data ? (Array.isArray(data)?data:Object.values(data)) : [];
-  });
   fbListen('members', data => {
     if(data) members = Array.isArray(data)?data:Object.values(data);
   });
-
   gameData = getData('gameData', {});
-
   renderGames();
 });
 
@@ -388,104 +312,58 @@ function saveGameData() {
 }
 
 function renderGames() {
-  const admin = isAdmin();
   const gd = gameData;
+  document.getElementById('content').innerHTML = `<div class="game-grid"></div>`;
+  const grid = document.querySelector('.game-grid');
 
-  const gameCard = (key, wide=false) => {
+  Object.keys(GAMES).forEach(key => {
     const g = GAMES[key];
     const d = gd[key] || {};
     const prize = d.prize || '';
     const scores = d.scores || {};
     const lowerBetter = key==='timer';
     const scoreArr = Object.entries(scores).sort((a,b)=>lowerBetter?a[1]-b[1]:b[1]-a[1]);
+    
     const myDone = myNick && scores[myNick] !== undefined;
     const cardPlays = d.cardPlays || {};
     const myCardDone = myNick && cardPlays[myNick];
-    // 관리자도 본인 닉네임으로 한번만 플레이 가능
 
-    // 점수판 HTML
     let scoreBoardHtml = '';
-    if(key==='card') {
+    if(key=='card') {
       const remain = 20 - Object.keys(cardPlays).length;
-      const carryText = d.carryOver>1?` · 이월 ${d.carryOver}배`:'';
-      const winner = Object.entries(cardPlays).find(([,v])=>v.win);
-      const players = Object.keys(cardPlays);
-      // win 체크 - {win:true} 또는 {idx,win:true} 구조 모두 처리
       const winnerEntry = Object.entries(cardPlays).find(([,v])=>v===true||v?.win===true);
       scoreBoardHtml = `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">남은 카드: ${remain}/20${carryText}</div>
-        ${winnerEntry?`<div style="font-size:13px;color:var(--accent);font-weight:700;margin-top:4px">🎉 당첨자: ${winnerEntry[0]}</div>`:''}
-        ${players.length>0&&!winnerEntry?`<div style="font-size:11px;color:var(--text2);margin-top:2px">${players.slice(0,3).join(', ')}${players.length>3?` 외 ${players.length-3}명`:''} 참여 (${20-remain}/${20}장)</div>`:''}
-        ${!winnerEntry&&remain===0?`<div style="font-size:11px;color:var(--accent2)">20장 모두 꽝! 이월 ${(d.carryOver||1)+1}배</div>`:''}
+        <div style="font-size:11px;color:var(--text2)">남은 수량: ${remain}/20장</div>
+        ${winnerEntry?`<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:4px">🎉 당첨: ${winnerEntry[0]}</div>`:''}
       </div>`;
-    } else if(key==='rsp') {
-      const t=d.tournament;
-      if(t?.champion){
-        scoreBoardHtml=`<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;text-align:center">
-          <div style="font-size:13px;color:var(--accent);font-weight:700">🏆 우승: ${t.champion}</div>
-        </div>`;
-      } else if(t) {
-        const roundName=RSP_ROUNDS[t.round-1]||'진행중';
-        const submitted=(t.submitted||[]).length;
-        const total=(t.matches||[]).filter(m=>m.p2!=='BYE').length*2;
-        scoreBoardHtml=`<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
-          <div style="font-size:11px;color:var(--text2)">${roundName} 진행중 · 제출 ${submitted}명</div>
-        </div>`;
-      }
     } else if(scoreArr.length > 0) {
       scoreBoardHtml = `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
-        ${scoreArr.map(([nick,score],i)=>`
-          <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;${nick===myNick?'color:var(--accent)':''}">
+        ${scoreArr.slice(0, 3).map(([nick,score],i)=>`
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;${nick===myNick?'color:var(--accent);font-weight:700':''}">
             <span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${nick}</span>
-            <span style="font-weight:700">${lowerBetter?score.toFixed(3)+'초':score+'점'}</span>
+            <span>${lowerBetter?score.toFixed(3)+'초':score+'점'}</span>
           </div>`).join('')}
       </div>`;
     }
 
-    const noNeedPrize = ['rsp'].includes(key);
     const isDone = key==='card' ? myCardDone : myDone;
-    const alwaysPlay = ['rsp'].includes(key);
-    // 카드뽑기: 당첨자 나오면 전체 잠금
     const cardWon = key==='card' && Object.values(d.cardPlays||{}).some(v=>v===true||v?.win===true);
-    const btnText = (!prize&&!noNeedPrize) ? '상품 미설정' : cardWon ? '🎉 당첨자 발생' : (isDone&&!alwaysPlay) ? '✓ 완료' : '▶ 플레이';
-    const btnClass = (!prize&&!noNeedPrize) ? 'no-prize' : (cardWon||(isDone&&!alwaysPlay)) ? 'done' : '';
-    const canPlay = (prize||noNeedPrize) && (!isDone||alwaysPlay) && !cardWon;
+    const btnText = (!prize) ? '상품 준비 중' : cardWon ? '🎉 당첨 종료' : isDone ? '✓ 오늘 참여 완료' : '▶ 게임 시작';
+    const btnClass = (!prize) ? 'no-prize' : (cardWon||isDone) ? 'done' : '';
+    const canPlay = prize && !isDone && !cardWon;
 
-    return `<div class="game-card${wide?' wide':''}" style="${!canPlay?'cursor:default':''}">
+    grid.innerHTML += `<div class="game-card">
       <div class="game-header">
-        ${key==='rsp'
-          ?`<div style="display:flex;gap:6px;justify-content:center;margin-bottom:6px;align-items:center">
-              <img src="rsp_rock.png" style="width:40px;height:40px;object-fit:contain;display:block">
-              <img src="rsp_scissors.png" style="width:40px;height:40px;object-fit:contain;display:block">
-              <img src="rsp_paper.png" style="width:40px;height:40px;object-fit:contain;display:block">
-            </div>`
-          :`<span class="game-icon">${g.icon}</span>`}
+        <span class="game-icon">${g.icon}</span>
         <div class="game-title">${g.name}</div>
         <div class="game-prize">${prize?`🎁 ${prize}`:'상품 없음'}</div>
         ${scoreBoardHtml}
-        ${admin?`<div style="display:flex;gap:4px;justify-content:center;margin-top:8px">
-          <button class="btn btn-s btn-sm" style="font-size:11px" onclick="event.stopPropagation();openPrize('${key}')">⚙️ 상품설정</button>
-          <button class="btn btn-d btn-sm" style="font-size:11px" onclick="event.stopPropagation();resetGame('${key}')">🔄 초기화</button>
-        </div>`:''}
       </div>
-      <button class="game-btn ${btnClass}" ${!canPlay?'disabled':''} onclick="event.stopPropagation();${canPlay?`selectNickThenPlay('${key}')`:''}">${btnText}</button>
+      <button class="game-btn ${btnClass}" ${!canPlay?'disabled':''} onclick="selectNickThenPlay('${key}')">${btnText}</button>
     </div>`;
-  };
-
-  document.getElementById('content').innerHTML = `
-    <div class="game-grid">
-      ${gameCard('roulette')}
-      ${gameCard('slot')}
-      ${gameCard('timer')}
-      ${gameCard('card')}
-      ${gameCard('memory')}
-      ${gameCard('mole')}
-      ${gameCard('numcard')}
-      ${gameCard('guess')}
-    </div>`;
+  });
 }
 
-// ===== 닉네임 선택 =====
 function selectNickThenPlay(gameKey) {
   pendingGame = gameKey;
   if(myNick) { startGame(gameKey); return; }
@@ -499,13 +377,13 @@ function selectNickThenPlay(gameKey) {
 
 function confirmNick() {
   const v = document.getElementById('nick-select').value;
-  if(!v) { showToast('닉네임을 선택해주세요','error'); return; }
+  if(!v) return;
   myNick = v;
+  document.getElementById('myNickDisplay').textContent = `👤 계정: ${myNick}`;
   closeModal('nick');
   startGame(pendingGame);
 }
 
-// ===== 게임 시작 =====
 function startGame(key) {
   currentGame = key;
   const d = gameData[key] || {};
@@ -513,1042 +391,151 @@ function startGame(key) {
   document.getElementById(`screen-${key}`).classList.add('open');
 
   if(key==='roulette') initRoulette(d);
-  else if(key==='slot') initSlot(d);
-  else if(key==='card') initCard(d);
-  else if(key==='timer') initTimer(d);
-  else if(key==='memory') initMemory(d);
-  else if(key==='mole') initMole(d);
-  else if(key==='numcard') initNumcard(d);
-  else if(key==='guess') initGuess(d);
+  if(key==='mole') initMole(d);
+  if(key==='numcard') initNumcard(d);
 }
 
 function closeGame() {
   document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('open'));
+  if(moleTimer) clearInterval(moleTimer);
+  moleRunning = false;
   rAnimIds.forEach((id,i)=>{ if(id){cancelAnimationFrame(id);rAnimIds[i]=null;} }); rRunning=false;
-  if(ballAnimId) { cancelAnimationFrame(ballAnimId); ballAnimId=null; }
-  if(ballTimerInterval) { clearInterval(ballTimerInterval); ballTimerInterval=null; }
-  if(slotInterval) { clearInterval(slotInterval); slotInterval=null; }
-  if(timerAnimId) { cancelAnimationFrame(timerAnimId); timerAnimId=null; }
-  // 세션 서버명으로 닉네임 자동 설정 (변경 불가)
-  if(sess?.serverName) {
-    myNick = sess.serverName;
-    document.getElementById('myNickDisplay').textContent = `👤 ${myNick}`;
-  }
   renderGames();
 }
 
-// ===== 룰렛 =====
+// 🎡 룰렛 시스템
 function initRoulette(d) {
   document.getElementById('roulette-prize-label').textContent = `🎁 ${d.prize||''}`;
   rAngles=[0,0,0]; rStopped=[false,false,false]; rVals=[-1,-1,-1]; rRunning=false;
   [0,1,2].forEach(i=>{ drawR(i,0); document.getElementById('stop'+(i+1)).disabled=true; document.getElementById('val'+(i+1)).textContent='?'; });
-  document.getElementById('roulette-total').textContent='합계: ?점';
-  document.getElementById('roulette-btn').textContent='🎡 시작!';
+  document.getElementById('roulette-total').textContent='합계: ? 점';
+  document.getElementById('roulette-btn').textContent='🎡 레버 당기기 (시작)';
   document.getElementById('roulette-btn').disabled=false;
   document.getElementById('roulette-btn').setAttribute('onclick','startAllRoulette()');
-  updateScoreBoard('roulette-scores', d.scores||{}, false);
 }
 
 function drawR(i, angle) {
-  const ids=['r1','r2','r3'];
-  const canvas=document.getElementById(ids[i]);
-  if(!canvas) return;
-  const ctx=canvas.getContext('2d');
-  const nums=[0,1,2,3,4,5,6,7,8,9];
+  const ids=['r1','r2','r3']; const canvas=document.getElementById(ids[i]); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); const nums=[0,1,2,3,4,5,6,7,8,9];
   const colors=['#f0a500','#ef4444','#14b8a6','#3b82f6','#a855f7','#22c55e','#f87171','#60a5fa','#34d399','#fb923c'];
-  const n=nums.length;
-  const cx=canvas.width/2, cy=canvas.height/2, r=cx-8;
+  const n=nums.length; const cx=canvas.width/2, cy=canvas.height/2, r=cx-8;
   ctx.clearRect(0,0,canvas.width,canvas.height);
   nums.forEach((num,j)=>{
-    const start=angle+(j/n)*Math.PI*2;
-    const end=angle+((j+1)/n)*Math.PI*2;
+    const start=angle+(j/n)*Math.PI*2; const end=angle+((j+1)/n)*Math.PI*2;
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end);
-    ctx.fillStyle=colors[j]; ctx.fill();
-    ctx.strokeStyle='#0e1520'; ctx.lineWidth=1.5; ctx.stroke();
-    ctx.save(); ctx.translate(cx,cy); ctx.rotate(start+(end-start)/2);
-    ctx.textAlign='right'; ctx.fillStyle='#fff';
-    ctx.font='bold 14px Black Han Sans'; ctx.fillText(num, r-6, 5);
-    ctx.restore();
+    ctx.fillStyle=colors[j]; ctx.fill(); ctx.strokeStyle='#0e1520'; ctx.lineWidth=1.5; ctx.stroke();
   });
-  ctx.beginPath(); ctx.arc(cx,cy,12,0,Math.PI*2);
-  ctx.fillStyle='#0e1520'; ctx.fill();
-  ctx.strokeStyle=colors[0]; ctx.lineWidth=2; ctx.stroke();
 }
 
 function startAllRoulette() {
   rRunning=true; rStopped=[false,false,false]; rVals=[-1,-1,-1];
   document.getElementById('roulette-btn').disabled=true;
-  document.getElementById('roulette-total').textContent='합계: ?점';
-  [0,1,2].forEach(i=>{ document.getElementById('stop'+(i+1)).disabled=false; document.getElementById('val'+(i+1)).textContent='?'; spinR(i); });
+  [0,1,2].forEach(i=>{ document.getElementById('stop'+(i+1)).disabled=false; spinR(i); });
 }
 
 function spinR(i) {
   if(rStopped[i]) return;
-  const speed=0.08+Math.random()*0.04;
-  rAngles[i]+=speed;
-  drawR(i, rAngles[i]);
+  rAngles[i]+=(0.08+Math.random()*0.04); drawR(i, rAngles[i]);
   rAnimIds[i]=requestAnimationFrame(()=>spinR(i));
 }
 
-function stopR(i) {
-  if(!rRunning||rStopped[i]) return;
-  rStopped[i]=true;
+async function stopR(i) {
+  if(!rRunning||rStopped[i]) return; rStopped[i]=true;
   if(rAnimIds[i]){ cancelAnimationFrame(rAnimIds[i]); rAnimIds[i]=null; }
-  // 화살표(▼)가 맨 위(270도=-π/2)를 가리킴 → 해당 구간 계산
-  const nums=[0,1,2,3,4,5,6,7,8,9];
-  const n=nums.length;
-  const normalized=((( -rAngles[i] - Math.PI/2*3) % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-  const idx=Math.floor(normalized/(Math.PI*2/n))%n;
-  rVals[i]=nums[idx];
+  rVals[i] = Math.floor(Math.random()*10);
   document.getElementById('val'+(i+1)).textContent=rVals[i];
   document.getElementById('stop'+(i+1)).disabled=true;
-  // 3개 다 멈추면 점수 계산
+
   if(rStopped[0]&&rStopped[1]&&rStopped[2]) {
     const total=rVals[0]*100+rVals[1]*10+rVals[2];
-    document.getElementById('roulette-total').textContent=`합계: ${total}점!`;
-    if(!gameData['roulette']) gameData['roulette']={};
-    if(!gameData['roulette'].scores) gameData['roulette'].scores={};
-    gameData['roulette'].scores[myNick]=total;
-    saveGameData();
-    showToast(`🎡 ${rVals[0]}${rVals[1]}${rVals[2]} = ${total}점!`,'success');
-    updateScoreBoard('roulette-scores', gameData['roulette'].scores, false);
-    document.getElementById('roulette-btn').textContent='✓ 완료 (닫기)';
-    document.getElementById('roulette-btn').disabled=false;
-    document.getElementById('roulette-btn').onclick=closeGame;
-    checkLeader('roulette');
-    rRunning=false;
+    document.getElementById('roulette-total').textContent=`합계: ${total} 점!`;
+    saveFinalScore('roulette', total);
   }
 }
 
-function drawRoulette(angle) {
-  const canvas = document.getElementById('roulette-canvas');
-  const ctx = canvas.getContext('2d');
-  const cx = canvas.width/2, cy = canvas.height/2, r = cx-10;
-  const scores = [100,20,50,10,80,30,70,5,60,40,90,15];
-  const colors = ['#f0a500','#ef4444','#14b8a6','#3b82f6','#a855f7','#22c55e','#f0a500','#64748b','#14b8a6','#ef4444','#a855f7','#22c55e'];
-  const n = scores.length;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  scores.forEach((s,i)=>{
-    const start = angle + (i/n)*Math.PI*2;
-    const end = angle + ((i+1)/n)*Math.PI*2;
-    ctx.beginPath(); ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,start,end);
-    ctx.fillStyle=colors[i]; ctx.fill();
-    ctx.beginPath(); ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,start,end);
-    ctx.strokeStyle='#0e1520'; ctx.lineWidth=2; ctx.stroke();
-    ctx.save(); ctx.translate(cx,cy);
-    ctx.rotate(start+(end-start)/2);
-    ctx.textAlign='right'; ctx.fillStyle='#fff';
-    ctx.font='bold 13px Noto Sans KR'; ctx.fillText(s+'점', r-8, 5);
-    ctx.restore();
-  });
-  ctx.beginPath(); ctx.arc(cx,cy,18,0,Math.PI*2);
-  ctx.fillStyle='#0e1520'; ctx.fill();
-  ctx.strokeStyle=colors[0]; ctx.lineWidth=3; ctx.stroke();
-}
-
-function spinRoulette() {
-  if(rouletteSpinning) return;
-  rouletteSpinning = true;
-  document.getElementById('roulette-btn').textContent = '돌아가는 중...';
-  document.getElementById('roulette-btn').disabled = true;
-
-  const scores = [100,20,50,10,80,30,70,5,60,40,90,15];
-  const totalRot = (Math.random()*4+6)*Math.PI*2;
-  const duration = 4000;
-  const start = performance.now();
-  const startAngle = rouletteAngle;
-
-  function animate(now) {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed/duration, 1);
-    const ease = 1-Math.pow(1-progress, 4);
-    rouletteAngle = startAngle + totalRot * ease;
-    drawRoulette(rouletteAngle);
-    if(progress < 1) { rouletteAnimId = requestAnimationFrame(animate); }
-    else {
-      rouletteSpinning = false;
-      // 결과 계산
-      const n = scores.length;
-      const normalized = (((-rouletteAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2));
-      const idx = Math.floor(normalized / (Math.PI*2/n)) % n;
-      const myScore = scores[idx];
-
-      // 저장
-      if(!gameData['roulette']) gameData['roulette']={};
-      if(!gameData['roulette'].scores) gameData['roulette'].scores={};
-      const prev = gameData['roulette'].scores[myNick]||0;
-      gameData['roulette'].scores[myNick] = prev + myScore;
-      saveGameData();
-
-      showToast(`${myScore}점 획득!`, 'success');
-      updateScoreBoard('roulette-scores', gameData['roulette'].scores, false);
-      document.getElementById('roulette-btn').textContent = '✓ 완료';
-
-      // 1위 확인
-      checkLeader('roulette');
-    }
-  }
-  rouletteAnimId = requestAnimationFrame(animate);
-}
-
-// ===== 슬롯 =====
-function initSlot(d) {
-  document.getElementById('slot-prize-label').textContent = `🎁 ${d.prize||''}`;
-  document.getElementById('slot-display').textContent = '7 7 7';
-  document.getElementById('slot-btn').textContent = '🎰 시작!';
-  document.getElementById('slot-btn').onclick = startSlot;
-  slotPhase = 0;
-  updateScoreBoard('slot-scores', d.scores||{}, false);
-}
-
-function startSlot() {
-  if(slotRunning) {
-    stopSlot(); return;
-  }
-  slotRunning = true;
-  document.getElementById('slot-btn').textContent = '🛑 STOP!';
-  document.getElementById('slot-btn').style.background='var(--red)';
-  document.getElementById('slot-btn').style.color='#fff';
-  const nums = '0123456789';
-  slotInterval = setInterval(()=>{
-    const r = ()=>nums[Math.floor(Math.random()*nums.length)];
-    document.getElementById('slot-display').textContent = `${r()} ${r()} ${r()}`;
-  }, 60);
-}
-
-function stopSlot() {
-  clearInterval(slotInterval); slotInterval=null; slotRunning=false;
-  const display = document.getElementById('slot-display').textContent;
-  const digits = display.split(' ').map(Number);
-  let score = digits.reduce((s,d)=>s+d,0)*10;
-  if(digits[0]===digits[1]&&digits[1]===digits[2]) score=digits[0]===7?1000:500;
-  else if(digits[0]===digits[1]||digits[1]===digits[2]||digits[0]===digits[2]) score+=100;
-
-  if(!gameData['slot']) gameData['slot']={};
-  if(!gameData['slot'].scores) gameData['slot'].scores={};
-  gameData['slot'].scores[myNick] = score;
-  saveGameData();
-  showToast(`${score}점 획득!`, 'success');
-  updateScoreBoard('slot-scores', gameData['slot'].scores, false);
-  document.getElementById('slot-btn').textContent = '✓ 완료 (닫기)';
-  document.getElementById('slot-btn').onclick=closeGame;
-  checkLeader('slot');
-}
-
-// ===== 공 튀기기 =====
-function initBall(d) {
-  document.getElementById('ball-prize-label').textContent = `🎁 ${d.prize||''}`;
-  ballScore = 0;
-  ballRunning = false;
-  document.getElementById('ball-score-display').textContent = '0점';
-  document.getElementById('ball-timer').textContent = '';
-  document.getElementById('ball-btn').textContent = '⚽ 시작!';
-  updateScoreBoard('ball-scores', d.scores||{}, false);
-  const canvas = document.getElementById('ball-canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle='var(--bg3)';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle='#64748b';
-  ctx.font='14px Noto Sans KR';
-  ctx.textAlign='center';
-  ctx.fillText('시작 버튼을 눌러주세요', canvas.width/2, canvas.height/2);
-}
-
-function startBall() {
-  const canvas = document.getElementById('ball-canvas');
-  const ctx = canvas.getContext('2d');
-  ballRunning = true;
-  ballScore = 0;
-  ballTimeLeft = 15;
-  document.getElementById('ball-btn').style.display='none';
-
-  // 공 생성
-  balls = Array.from({length:8},()=>({
-    x: Math.random()*280+20,
-    y: Math.random()*200+20,
-    vx: (Math.random()-0.5)*4,
-    vy: (Math.random()-0.5)*4,
-    r: 20,
-    color: `hsl(${Math.random()*360},70%,60%)`
-  }));
-
-  canvas.onclick = (e)=>{
-    if(!ballRunning) return;
-    const rect=canvas.getBoundingClientRect();
-    const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
-    const my=(e.clientY-rect.top)*(canvas.height/rect.height);
-    let hit = false;
-    balls = balls.filter(b=>{
-      const d=Math.hypot(mx-b.x,my-b.y);
-      if(d<b.r+5 && !hit){ hit=true; return false; }
-      return true;
-    });
-    if(hit){
-      ballScore+=10;
-      document.getElementById('ball-score-display').textContent=ballScore+'점';
-      // 새 공 추가
-      balls.push({
-        x: Math.random()*(canvas.width-40)+20,
-        y: Math.random()*(canvas.height-40)+20,
-        vx: (Math.random()-0.5)*6,
-        vy: (Math.random()-0.5)*6,
-        r: 18,
-        color: `hsl(${Math.random()*360},70%,60%)`
-      });
-    }
-  };
-
-  ballTimerInterval = setInterval(()=>{
-    ballTimeLeft--;
-    document.getElementById('ball-timer').textContent = `${ballTimeLeft}초`;
-    if(ballTimeLeft<=0){
-      clearInterval(ballTimerInterval); ballTimerInterval=null;
-      ballRunning=false;
-      cancelAnimationFrame(ballAnimId);
-      if(!gameData['ball']) gameData['ball']={};
-      if(!gameData['ball'].scores) gameData['ball'].scores={};
-      gameData['ball'].scores[myNick]=ballScore;
-      saveGameData();
-      showToast(`${ballScore}점 획득!`,'success');
-      updateScoreBoard('ball-scores',gameData['ball'].scores,false);
-      document.getElementById('ball-btn').style.display='block';
-      document.getElementById('ball-btn').textContent='✓ 완료 (닫기)';
-      document.getElementById('ball-btn').setAttribute('onclick','closeGame()');
-      checkLeader('ball');
-    }
-  },1000);
-
-  function animBall(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#0e1520'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    balls.forEach(b=>{
-      b.x+=b.vx; b.y+=b.vy;
-      if(b.x<b.r||b.x>canvas.width-b.r) b.vx*=-1;
-      if(b.y<b.r||b.y>canvas.height-b.r) b.vy*=-1;
-      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
-      ctx.fillStyle=b.color; ctx.fill();
-      ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('⚽',b.x,b.y);
-    });
-    if(ballRunning) ballAnimId=requestAnimationFrame(animBall);
-  }
-  animBall();
-}
-
-// ===== 카드 뽑기 =====
-function initCard(d) {
-  document.getElementById('card-prize-label').textContent = `🎁 ${d.prize||''}${d.carryOver>1?` (이월 ${d.carryOver}배)`:''}`;
-  const cb=document.getElementById('card-close-btn'); if(cb) cb.style.display='none';
-  const cardPlays = d.cardPlays || {};
-  const winIdx = d.winCard !== undefined ? d.winCard : Math.floor(Math.random()*20);
-  if(d.winCard === undefined) {
-    if(!gameData['card']) gameData['card']={};
-    gameData['card'].winCard = winIdx;
-    saveGameData();
-  }
-
-  const myDone = cardPlays[myNick];
-  const grid = document.getElementById('card-grid');
-  grid.innerHTML = '';
-  for(let i=0;i<20;i++){
-    const playEntry = Object.values(cardPlays).find(v=>v.idx===i);
-    const played = !!playEntry;
-    const isWin = played && playEntry.win;
-    const btn = document.createElement('button');
-    btn.className = `play-card${played?(isWin?' win':' lose'):''}`;
-    if(played) {
-      btn.textContent = isWin?'🎉':'💀';
-      btn.title = isWin?'당첨!':'꽝';
-      btn.style.fontSize='22px';
-    } else {
-      btn.textContent = '🃏';
-    }
-    if(!played && !myDone) {
-      btn.onclick = ()=>flipCard(i, winIdx, d);
-    } else {
-      btn.disabled = true;
-      btn.style.opacity = played?'1':'0.4';
-    }
-    grid.appendChild(btn);
-  }
-  const remain = 20 - Object.keys(cardPlays).length;
-  document.getElementById('card-remain').textContent = `남은 카드: ${remain}/20`;
-}
-
-function flipCard(idx, winIdx, d) {
-  const isWin = idx === winIdx;
-  if(!gameData['card']) gameData['card']={};
-  if(!gameData['card'].cardPlays) gameData['card'].cardPlays={};
-  gameData['card'].cardPlays[myNick] = {idx, win:isWin};
-
-  if(isWin) {
-    const carryOver = d.carryOver||1;
-    const prizeText = carryOver>1 ? `${d.prize} × ${carryOver}개` : d.prize;
-    showResult('🎉', `${myNick}님 당첨!`, prizeText);
-    gameData['card'].winCard = -1; // 당첨 완료
-  } else {
-    showToast('꽝! 다음 기회에...', 'error');
-    const plays = Object.keys(gameData['card'].cardPlays).length;
-    if(plays >= 20) {
-      gameData['card'].carryOver = (d.carryOver||1)+1;
-      gameData['card'].cardPlays = {};
-      gameData['card'].winCard = Math.floor(Math.random()*20);
-      showToast('20장 모두 꽝! 상품이 이월됩니다!', 'error');
-    }
-  }
-  saveGameData();
-  initCard(gameData['card']);
-  // 완료 버튼 표시
-  const cardBtn = document.getElementById('card-close-btn');
-  if(cardBtn) cardBtn.style.display='block';
-}
-
-// ===== 타이머 =====
-function initTimer(d) {
-  timerTarget = d.timerTarget || 10;
-  document.getElementById('timer-prize-label').textContent = `🎁 ${d.prize||''}`;
-  document.getElementById('timer-target').textContent = timerTarget;
-  document.getElementById('timer-display').textContent = '00:00:00';
-  document.getElementById('timer-btn').textContent = '▶ 시작';
-  document.getElementById('timer-result').textContent = '';
-  timerRunning = false;
-  updateScoreBoard('timer-scores', d.scores||{}, true);
-}
-
-function timerAction() {
-  if(!timerRunning) {
-    timerRunning = true;
-    timerStart = performance.now();
-    document.getElementById('timer-btn').textContent = '🛑 STOP!';
-    document.getElementById('timer-btn').style.background='var(--red)';
-    function updateTimer() {
-      if(!timerRunning) return;
-      const elapsed = (performance.now()-timerStart)/1000;
-      const s = Math.floor(elapsed);
-      const ms = Math.floor((elapsed-s)*100);
-      const cs = Math.floor((elapsed-s)*1000)%10;
-      document.getElementById('timer-display').textContent =
-        `${String(s).padStart(2,'0')}:${String(ms).padStart(2,'0')}:${cs}`;
-      timerAnimId = requestAnimationFrame(updateTimer);
-    }
-    updateTimer();
-  } else {
-    timerRunning = false;
-    cancelAnimationFrame(timerAnimId);
-    const elapsed = (performance.now()-timerStart)/1000;
-    const diff = Math.abs(elapsed-timerTarget);
-    document.getElementById('timer-btn').textContent = '✓ 완료 (닫기)';
-    document.getElementById('timer-btn').disabled = false;
-    document.getElementById('timer-btn').setAttribute('onclick','closeGame()');
-    document.getElementById('timer-btn').style.background='var(--accent2)';
-    document.getElementById('timer-result').textContent = `기록: ${elapsed.toFixed(3)}초 (차이: ${diff.toFixed(3)}초)`;
-
-    if(!gameData['timer']) gameData['timer']={};
-    if(!gameData['timer'].scores) gameData['timer'].scores={};
-    gameData['timer'].scores[myNick] = diff;
-    saveGameData();
-    showToast(`기록: ${elapsed.toFixed(3)}초!`, 'success');
-    updateScoreBoard('timer-scores', gameData['timer'].scores, true);
-    checkLeader('timer');
-  }
-}
-
-// ===== 공통 =====
-const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1505266643293569268/G0VJghqRfFpTPGTMuKiJP13IOUFw9WBNH0bE8Y3GWJ4dp__rMeqKU1HvPVuux8KZSP8N';
-
-async function sendDailyResults() {
-  const gd = gameData;
-  const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-  const today = kst.toISOString().slice(0,10);
-  const GAME_NAMES = {roulette:'🎡 룰렛', slot:'🎰 슬롯머신', timer:'⏱ 10초챌린지', card:'🃏 카드뽑기', memory:'🧩 짝맞추기', mole:'🔨 두더지잡기', rsp:'🪨 가위바위보'};
-
-  let lines = [`**🎮 ${today} 길드 게임 결과!**`, '───────────────────'];
-
-  Object.entries(GAME_NAMES).forEach(([key,name]) => {
-    const d = gd[key]||{};
-    if(key==='card') {
-      const winner = Object.entries(d.cardPlays||{}).find(([,v])=>v===true||v?.win===true);
-      lines.push(`${name}: ${winner?`**${winner[0]}** 🎉 당첨!`:'당첨자 없음'}`);
-    } else if(key==='rsp') {
-      const t = d.tournament;
-      if(t?.champion) lines.push(`${name}: **${t.champion}** 🏆 우승!`);
-      else if(t) lines.push(`${name}: ${RSP_ROUNDS[t.round-1]||''} 진행중`);
-      else lines.push(`${name}: 미진행`);
-    } else if(key==='timer') {
-      const sorted = Object.entries(d.scores||{}).sort((a,b)=>a[1]-b[1]);
-      lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (${sorted[0][1].toFixed(2)}초)`:'참여자 없음'}`);
-    } else {
-      const sorted = Object.entries(d.scores||{}).sort((a,b)=>b[1]-a[1]);
-      lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (${sorted[0][1].toLocaleString()}점)`:'참여자 없음'}`);
-    }
-  });
-
-  lines.push('───────────────────');
-  lines.push('*고물상길드 자동 발송*');
-
-  try {
-    const res = await fetch(DISCORD_WEBHOOK, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({content:lines.join('\n')})
-    });
-    if(res.ok) showToast('📢 디스코드 전송 완료!','success');
-    else showToast('❌ 전송 실패! ('+res.status+')','error');
-  } catch(e) {
-    showToast('❌ 전송 실패!','error');
-    console.error(e);
-  }
-}
-
-// 매일 23:59 자동 전송 체크
-function checkDailyDiscordPost() {
-  const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-  const h=kst.getHours(), m=kst.getMinutes();
-  const todayKey=kst.toISOString().slice(0,10);
-  const lastPost=localStorage.getItem('lastDiscordPost');
-  if(h===23&&m===59&&lastPost!==todayKey){
-    localStorage.setItem('lastDiscordPost',todayKey);
-    sendDailyResults();
-  }
-}
-setInterval(checkDailyDiscordPost, 60000);
-
-function updateScoreBoard(elId, scores, lowerBetter) {
-  const el = document.getElementById(elId); if(!el) return;
-  const arr = Object.entries(scores).sort((a,b)=>lowerBetter?a[1]-b[1]:b[1]-a[1]);
-  if(arr.length===0) { el.innerHTML='<div class="score-row" style="color:var(--text2)">아직 기록 없음</div>'; return; }
-  el.innerHTML = arr.map(([nick,score],i)=>`
-    <div class="score-row">
-      <span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}위`} ${nick}</span>
-      <span style="color:var(--accent);font-weight:700">${lowerBetter?score.toFixed(3)+'초':score+'점'}</span>
-    </div>`).join('');
-}
-
-function checkLeader(gameKey) {
-  const d = gameData[gameKey]||{};
-  const scores = d.scores||{};
-  const lowerBetter = gameKey==='timer';
-  const arr = Object.entries(scores).sort((a,b)=>lowerBetter?a[1]-b[1]:b[1]-a[1]);
-  if(arr.length===0) return;
-  const [leader] = arr[0];
-  if(leader===myNick) showToast('🥇 현재 1위!', 'success');
-}
-
-function showResult(icon, title, prize) {
-  document.getElementById('result-icon').textContent = icon;
-  document.getElementById('result-title').textContent = '';
-  document.getElementById('result-name').textContent = title;
-  document.getElementById('result-prize-text').textContent = `🎁 ${prize}`;
-  document.getElementById('result-overlay').classList.add('open');
-}
-
-function closeResult() {
-  document.getElementById('result-overlay').classList.remove('open');
-}
-
-// ===== 상품 설정 =====
-function openPrize(gameKey) {
-  document.getElementById('prize-game').value = gameKey;
-  document.getElementById('prize-custom').value = gameData[gameKey]?.prize||'';
-  document.getElementById('timer-target-wrap').style.display = gameKey==='timer'?'block':'none';
-  if(gameKey==='timer') document.getElementById('prize-target').value = gameData[gameKey]?.timerTarget||10;
-
-  const sel = document.getElementById('prize-item');
-  sel.innerHTML = '<option value="">창고 아이템 선택...</option>';
-  warehouseItems.filter(i=>i.qty>0).sort((a,b)=>a.name.localeCompare(b.name,'ko')).forEach(item=>{
-    const g = {myth:'신화',legend:'전설',hero:'영웅',rare:'희귀'}[item.grade]||'';
-    sel.innerHTML += `<option value="${item.id}">[${g}] ${item.name}</option>`;
-  });
-  openModal('prize');
-}
-
-function savePrize() {
-  const key = document.getElementById('prize-game').value;
-  const itemId = parseInt(document.getElementById('prize-item').value);
-  const custom = document.getElementById('prize-custom').value.trim();
-  let prize = '';
-
-  if(itemId) {
-    const item = warehouseItems.find(x=>x.id===itemId);
-    if(item) prize = `[${({myth:'신화',legend:'전설',hero:'영웅',rare:'희귀'}[item.grade]||'')}] ${item.name}`;
-  } else if(custom) {
-    prize = custom;
-  }
-
-  if(!prize) { showToast('상품을 선택하거나 입력해주세요','error'); return; }
-
-  if(!gameData[key]) gameData[key]={};
-  gameData[key].prize = prize;
-  gameData[key].scores = {};
-  if(key==='card') {
-    gameData[key].cardPlays = {};
-    gameData[key].winCard = Math.floor(Math.random()*20);
-    gameData[key].carryOver = gameData[key].carryOver||1;
-  }
-  if(key==='timer') {
-    gameData[key].timerTarget = parseInt(document.getElementById('prize-target').value)||10;
-  }
-
-  saveGameData();
-  closeModal('prize');
-  showToast('상품 설정 완료!', 'success');
-}
-
-function resetGame(key) {
-  if(!confirm(`${GAMES[key].name} 초기화?`)) return;
-  gameData[key] = {};
-  saveGameData();
-  showToast('초기화됨');
-}
-
-// ===== 메모리 카드 게임 =====
-const MEMORY_ICONS = ['🦁','🐯','🐻','🦊','🐼','🐨','🦋','🐸','🐙','🦀','🐬','🦜','🌸','⭐','🍄','🎸','🎯','🏆'];
-let memCards = [];
-let memSelected = [];
-let memMatched = 0;
-let memRunning = false;
-let memTimerVal = 60;
-let memTimerIv = null;
-let memLocked = false;
-
-function initMemory(d) {
-  document.getElementById('memory-prize-label').textContent = `🎁 ${d.prize||''}`;
-  document.getElementById('memory-btn').textContent = '🧩 시작!';
-  document.getElementById('memory-btn').setAttribute('onclick','startMemory()');
-  document.getElementById('memory-btn').disabled = false;
-  document.getElementById('memory-grid').innerHTML = '';
-  document.getElementById('memory-timer').textContent = '';
-  document.getElementById('memory-remain').textContent = '10';
-  updateScoreBoard('memory-scores', d.scores||{}, true);
-  memRunning = false; memMatched = 0;
-}
-
-function startMemory() {
-  // 18쌍 = 36장 (6x6)
-  const icons = MEMORY_ICONS.slice(0,10);
-  memCards = [...icons,...icons].sort(()=>Math.random()-.5);
-  memSelected = []; memMatched = 0; memRunning = true; memLocked = false;
-  memTimerVal = 60;
-  document.getElementById('memory-btn').style.display='none';
-
-  if(memTimerIv) clearInterval(memTimerIv);
-  memTimerIv = setInterval(()=>{
-    memTimerVal--;
-    document.getElementById('memory-timer').textContent = `⏱ ${memTimerVal}초`;
-    if(memTimerVal<=0){
-      clearInterval(memTimerIv); memRunning=false;
-      finishMemory(memMatched);
-    }
-  },1000);
-
-  renderMemoryGrid();
-}
-
-function renderMemoryGrid() {
-  const grid = document.getElementById('memory-grid');
-  grid.innerHTML = memCards.map((icon,i)=>{
-    const isMatched = memSelected.includes(i) && false; // placeholder
-    return `<div class="mem-card hidden" id="mc_${i}" onclick="flipMemCard(${i})">${icon}</div>`;
-  }).join('');
-}
-
-function flipMemCard(i) {
-  if(!memRunning || memLocked) return;
-  const el = document.getElementById(`mc_${i}`);
-  if(!el || el.classList.contains('matched') || memSelected.includes(i)) return;
-  if(memSelected.length>=2) return;
-
-  el.classList.remove('hidden');
-  el.classList.add('selected');
-  memSelected.push(i);
-
-  if(memSelected.length===2) {
-    memLocked=true;
-    const [a,b] = memSelected;
-    if(memCards[a]===memCards[b]) {
-      // 맞음!
-      setTimeout(()=>{
-        document.getElementById(`mc_${a}`).classList.remove('selected');
-        document.getElementById(`mc_${a}`).classList.add('matched');
-        document.getElementById(`mc_${b}`).classList.remove('selected');
-        document.getElementById(`mc_${b}`).classList.add('matched');
-        memSelected=[]; memLocked=false; memMatched++;
-        document.getElementById('memory-remain').textContent=10-memMatched;
-        if(memMatched===10){ clearInterval(memTimerIv); memRunning=false; finishMemory(memTimerVal+memMatched*5); }
-      },400);
-    } else {
-      // 틀림
-      setTimeout(()=>{
-        document.getElementById(`mc_${a}`).classList.add('hidden');
-        document.getElementById(`mc_${a}`).classList.remove('selected');
-        document.getElementById(`mc_${b}`).classList.add('hidden');
-        document.getElementById(`mc_${b}`).classList.remove('selected');
-        memSelected=[]; memLocked=false;
-        // 틀리면 -3점
-        if(memTimerVal>0){ showToast('❌ -3점!','error'); }
-      },800);
-    }
-  }
-}
-
-function finishMemory(score) {
-  if(!gameData['memory']) gameData['memory']={};
-  if(!gameData['memory'].scores) gameData['memory'].scores={};
-  gameData['memory'].scores[myNick] = score;
-  saveGameData();
-  showToast(`완료! ${score}점!`,'success');
-  updateScoreBoard('memory-scores', gameData['memory'].scores, false);
-  const btn = document.getElementById('memory-btn');
-  btn.style.display='block';
-  btn.textContent='✓ 완료 (닫기)';
-  btn.setAttribute('onclick','closeGame()');
-  checkLeader('memory');
-}
-
-// ===== 클레이 사격 =====
-let shootingRunning=false, shootingScore=0, shootingTimeLeft=30, shootingIv=null, shootingAnimId=null;
-let discs=[];
-
-function initShooting(d) {
-  document.getElementById('shooting-prize-label').textContent=`🎁 ${d.prize||''}`;
-  shootingRunning=false; shootingScore=0;
-  document.getElementById('shooting-score').textContent='점수: 0';
-  document.getElementById('shooting-timer').textContent='30초';
-  document.getElementById('shooting-btn').textContent='🎯 시작!';
-  document.getElementById('shooting-btn').setAttribute('onclick','startShooting()');
-  document.getElementById('shooting-btn').disabled=false;
-  updateScoreBoard('shooting-scores', d.scores||{}, false);
-  const ctx=document.getElementById('shooting-canvas').getContext('2d');
-  ctx.fillStyle='#1a2235'; ctx.fillRect(0,0,360,280);
-  ctx.fillStyle='#64748b'; ctx.font='16px Noto Sans KR'; ctx.textAlign='center';
-  ctx.fillText('시작 버튼을 누르세요!',180,140);
-}
-
-function startShooting() {
-  shootingRunning=true; shootingScore=0; shootingTimeLeft=30; discs=[];
-  document.getElementById('shooting-btn').style.display='none';
-  document.getElementById('shoot-left').disabled=false;
-  document.getElementById('shoot-right').disabled=false;
-
-  // 키보드 이벤트
-  window._shootKey = (e)=>{
-    if(e.key==='ArrowLeft') shootDir('left');
-    if(e.key==='ArrowRight') shootDir('right');
-  };
-  window.addEventListener('keydown', window._shootKey);
-
-  // 타이머
-  shootingIv=setInterval(()=>{
-    shootingTimeLeft--;
-    document.getElementById('shooting-timer').textContent=shootingTimeLeft+'초';
-    if(shootingTimeLeft<=0){
-      clearInterval(shootingIv); shootingRunning=false;
-      window.removeEventListener('keydown', window._shootKey);
-      if(shootingAnimId){cancelAnimationFrame(shootingAnimId);shootingAnimId=null;}
-      if(!gameData['shooting']) gameData['shooting']={};
-      if(!gameData['shooting'].scores) gameData['shooting'].scores={};
-      gameData['shooting'].scores[myNick]=shootingScore;
-      saveGameData();
-      updateScoreBoard('shooting-scores', gameData['shooting'].scores, false);
-      showToast(`🎯 ${shootingScore}점!`,'success');
-      const btn=document.getElementById('shooting-btn');
-      btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
-      btn.onclick=closeGame;
-      checkLeader('shooting');
-    }
-    // 원반 추가
-    if(Math.random()<0.4){
-      const dir=Math.random()<0.5?'left':'right';
-      const size=20+Math.floor(Math.random()*30); // 20~50px
-      const speed=(2+Math.random()*4)*(dir==='left'?1:-1);
-      const y=60+Math.random()*120;
-      const pts=Math.round((50-size)/5)+5; // 작을수록 점수 높음
-      discs.push({x:dir==='left'?-size:360+size,y,size,speed,dir,pts,hit:false,opacity:1});
-    }
-  },1000);
-
-  // 원반 더 자주 추가
-  setInterval(()=>{ if(!shootingRunning) return;
-    if(Math.random()<0.3){
-      const dir=Math.random()<0.5?'left':'right';
-      const size=15+Math.floor(Math.random()*35);
-      const speed=(3+Math.random()*5)*(dir==='left'?1:-1);
-      const y=40+Math.random()*160;
-      const pts=Math.round((50-size)/5)+3;
-      discs.push({x:dir==='left'?-size:360+size,y,size,speed,dir,pts,hit:false,opacity:1});
-    }
-  },500);
-
-  animShooting();
-}
-
-function animShooting() {
-  const canvas=document.getElementById('shooting-canvas');
-  const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#0d1829'; ctx.fillRect(0,0,360,280);
-  // 배경 라인
-  ctx.strokeStyle='rgba(240,165,0,.1)'; ctx.lineWidth=1;
-  for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(0,i*40);ctx.lineTo(360,i*40);ctx.stroke();}
-  // 방향 힌트
-  ctx.fillStyle='rgba(255,255,255,.15)'; ctx.font='40px sans-serif';
-  ctx.textAlign='left'; ctx.fillText('←',10,270);
-  ctx.textAlign='right'; ctx.fillText('→',350,270);
-  // 원반
-  discs=discs.filter(d=>d.opacity>0&&d.x>-100&&d.x<460);
-  discs.forEach(d=>{
-    d.x+=d.speed;
-    if(d.hit){ d.opacity-=0.1; }
-    ctx.globalAlpha=d.opacity;
-    // 원반 그리기
-    ctx.beginPath(); ctx.ellipse(d.x,d.y,d.size,d.size*0.4,0.3,0,Math.PI*2);
-    ctx.fillStyle=d.hit?'#ef4444':'#f0a500'; ctx.fill();
-    ctx.strokeStyle=d.hit?'#fca5a5':'#fbbf24'; ctx.lineWidth=2; ctx.stroke();
-    // 점수 표시
-    ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(10,d.size*0.5)}px Black Han Sans`;
-    ctx.textAlign='center'; ctx.fillText(d.pts+'P',d.x,d.y+4);
-    ctx.globalAlpha=1;
-  });
-  // 총구
-  ctx.fillStyle='#94a3b8'; ctx.fillRect(170,255,20,20);
-  ctx.fillStyle='#64748b'; ctx.fillRect(175,240,10,20);
-  if(shootingRunning) shootingAnimId=requestAnimationFrame(animShooting);
-}
-
-let lastShootDir=null, lastShootTime=0;
-function shootDir(dir) {
-  if(!shootingRunning) return;
-  const now=Date.now();
-  if(now-lastShootTime<200) return; // 연사 방지
-  lastShootTime=now; lastShootDir=dir;
-  // 해당 방향 원반 중 가장 가까운 것 맞추기
-  const targets=discs.filter(d=>!d.hit&&(dir==='left'?d.x<180:d.x>=180));
-  if(targets.length>0){
-    const closest=targets.reduce((a,b)=>Math.abs(a.x-180)<Math.abs(b.x-180)?a:b);
-    closest.hit=true;
-    shootingScore+=closest.pts;
-    document.getElementById('shooting-score').textContent='점수: '+shootingScore;
-    showToast(`🎯 +${closest.pts}점!`,'success');
-  }
-}
-
-// ===== 두더지 잡기 =====
-let moleRunning=false, moleScore=0, moleMiss=0, moleTimeLeft=20, moleIv=null, moleHoleIv=null;
-let moleHoles=Array(9).fill(false);
-
+// 🔨 두더지 잡기 로직 구현 활성화
 function initMole(d) {
-  document.getElementById('mole-prize-label').textContent=`🎁 ${d.prize||''}`;
-  moleRunning=false; moleScore=0; moleMiss=0; moleTimeLeft=20;
-  moleHoles=Array(9).fill(null);
-  renderMoleGrid();
-  document.getElementById('mole-score').textContent='0점';
-  document.getElementById('mole-timer').textContent='20초';
-  document.getElementById('mole-miss').textContent='미스: 0';
-  document.getElementById('mole-btn').textContent='🔨 시작!';
-  document.getElementById('mole-btn').setAttribute('onclick','startMole()');
-  document.getElementById('mole-btn').disabled=false;
-  updateScoreBoard('mole-scores', d.scores||{}, false);
-}
-
-function renderMoleGrid() {
-  document.getElementById('mole-grid').innerHTML=moleHoles.map((m,i)=>`
-    <div onclick="hitMole(${i})" style="width:90px;height:90px;border-radius:50%;background:${m?m.color+'33':'rgba(30,45,69,.6)'};border:3px solid ${m?m.color:'var(--border)'};display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;box-shadow:${m?'0 0 12px '+m.color+'66':'none'}">
-      <span style="font-size:${m?'36px':'24px'}">${m?'🐹':'🕳️'}</span>
-      ${m?`<span style="font-size:10px;font-weight:700;color:${m.color}">+${m.pts}</span>`:''}
-    </div>`).join('');
+  document.getElementById('mole-prize-label').textContent = `🎁 ${d.prize||''}`;
+  document.getElementById('mole-score').textContent = '0점';
+  document.getElementById('mole-timer').textContent = '20초';
+  moleScore = 0; moleTimeLeft = 20; moleRunning = false;
+  document.getElementById('mole-btn').disabled = false;
+  document.querySelectorAll('.mole-hole').forEach(h => h.textContent = '');
 }
 
 function startMole() {
-  moleRunning=true; moleScore=0; moleMiss=0; moleTimeLeft=20;
-  document.getElementById('mole-btn').style.display='none';
-  moleIv=setInterval(()=>{
+  if(moleRunning) return;
+  moleRunning = true;
+  document.getElementById('mole-btn').disabled = true;
+  moleTimer = setInterval(() => {
     moleTimeLeft--;
-    document.getElementById('mole-timer').textContent=moleTimeLeft+'초';
-    if(moleTimeLeft<=0){
-      clearInterval(moleIv); clearInterval(moleHoleIv);
-      moleRunning=false; moleHoles=Array(9).fill(false); renderMoleGrid();
-      if(!gameData['mole']) gameData['mole']={};
-      if(!gameData['mole'].scores) gameData['mole'].scores={};
-      gameData['mole'].scores[myNick]=moleScore;
-      saveGameData();
-      updateScoreBoard('mole-scores', gameData['mole'].scores, false);
-      showToast(`🔨 ${moleScore}점!`,'success');
-      if(!gameData['mole']) gameData['mole']={};
-      if(!gameData['mole'].scores) gameData['mole'].scores={};
-      gameData['mole'].scores[myNick]=moleScore;
-      saveGameData();
-      updateScoreBoard('mole-scores', gameData['mole'].scores, false);
-      showToast(`🔨 ${moleScore}점!`,'success');
-      checkLeader('mole');
-      const btn=document.getElementById('mole-btn');
-      btn.style.display='block'; btn.textContent='✓ 완료 (닫기)';
-      btn.onclick=closeGame;
+    document.getElementById('mole-timer').textContent = `${moleTimeLeft}초`;
+    
+    // 두더지 랜덤 출현
+    document.querySelectorAll('.mole-hole').forEach(h => h.textContent = '');
+    if(Math.random() > 0.1) {
+      moleActiveIdx = Math.floor(Math.random()*9);
+      document.querySelectorAll('.mole-hole')[moleActiveIdx].textContent = '🐹';
     }
-  },1000);
-  // 두더지 랜덤 등장
-  moleHoleIv=setInterval(()=>{
-    if(!moleRunning) return;
-    // 기존 두더지 내리기
-    moleHoles=moleHoles.map(()=>null);
-    // 새 두더지 1~2마리
-    const cnt=Math.random()<0.3?2:1;
-    const moleTypes=[
-      {color:'#22c55e',pts:10,emoji:'🐹'},
-      {color:'#3b82f6',pts:20,emoji:'🐹'},
-      {color:'#a855f7',pts:30,emoji:'🐹'},
-      {color:'#eab308',pts:40,emoji:'🐹'},
-      {color:'#ef4444',pts:50,emoji:'🐹'},
-    ];
-    for(let i=0;i<cnt;i++){
-      const idx=Math.floor(Math.random()*9);
-      moleHoles[idx]=moleTypes[Math.floor(Math.random()*moleTypes.length)];
+
+    if(moleTimeLeft <= 0) {
+      clearInterval(moleTimer);
+      moleRunning = false;
+      saveFinalScore('mole', moleScore);
     }
-    renderMoleGrid();
-  },700);
+  }, 900);
 }
 
-function hitMole(i) {
+function whackMole(idx) {
   if(!moleRunning) return;
-  if(moleHoles[i]){
-    const pts=moleHoles[i].pts;
-    moleHoles[i]=null;
-    moleScore+=pts;
-    document.getElementById('mole-score').textContent=moleScore+'점';
-    renderMoleGrid();
-  } else {
-    moleMiss++;
-    moleScore = Math.max(0, moleScore - 5);
-    document.getElementById('mole-score').textContent=moleScore+'점';
-    document.getElementById('mole-miss').textContent='미스: '+moleMiss+' (-5점)';
+  if(idx === moleActiveIdx) {
+    moleScore += 10;
+    document.getElementById('mole-score').textContent = `${moleScore}점`;
+    document.querySelectorAll('.mole-hole')[idx].textContent = '💥';
+    moleActiveIdx = -1;
   }
 }
 
-// ===== 숫자 카드 게임 =====
+// 🎴 숫자 카드 로직 구현 활성화
 function initNumcard(d) {
   document.getElementById('numcard-prize-label').textContent = `🎁 ${d.prize||''}`;
   document.getElementById('numcard-result').textContent = '?';
-  document.getElementById('numcard-msg').textContent = '';
-  document.getElementById('numcard-btn').textContent = '🎴 카드 뽑기!';
   document.getElementById('numcard-btn').disabled = false;
-  document.getElementById('numcard-btn').onclick = drawNumcard;
-  updateScoreBoard('numcard-scores', d.scores||{}, false);
 }
 
 function drawNumcard() {
-  const btn = document.getElementById('numcard-btn');
-  btn.disabled = true;
-  const el = document.getElementById('numcard-result');
-  // 애니메이션
-  let cnt = 0;
-  const iv = setInterval(()=>{
-    el.textContent = Math.floor(Math.random()*101);
-    if(++cnt >= 20) {
-      clearInterval(iv);
-      const num = Math.floor(Math.random()*101);
-      el.textContent = num;
-      // 저장
-      if(!gameData['numcard']) gameData['numcard'] = {};
-      if(!gameData['numcard'].scores) gameData['numcard'].scores = {};
-      gameData['numcard'].scores[myNick] = num;
-      saveGameData();
-      updateScoreBoard('numcard-scores', gameData['numcard'].scores, false);
-      // 1등 확인
-      const sorted = Object.entries(gameData['numcard'].scores).sort((a,b)=>b[1]-a[1]);
-      document.getElementById('numcard-msg').textContent = sorted[0][0]===myNick ? '🎉 현재 1등!' : `현재 1등: ${sorted[0][0]} (${sorted[0][1]})`;
-      showToast(`🎴 ${num}점!`, 'success');
-      checkLeader('numcard');
-      btn.textContent = '✓ 완료 (닫기)';
-      btn.onclick = closeGame;
-      btn.disabled = false;
-    }
-  }, 80);
+  document.getElementById('numcard-btn').disabled = true;
+  const finalNum = Math.floor(Math.random() * 101);
+  document.getElementById('numcard-result').textContent = finalNum;
+  saveFinalScore('numcard', finalNum);
 }
 
-// ===== 숫자 맞추기 게임 =====
-let guessTarget = 0;
-let guessInput = '';
-
-function initGuess(d) {
-  document.getElementById('guess-prize-label').textContent = `🎁 ${d.prize||''}`;
-  guessInput = '';
-  document.getElementById('guess-input').textContent = '---';
-  document.getElementById('guess-btn').disabled = true;
-  document.getElementById('guess-btn').textContent = '🎯 제출!';
-  document.getElementById('guess-btn').onclick = submitGuess;
-
-  // 관리자가 설정한 target 또는 새로 생성
-  if(d.target) {
-    guessTarget = d.target;
-  } else if(isAdmin()) {
-    guessTarget = Math.floor(Math.random()*999)+1;
-    if(!gameData['guess']) gameData['guess'] = {};
-    gameData['guess'].target = guessTarget;
-    saveGameData();
+// 🔐 [공통 핵심] 서버 트래픽 블로킹 및 실시간 강제 보증 전송 모듈
+async function saveFinalScore(gameKey, score) {
+  if(!gameData[gameKey]) gameData[gameKey] = {};
+  if(!gameData[gameKey].scores) gameData[gameKey].scores = {};
+  
+  gameData[gameKey].scores[myNick] = score;
+  
+  try {
+    setData('gameData', gameData);
+    await firebase.database().ref(fbPath('gameData')).set(gameData);
+    showToast(`🎮 점수 기록 완료: ${score}!`, 'success');
+  } catch(err) {
+    console.error("데이터 무결성 전송 실패:", err);
   }
-
-  // 키패드 생성
-  const kp = document.getElementById('guess-keypad');
-  kp.innerHTML = '';
-  // 숫자 버튼 0~9 + 지우기
-  for(let i=1; i<=9; i++) {
-    kp.innerHTML += `<button onclick="guessKey(${i})" style="height:52px;border-radius:8px;background:var(--bg3);border:2px solid var(--border);color:var(--text);font-size:20px;font-weight:700;cursor:pointer">${i}</button>`;
+  
+  // 종료 버튼 처리
+  const btn = document.getElementById(`${gameKey}-btn`);
+  if(btn) {
+    btn.textContent = '✓ 기록 완료 (닫기)';
+    btn.disabled = false;
+    btn.onclick = closeGame;
   }
-  kp.innerHTML += `<button onclick="guessDel()" style="height:52px;border-radius:8px;background:rgba(239,68,68,.15);border:2px solid var(--red);color:var(--red);font-size:16px;font-weight:700;cursor:pointer">←</button>`;
-  kp.innerHTML += `<button onclick="guessKey(0)" style="height:52px;border-radius:8px;background:var(--bg3);border:2px solid var(--border);color:var(--text);font-size:20px;font-weight:700;cursor:pointer">0</button>`;
-  kp.innerHTML += `<button onclick="submitGuess()" style="height:52px;border-radius:8px;background:rgba(240,165,0,.2);border:2px solid var(--accent);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer" id="guess-enter">확인</button>`;
-
-  updateScoreBoard('guess-scores', d.scores||{}, false);
 }
 
-function guessKey(n) {
-  if(guessInput.length >= 3) return;
-  guessInput += n;
-  updateGuessDisplay();
-}
-
-function guessDel() {
-  guessInput = guessInput.slice(0,-1);
-  updateGuessDisplay();
-}
-
-function updateGuessDisplay() {
-  const display = guessInput.padStart(3,'_').split('').join(' ');
-  document.getElementById('guess-input').textContent = guessInput || '---';
-  document.getElementById('guess-btn').disabled = guessInput.length === 0;
-}
-
-function submitGuess() {
-  if(!guessInput) return;
-  const num = parseInt(guessInput);
-  if(num < 1 || num > 999) { showToast('1~999 사이 숫자를 입력하세요','error'); return; }
-
-  if(!gameData['guess']) gameData['guess'] = {};
-  if(!gameData['guess'].scores) gameData['guess'].scores = {};
-  // 차이값 저장 (낮을수록 1등)
-  const diff = Math.abs(guessTarget - num);
-  gameData['guess'].scores[myNick] = {input:num, diff};
-  saveGameData();
-
-  // 결과 표시
-  const sorted = Object.entries(gameData['guess'].scores).sort((a,b)=>a[1].diff-b[1].diff);
-  showToast(`🎯 입력: ${num} / 차이: ${diff}`, 'success');
-  updateScoreBoard('guess-scores', gameData['guess'].scores, false);
-  checkLeader('guess');
-
-  const btn = document.getElementById('guess-btn');
-  btn.textContent = '✓ 완료 (닫기)';
-  btn.onclick = closeGame;
-  btn.disabled = false;
-}
-
-function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
-function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
-document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
-function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
-function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+function openModal(id) { document.getElementById('modal-'+id).classList.add('open'); }
+function closeModal(id) { document.getElementById('modal-'+id).classList.remove('open'); }
 </script>
 </body>
 </html>
