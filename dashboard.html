@@ -35,7 +35,6 @@
     </div>
     
     <div class="content">
-      <!-- ⚠️ 상단 공지 바 -->
       <div class="notice-box">
         <span>⚠️</span> 보스 회차 추가 후 <strong style="color:#ef4444; text-decoration: underline;">1시간 뒤 자동 잠금</strong> · 참여 변경 내역은 로그에 기록됩니다
       </div>
@@ -45,7 +44,6 @@
   </div>
 </div>
 
-<!-- Firebase SDK 및 공통 스크립트 연동 -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
@@ -55,42 +53,26 @@ document.getElementById('commonStyle').textContent = COMMON_CSS;
 
 let sess, members=[], bosses=[], attend={};
 let curTab = 'guild';
-let isInitialDataLoaded = false; 
-
-// 🔐 [권한 검증 패치] index.html의 super/admin 로그인과 무조건 연동되는 마스터 권한 체크
-function checkHasAdminPermission() {
-  if (!sess) return false;
-  // 세션의 role이 super(총관리자)이거나 admin(서버관리자)이면 무조건 관리자로 인정
-  if (sess.role === 'super' || sess.role === 'admin') {
-    return true;
-  }
-  return false;
-}
 
 window.addEventListener('load', () => {
-  try {
-    sess = requireLogin(); 
-    if(!sess) return;
-    
-    initFirebase();
-    watchServerName();
-    
-    members = getData('members', []);
-    bosses = getData('bosses', DEFAULT_BOSSES);
-    attend = getData('attend', {});
-    
-    initialLoadSequence();
-  } catch(e) {
-    console.error("초기화 예외 방어:", e);
-    renderCurrentDashboard();
-  }
+  sess = requireLogin(); if(!sess) return;
+  initFirebase();
+  watchServerName();
+  
+  renderSidebar('dashboard');
+  
+  members = getData('members', []);
+  bosses = getData('bosses', DEFAULT_BOSSES);
+  attend = getData('attend', {});
+  
+  renderCurrentDashboard();
 
   fbListen('members', d => {
     if(d) {
       members = Array.isArray(d) ? d : Object.values(d);
       setData('members', members);
     }
-    triggerSafeRender();
+    if(curTab==='guild'||curTab==='week') renderCurrentDashboard();
   });
 
   fbListen('attend', d => {
@@ -98,7 +80,7 @@ window.addEventListener('load', () => {
       attend = d;
       setData('attend', attend);
     }
-    triggerSafeRender();
+    if(curTab==='week') renderCurrentDashboard();
   });
 
   fbListen('bosses', d => {
@@ -106,30 +88,9 @@ window.addEventListener('load', () => {
       bosses = Array.isArray(d) ? d : Object.values(d);
       setData('bosses', bosses);
     }
-    triggerSafeRender();
+    if(curTab==='boss') renderCurrentDashboard();
   });
 });
-
-function initialLoadSequence() {
-  if (members.length > 0) {
-    renderSidebar('dashboard');
-    renderCurrentDashboard();
-    isInitialDataLoaded = true;
-  } else {
-    document.getElementById('dashContent').innerHTML = `
-      <div style="text-align:center; padding:40px 0; color:var(--text2); font-size:13px;">
-        🔄 서버 데이터를 동기화하는 중입니다. 잠시만 기다려주세요...
-      </div>`;
-  }
-}
-
-function triggerSafeRender() {
-  if (!isInitialDataLoaded) {
-    isInitialDataLoaded = true;
-  }
-  renderSidebar('dashboard');
-  renderCurrentDashboard();
-}
 
 function refreshCurrentTab() {
   renderCurrentDashboard();
@@ -155,7 +116,6 @@ function renderCurrentDashboard() {
   }
 }
 
-// 1. 길드원 현황 탭 출력
 function renderGuildTab(target) {
   target.innerHTML = `
     <div class="card">
@@ -166,12 +126,12 @@ function renderGuildTab(target) {
             <tr><th class="tl">닉네임</th><th>클래스</th><th>직책</th><th>가입일</th></tr>
           </thead>
           <tbody>
-            ${members.length === 0 ? '<tr><td colspan="4" style="text-align:center;color:var(--text2)">등록된 길드원이 없습니다. 길드원 관리 메뉴를 이용해 주세요.</td></tr>' :
+            ${members.length === 0 ? '<tr><td colspan="4" style="text-align:center;color:var(--text2)">등록된 길드원이 없습니다.</td></tr>' :
             members.map(m => `
               <tr>
                 <td class="tl" style="font-weight:600">${m.nick}</td>
                 <td><span class="badge b-blue">${m.class || '미지정'}</span></td>
-                <td><span class="badge ${m.grade==='총관리자' || m.role==='super'?'b-red':m.grade==='부관리자'?'b-gold':'b-silver'}">${m.grade || '일반'}</span></td>
+                <td><span class="badge ${m.grade==='총관리자'?'b-red':m.grade==='부관리자'?'b-gold':'b-silver'}">${m.grade || '일반'}</span></td>
                 <td style="color:var(--text2); font-size:12px;">${m.joinDate || '-'}</td>
               </tr>
             `).join('')}
@@ -181,14 +141,10 @@ function renderGuildTab(target) {
     </div>`;
 }
 
-// 2. 보스 포인트 탭 출력
 function renderBossTab(target) {
-  const isAdmin = checkHasAdminPermission();
   target.innerHTML = `
     <div class="card">
-      <div class="card-head">
-        <div class="card-title">보스별 배정 포인트 점수</div>
-      </div>
+      <div class="card-head"><div class="card-title">보스별 배정 포인트 점수</div></div>
       <div style="overflow-x:auto">
         <table>
           <thead>
@@ -208,7 +164,6 @@ function renderBossTab(target) {
     </div>`;
 }
 
-// 3. 주간 기록 요약 탭 출력
 function renderWeekTab(target) {
   const wk = getWeekKey();
   const wkData = attend[wk] || {};
