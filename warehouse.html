@@ -76,18 +76,27 @@
   <div class="modal" style="max-width:540px">
     <div class="modal-title">📸 스크린샷 자동 분류</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7">
-      아이템 목록을 복사해서 Ctrl+V로 붙여넣으세요.<br>
-      <span style="color:var(--accent)">기존에 등록된 시리즈는 자동 분류!</span><br>
-      새 아이템은 미분류함에서 등급 지정 후 이동하세요.
+      아이템 목록 스크린샷을 올리면 AI가 색상을 읽어서 자동 분류해요!<br>
+      <span style="color:var(--accent)">🔴신화 🟡전설 🟣영웅 🔵희귀</span>
     </div>
-    <textarea class="inp" id="screenshot-text" rows="8"
-      placeholder="여기에 아이템 목록을 붙여넣으세요 (Ctrl+V)&#10;예:&#10;검은 가시 반지&#10;일리아나 로브&#10;엘 세라 귀걸이"
-      style="width:100%;resize:vertical;font-size:13px;line-height:1.8"
-      onkeydown="event.stopPropagation()"
-      oninput="previewScreenshot()"></textarea>
-    <div id="screenshot-preview" style="margin-top:10px;max-height:250px;overflow-y:auto"></div>
+    <div id="screenshot-upload-area" 
+      style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;margin-bottom:10px"
+      onclick="document.getElementById('screenshot-file').click()"
+      ondragover="event.preventDefault()"
+      ondrop="handleScreenshotDrop(event)">
+      <div style="font-size:36px;margin-bottom:8px">📸</div>
+      <div style="font-size:13px;color:var(--text2)">클릭하거나 이미지를 드래그해서 올려주세요</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">PNG, JPG 지원</div>
+    </div>
+    <input type="file" id="screenshot-file" accept="image/*" style="display:none" onchange="handleScreenshotFile(event)">
+    <img id="screenshot-img-preview" style="display:none;max-width:100%;border-radius:8px;margin-bottom:10px">
+    <div id="screenshot-analyzing" style="display:none;text-align:center;padding:16px;color:var(--accent)">
+      <div style="font-size:24px;margin-bottom:8px">🤖</div>
+      <div>AI가 분석중...</div>
+    </div>
+    <div id="screenshot-preview" style="margin-top:10px;max-height:280px;overflow-y:auto"></div>
     <div class="modal-footer">
-      <button class="btn btn-s" onclick="closeModal('screenshot')">취소</button>
+      <button class="btn btn-s" onclick="closeScreenshotModal()">취소</button>
       <button class="btn btn-p" id="screenshot-save-btn" onclick="saveScreenshotItems()" disabled>✅ 분류 등록</button>
     </div>
   </div>
@@ -368,10 +377,132 @@ function saveBulk() {
   showToast(`${added}개 아이템 등록됨!`,'success');
 }
 
-// ===== 스크린샷 자동 분류 =====
-// 시리즈 학습 데이터 (Firebase에 저장)
-let seriesMap = {}; // {시리즈명: 등급}
-let previewItems = []; // {name, grade, isNew}
+// ===== 스크린샷 자동 분류 (Claude API) =====
+let seriesMap = {};
+let previewItems = [];
+
+function closeScreenshotModal() {
+  closeModal('screenshot');
+  document.getElementById('screenshot-img-preview').style.display = 'none';
+  document.getElementById('screenshot-preview').innerHTML = '';
+  document.getElementById('screenshot-save-btn').disabled = true;
+  document.getElementById('screenshot-upload-area').style.display = 'block';
+  previewItems = [];
+}
+
+function handleScreenshotDrop(e) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('image/')) processScreenshotFile(file);
+}
+
+function handleScreenshotFile(e) {
+  const file = e.target.files[0];
+  if(file) processScreenshotFile(file);
+}
+
+function processScreenshotFile(file) {
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const base64 = ev.target.result;
+    // 미리보기
+    const img = document.getElementById('screenshot-img-preview');
+    img.src = base64;
+    img.style.display = 'block';
+    document.getElementById('screenshot-upload-area').style.display = 'none';
+    document.getElementById('screenshot-analyzing').style.display = 'block';
+    document.getElementById('screenshot-preview').innerHTML = '';
+    document.getElementById('screenshot-save-btn').disabled = true;
+
+    // Claude API로 분석
+    const b64data = base64.split(',')[1];
+    const mediaType = file.type;
+    await analyzeScreenshotWithClaude(b64data, mediaType);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeScreenshotWithClaude(b64data, mediaType) {
+  try {
+    const GRADE_COLORS = {
+      '신화': 'myth', '빨강': 'myth', '빨간': 'myth', 'red': 'myth',
+      '전설': 'legend', '주황': 'legend', '노랑': 'legend', 'orange': 'legend',
+      '영웅': 'hero', '보라': 'hero', '자주': 'hero', 'purple': 'hero',
+      '희귀': 'rare', '파랑': 'rare', '파란': 'rare', 'blue': 'rare'
+    };
+
+    const prompt = `이 이미지는 게임 아이템 목록 스크린샷입니다.
+각 아이템의 이름과 텍스트 색상을 분석해서 아래 JSON 형식으로만 답해주세요.
+텍스트 색상 기준: 빨강=신화, 주황/노랑=전설, 보라=영웅, 파랑=희귀
+
+반드시 이 JSON 형식으로만 답하고 다른 텍스트는 없어야 합니다:
+{"items":[{"name":"아이템명","grade":"myth|legend|hero|rare"}]}`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {type: 'image', source: {type: 'base64', media_type: mediaType, data: b64data}},
+            {type: 'text', text: prompt}
+          ]
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+
+    document.getElementById('screenshot-analyzing').style.display = 'none';
+    renderScreenshotResult(parsed.items || []);
+  } catch(e) {
+    document.getElementById('screenshot-analyzing').style.display = 'none';
+    document.getElementById('screenshot-preview').innerHTML =
+      `<div style="color:var(--red);font-size:12px">❌ 분석 실패: ${e.message}<br>다시 시도해주세요.</div>`;
+    console.error(e);
+  }
+}
+
+function renderScreenshotResult(items) {
+  if(items.length === 0) {
+    document.getElementById('screenshot-preview').innerHTML = '<div style="color:var(--text2)">아이템을 인식하지 못했습니다.</div>';
+    return;
+  }
+
+  const GRADE_LABELS = {myth:'🔴 신화', legend:'🟡 전설', hero:'🟣 영웅', rare:'🔵 희귀'};
+  previewItems = items;
+
+  // 시리즈맵 업데이트 - 인식된 아이템으로 학습
+  items.forEach(item => {
+    const series = getSeriesKey(item.name);
+    if(!seriesMap[series]) seriesMap[series] = item.grade;
+  });
+
+  // 그룹별로 표시
+  const groups = {myth:[], legend:[], hero:[], rare:[]};
+  items.forEach(item => { if(groups[item.grade]) groups[item.grade].push(item); });
+
+  let html = `<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">✅ ${items.length}개 아이템 인식됨</div>`;
+  
+  Object.entries(groups).forEach(([grade, list]) => {
+    if(list.length === 0) return;
+    html += `<div style="margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">${GRADE_LABELS[grade]} (${list.length}개)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${list.map(item => `<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:var(--bg3);border:1px solid var(--border)">${item.name}</span>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('screenshot-preview').innerHTML = html;
+  document.getElementById('screenshot-save-btn').disabled = false;
+}
 
 function loadSeriesMap() {
   const saved = getData('seriesMap', {});
