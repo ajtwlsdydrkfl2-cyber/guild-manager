@@ -35,6 +35,7 @@
     </div>
     
     <div class="content">
+      <!-- ⚠️ 상단 공지 바 -->
       <div class="notice-box">
         <span>⚠️</span> 보스 회차 추가 후 <strong style="color:#ef4444; text-decoration: underline;">1시간 뒤 자동 잠금</strong> · 참여 변경 내역은 로그에 기록됩니다
       </div>
@@ -44,17 +45,27 @@
   </div>
 </div>
 
+<!-- Firebase SDK 및 공통 스크립트 연동 -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="common.js"></script>
 <script>
-// 공통 디자인 양식 주입
 document.getElementById('commonStyle').textContent = COMMON_CSS;
 
 let sess, members=[], bosses=[], attend={};
 let curTab = 'guild';
-let isInitialDataLoaded = false; // 💡 파이어베이스 첫 수신 여부 확인 플래그
+let isInitialDataLoaded = false; 
+
+// 🔐 [권한 검증 패치] index.html의 super/admin 로그인과 무조건 연동되는 마스터 권한 체크
+function checkHasAdminPermission() {
+  if (!sess) return false;
+  // 세션의 role이 super(총관리자)이거나 admin(서버관리자)이면 무조건 관리자로 인정
+  if (sess.role === 'super' || sess.role === 'admin') {
+    return true;
+  }
+  return false;
+}
 
 window.addEventListener('load', () => {
   try {
@@ -64,21 +75,16 @@ window.addEventListener('load', () => {
     initFirebase();
     watchServerName();
     
-    // 로컬 스토리지 임시 데이터 확보
     members = getData('members', []);
     bosses = getData('bosses', DEFAULT_BOSSES);
     attend = getData('attend', {});
     
-    // 💡 최초 화면 로드 시 데이터 유무 판정 후 안전 가드 렌더링
     initialLoadSequence();
   } catch(e) {
     console.error("초기화 예외 방어:", e);
     renderCurrentDashboard();
   }
 
-  // ==========================================
-  // ⚡ 파이어베이스 실시간 동기화 및 정렬 패치
-  // ==========================================
   fbListen('members', d => {
     if(d) {
       members = Array.isArray(d) ? d : Object.values(d);
@@ -104,15 +110,12 @@ window.addEventListener('load', () => {
   });
 });
 
-// 💡 첫 화면 구동 시 타이밍 병목 현상 원천 차단 시퀀스
 function initialLoadSequence() {
-  // 로컬에 기존 데이터가 이미 깔려있다면 먼저 레이아웃을 띄워 유저 경험 유지
   if (members.length > 0) {
     renderSidebar('dashboard');
     renderCurrentDashboard();
     isInitialDataLoaded = true;
   } else {
-    // 완전 백지 상태일 경우 안내 메시지 출력 및 대기
     document.getElementById('dashContent').innerHTML = `
       <div style="text-align:center; padding:40px 0; color:var(--text2); font-size:13px;">
         🔄 서버 데이터를 동기화하는 중입니다. 잠시만 기다려주세요...
@@ -120,12 +123,10 @@ function initialLoadSequence() {
   }
 }
 
-// 💡 파이어베이스 수신이 정상 확인되면 그때 사이드바와 대시보드를 완벽 매칭하여 갱신
 function triggerSafeRender() {
   if (!isInitialDataLoaded) {
     isInitialDataLoaded = true;
   }
-  // 새로고침 직후 데이터가 비동기로 로드되더라도 꼬이지 않고 무조건 출력 보장
   renderSidebar('dashboard');
   renderCurrentDashboard();
 }
@@ -170,7 +171,7 @@ function renderGuildTab(target) {
               <tr>
                 <td class="tl" style="font-weight:600">${m.nick}</td>
                 <td><span class="badge b-blue">${m.class || '미지정'}</span></td>
-                <td><span class="badge ${m.grade==='총관리자'?'b-red':m.grade==='부관리자'?'b-gold':'b-silver'}">${m.grade || '일반'}</span></td>
+                <td><span class="badge ${m.grade==='총관리자' || m.role==='super'?'b-red':m.grade==='부관리자'?'b-gold':'b-silver'}">${m.grade || '일반'}</span></td>
                 <td style="color:var(--text2); font-size:12px;">${m.joinDate || '-'}</td>
               </tr>
             `).join('')}
@@ -182,9 +183,12 @@ function renderGuildTab(target) {
 
 // 2. 보스 포인트 탭 출력
 function renderBossTab(target) {
+  const isAdmin = checkHasAdminPermission();
   target.innerHTML = `
     <div class="card">
-      <div class="card-head"><div class="card-title">보스별 배정 포인트 점수</div></div>
+      <div class="card-head">
+        <div class="card-title">보스별 배정 포인트 점수</div>
+      </div>
       <div style="overflow-x:auto">
         <table>
           <thead>
@@ -224,12 +228,11 @@ function renderWeekTab(target) {
       <div class="card-head"><div class="card-title">진행 로그 상태 요약</div></div>
       <div style="padding:16px; font-size:13px; color:var(--text2); text-align:center;">
         이번 주차 실시간 출석 레이드 데이터가 정상 동기화 중입니다.<br>
-        자세한 참여 명단 및 포인트 내역은 왼쪽 메뉴의 <strong>[보스 포인트]</strong>를 참고해 주세요.
+        자세한 참여 명단 및 포인트 내역은 왼쪽 메뉴의 기능을 참고해 주세요.
       </div>
     </div>`;
 }
 
-// 사이드바 토글 제어
 function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
 function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
 </script>
