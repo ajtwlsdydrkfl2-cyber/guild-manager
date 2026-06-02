@@ -24,6 +24,10 @@
 .item-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;background:var(--bg3);border:1px solid var(--border);}
 .item-chip .qty{font-size:12px;font-weight:700;color:var(--accent);margin-left:2px;}
 .empty-grade{color:var(--text2);font-size:13px;padding:4px 0;}
+.grade-unclassified .grade-header{background:rgba(100,116,139,.15);color:#94a3b8;border:1px solid rgba(100,116,139,.3);}
+.grade-unclassified .grade-body{border-color:rgba(100,116,139,.2);}
+.unclass-item{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;font-size:12px;background:var(--bg3);border:1px solid var(--border);margin:3px;}
+.unclass-grade-sel{font-size:11px;padding:2px 4px;border-radius:4px;background:var(--bg2);border:1px solid var(--border);color:var(--text);}
 @media(max-width:768px){.item-chip{font-size:12px;padding:5px 10px;}.content{padding-bottom:100px!important;}}
 </style>
 </head>
@@ -69,34 +73,22 @@
 
 <!-- 스크린샷 붙여넣기 모달 -->
 <div class="modal-ov" id="modal-screenshot">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-title">📸 스크린샷 붙여넣기</div>
+  <div class="modal" style="max-width:540px">
+    <div class="modal-title">📸 스크린샷 자동 분류</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7">
-      아이템 목록 스크린샷을 Ctrl+V로 붙여넣으세요.<br>
-      <span style="color:var(--accent)">텍스트로 인식되면 자동 분류됩니다!</span>
+      아이템 목록을 복사해서 Ctrl+V로 붙여넣으세요.<br>
+      <span style="color:var(--accent)">기존에 등록된 시리즈는 자동 분류!</span><br>
+      새 아이템은 미분류함에서 등급 지정 후 이동하세요.
     </div>
-    <div class="fg">
-      <label>등급</label>
-      <select class="sel" id="screenshot-grade" style="width:100%">
-        <option value="myth">🔴 신화</option>
-        <option value="legend">🟡 전설</option>
-        <option value="hero">🟣 영웅</option>
-        <option value="rare">🔵 희귀</option>
-      </select>
-    </div>
-    <div id="screenshot-paste-area" 
-      style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;min-height:120px;margin-bottom:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px"
-      onclick="document.getElementById('screenshot-paste-area').focus()"
-      tabindex="0">
-      <div style="font-size:32px">📋</div>
-      <div style="font-size:13px;color:var(--text2)">여기를 클릭 후 Ctrl+V로 붙여넣기</div>
-      <div style="font-size:11px;color:var(--text2)">이미지 또는 텍스트 모두 가능</div>
-    </div>
-    <div id="screenshot-preview" style="font-size:12px;color:var(--text2);margin-bottom:8px;max-height:200px;overflow-y:auto"></div>
-    <div id="screenshot-parsed" style="font-size:12px;color:var(--accent);margin-bottom:8px"></div>
+    <textarea class="inp" id="screenshot-text" rows="8"
+      placeholder="여기에 아이템 목록을 붙여넣으세요 (Ctrl+V)&#10;예:&#10;검은 가시 반지&#10;일리아나 로브&#10;엘 세라 귀걸이"
+      style="width:100%;resize:vertical;font-size:13px;line-height:1.8"
+      onkeydown="event.stopPropagation()"
+      oninput="previewScreenshot()"></textarea>
+    <div id="screenshot-preview" style="margin-top:10px;max-height:250px;overflow-y:auto"></div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('screenshot')">취소</button>
-      <button class="btn btn-p" id="screenshot-save-btn" onclick="saveScreenshotItems()" disabled>저장</button>
+      <button class="btn btn-p" id="screenshot-save-btn" onclick="saveScreenshotItems()" disabled>✅ 분류 등록</button>
     </div>
   </div>
 </div>
@@ -207,6 +199,7 @@ window.addEventListener('load', () => {
   });
 
   warehouseItems = getData('warehouseItems', []);
+  loadSeriesMap();
   renderWarehouse();
 });
 
@@ -375,102 +368,143 @@ function saveBulk() {
   showToast(`${added}개 아이템 등록됨!`,'success');
 }
 
-// 스크린샷 붙여넣기 기능
-let parsedScreenshotItems = [];
+// ===== 스크린샷 자동 분류 =====
+// 시리즈 학습 데이터 (Firebase에 저장)
+let seriesMap = {}; // {시리즈명: 등급}
+let previewItems = []; // {name, grade, isNew}
 
-document.addEventListener('paste', function(e) {
-  const modal = document.getElementById('modal-screenshot');
-  if(!modal.classList.contains('open')) return;
-
-  const items = e.clipboardData.items;
-  let handled = false;
-
-  // 이미지 붙여넣기 - 텍스트 추출 시도
-  for(const item of items) {
-    if(item.type.startsWith('image/')) {
-      const file = item.getAsFile();
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        document.getElementById('screenshot-preview').innerHTML =
-          `<img src="${ev.target.result}" style="max-width:100%;border-radius:8px;margin-bottom:8px"><div style="color:var(--text2)">이미지가 붙여넣어졌습니다. 아이템명을 아래 텍스트로 입력해주세요.</div>`;
-      };
-      reader.readAsDataURL(file);
-      handled = true;
-      break;
-    }
-  }
-
-  // 텍스트 붙여넣기
-  if(!handled) {
-    const text = e.clipboardData.getData('text');
-    if(text) {
-      parseScreenshotText(text);
-      handled = true;
-    }
-  }
-});
-
-function parseScreenshotText(text) {
-  // 줄바꿈/쉼표로 분리해서 아이템명 파싱
-  const lines = text.split(/[\n,]/).map(l => l.trim()).filter(l => l.length > 1);
-  parsedScreenshotItems = [];
-
-  lines.forEach(line => {
-    // 숫자만 있는 줄 제외
-    if(/^\d+$/.test(line)) return;
-    // 아이템명 추출 (앞뒤 특수문자 제거)
-    const name = line.replace(/[^\w가-힣\s\/]/g, '').trim();
-    if(name.length > 1) parsedScreenshotItems.push(name);
-  });
-
-  if(parsedScreenshotItems.length > 0) {
-    document.getElementById('screenshot-parsed').innerHTML =
-      `<b style="color:var(--green)">✅ ${parsedScreenshotItems.length}개 인식됨:</b><br>` +
-      parsedScreenshotItems.map(n => `<span style="background:var(--bg3);padding:2px 6px;border-radius:4px;margin:2px;display:inline-block">${n}</span>`).join('');
-    document.getElementById('screenshot-save-btn').disabled = false;
-  } else {
-    document.getElementById('screenshot-parsed').innerHTML = '<span style="color:var(--red)">인식된 아이템 없음. 텍스트를 확인해주세요.</span>';
-    document.getElementById('screenshot-save-btn').disabled = true;
-  }
+function loadSeriesMap() {
+  const saved = getData('seriesMap', {});
+  seriesMap = saved;
+  fbListen('seriesMap', d => { if(d) { seriesMap = d; setData('seriesMap', d); } });
 }
 
-// 수동 텍스트 입력도 지원
-document.addEventListener('DOMContentLoaded', () => {
-  const area = document.getElementById('screenshot-paste-area');
-  if(area) {
-    area.addEventListener('keydown', (e) => {
-      if(e.ctrlKey && e.key === 'v') {
-        setTimeout(() => {
-          const text = area.textContent || area.innerText;
-          if(text) parseScreenshotText(text);
-        }, 100);
-      }
+function getSeriesKey(name) {
+  // 앞 1~2단어를 시리즈 키로 사용
+  const words = name.trim().split(' ');
+  if(words.length >= 2) return words.slice(0,2).join(' ');
+  return words[0];
+}
+
+function findGradeByName(name) {
+  // 1. 완전 일치 아이템이 창고에 있으면 그 등급
+  const exact = warehouseItems.find(x => x.name === name);
+  if(exact) return exact.grade;
+  // 2. 시리즈맵에서 찾기
+  const series = getSeriesKey(name);
+  if(seriesMap[series]) return seriesMap[series];
+  // 3. 시리즈맵 앞단어만으로도 확인
+  const firstWord = name.split(' ')[0];
+  const match = Object.keys(seriesMap).find(k => k.startsWith(firstWord));
+  if(match) return seriesMap[match];
+  return null;
+}
+
+function previewScreenshot() {
+  const text = document.getElementById('screenshot-text').value.trim();
+  if(!text) {
+    document.getElementById('screenshot-preview').innerHTML = '';
+    document.getElementById('screenshot-save-btn').disabled = true;
+    return;
+  }
+  const lines = text.split(/[\n,]/).map(l => l.trim()).filter(l => l.length > 1);
+  previewItems = [];
+  const GRADE_LABELS = {myth:'🔴 신화', legend:'🟡 전설', hero:'🟣 영웅', rare:'🔵 희귀'};
+
+  lines.forEach(line => {
+    if(/^\d+$/.test(line)) return;
+    const name = line.replace(/[^\w가-힣\s\/]/g, '').trim();
+    if(name.length < 2) return;
+    const grade = findGradeByName(name);
+    previewItems.push({name, grade, series: getSeriesKey(name)});
+  });
+
+  if(previewItems.length === 0) {
+    document.getElementById('screenshot-preview').innerHTML = '<div style="color:var(--text2);font-size:12px">인식된 아이템 없음</div>';
+    document.getElementById('screenshot-save-btn').disabled = true;
+    return;
+  }
+
+  const known = previewItems.filter(x => x.grade);
+  const unknown = previewItems.filter(x => !x.grade);
+
+  let html = '';
+  if(known.length > 0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">✅ 자동 분류 (${known.length}개)</div>`;
+    html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">';
+    known.forEach(item => {
+      html += `<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:var(--bg3);border:1px solid var(--border)">${GRADE_LABELS[item.grade]} ${item.name}</span>`;
+    });
+    html += '</div>';
+  }
+  if(unknown.length > 0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px">❓ 미분류 - 등급 선택 (${unknown.length}개)</div>`;
+    unknown.forEach((item, i) => {
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;background:var(--bg3);padding:6px 10px;border-radius:8px">
+        <span style="font-size:12px;flex:1">${item.name}</span>
+        <select class="sel" id="unclass_${i}" onchange="updatePreviewGrade(${i}, this.value)" style="font-size:11px;padding:3px 6px">
+          <option value="">등급선택</option>
+          <option value="myth">🔴 신화</option>
+          <option value="legend">🟡 전설</option>
+          <option value="hero">🟣 영웅</option>
+          <option value="rare">🔵 희귀</option>
+        </select>
+      </div>`;
     });
   }
-});
+
+  document.getElementById('screenshot-preview').innerHTML = html;
+  document.getElementById('screenshot-save-btn').disabled = false;
+}
+
+function updatePreviewGrade(unknownIdx, grade) {
+  const unknowns = previewItems.filter(x => !x.grade || x._manualGrade);
+  // 실제 previewItems에서 해당 인덱스 찾아서 업데이트
+  let cnt = 0;
+  previewItems.forEach(item => {
+    if(!item.grade || item._manualGrade) {
+      if(cnt === unknownIdx) { item._manualGrade = grade; }
+      cnt++;
+    }
+  });
+}
 
 function saveScreenshotItems() {
-  if(parsedScreenshotItems.length === 0) return;
-  const grade = document.getElementById('screenshot-grade').value;
+  if(previewItems.length === 0) return;
   let added = 0;
+  const newSeriesMap = {...seriesMap};
 
-  parsedScreenshotItems.forEach(name => {
-    if(!name) return;
-    const existing = warehouseItems.find(x => x.name === name && x.grade === grade);
+  previewItems.forEach(item => {
+    const finalGrade = item.grade || item._manualGrade;
+    if(!finalGrade) return; // 등급 미선택 스킵
+
+    // 창고에 추가
+    const existing = warehouseItems.find(x => x.name === item.name && x.grade === finalGrade);
     if(existing) { existing.qty++; }
     else {
-      const newId = Date.now() + Math.random();
-      warehouseItems.push({id: newId, name, grade, qty: 1, memo: ''});
+      warehouseItems.push({id: Date.now() + Math.random(), name: item.name, grade: finalGrade, qty: 1, memo: ''});
     }
     added++;
+
+    // 시리즈맵 학습 (새 아이템이면)
+    if(!item.grade && item._manualGrade) {
+      newSeriesMap[item.series] = item._manualGrade;
+    }
   });
+
+  // 시리즈맵 저장
+  if(JSON.stringify(newSeriesMap) !== JSON.stringify(seriesMap)) {
+    seriesMap = newSeriesMap;
+    setData('seriesMap', seriesMap);
+    fbSet('seriesMap', seriesMap);
+  }
 
   saveWarehouse();
   closeModal('screenshot');
-  parsedScreenshotItems = [];
-  document.getElementById('screenshot-parsed').innerHTML = '';
+  document.getElementById('screenshot-text').value = '';
   document.getElementById('screenshot-preview').innerHTML = '';
-  showToast(`${added}개 아이템 추가됨!`, 'success');
+  previewItems = [];
+  showToast(`${added}개 아이템 분류 완료!`, 'success');
 }
 
 function saveDeduct() {
