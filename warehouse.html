@@ -447,11 +447,11 @@ async function analyzeScreenshotWithClaude(b64data, mediaType) {
     };
 
     const prompt = `이 이미지는 게임 아이템 목록 스크린샷입니다.
-각 아이템의 이름과 텍스트 색상을 분석해서 아래 JSON 형식으로만 답해주세요.
-텍스트 색상 기준: 빨강=신화, 주황/노랑=전설, 보라=영웅, 파랑=희귀
+텍스트 색상을 보고 각 아이템의 이름과 등급을 분류해주세요.
+색상 기준: 빨강계열=myth, 주황/노랑계열=legend, 보라계열=hero, 파랑계열=rare
 
-반드시 이 JSON 형식으로만 답하고 다른 텍스트는 없어야 합니다:
-{"items":[{"name":"아이템명","grade":"myth|legend|hero|rare"}]}`;
+JSON만 반환하세요 (다른 텍스트 없이):
+{"items":[{"name":"아이템명","grade":"myth"}]}`;
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -473,9 +473,14 @@ async function analyzeScreenshotWithClaude(b64data, mediaType) {
     });
 
     const data = await res.json();
+    console.log('API response:', JSON.stringify(data));
     const text = data.content?.[0]?.text || '';
+    if(!text) throw new Error('응답이 비어있습니다');
     const clean = text.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
+    // JSON 부분만 추출
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('JSON을 찾을 수 없습니다: ' + clean.slice(0,100));
+    const parsed = JSON.parse(jsonMatch[0]);
 
     document.getElementById('screenshot-analyzing').style.display = 'none';
     renderScreenshotResult(parsed.items || []);
