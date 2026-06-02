@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>분배 계산기 — 길드 매니저</title>
+<style id="commonStyle"></style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">🧮 분배 계산기</div>
+      </div>
+    </div>
+    <div class="content" id="content" style="padding:16px;max-width:800px">
+
+      <!-- 주간기록 불러오기 -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">📊 기준 주간기록</div>
+        <div id="weekInfo" style="font-size:12px;color:var(--text2);margin-bottom:10px"></div>
+        <div id="memberTable"></div>
+      </div>
+
+      <!-- 수량 입력 -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">📦 분배할 수량 입력</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div class="fg" style="flex:1;min-width:200px;margin:0">
+            <label>수량 (쉼표로 여러개 입력 가능)</label>
+            <input class="inp" id="qtyInput" type="text" placeholder="예: 500, 1200, 34" style="width:100%">
+          </div>
+          <button class="btn btn-p" onclick="calcDist()" style="padding:10px 20px">계산하기</button>
+        </div>
+      </div>
+
+      <!-- 결과 -->
+      <div id="result"></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+
+let weeklyData = []; // {nick, pts, rate, rank}
+let weekKey = '';
+
+window.addEventListener('load', () => {
+  const sess = requireLogin(); if(!sess) return;
+  initFirebase(); watchServerName(); renderSidebar('calc');
+  loadLatestWeekly();
+});
+
+function loadLatestWeekly() {
+  fbGet('weeklyHistory', data => {
+    if(!data) { document.getElementById('weekInfo').textContent = '주간기록 없음'; return; }
+    // 가장 최근 주차
+    const keys = Object.keys(data).sort().reverse();
+    if(keys.length === 0) return;
+    weekKey = keys[0];
+    const wk = data[weekKey];
+    // 날짜 포맷
+    const y = weekKey.slice(0,4), m = weekKey.slice(4,6), d = weekKey.slice(6,8);
+    document.getElementById('weekInfo').textContent = `📅 ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 주 기준`;
+
+    // 순위별 정렬
+    weeklyData = Object.entries(wk)
+      .map(([nick, v]) => ({nick, pts: v.pts||0, rate: v.rate||0, rank: v.rank||99}))
+      .sort((a,b) => a.rank - b.rank);
+
+    renderMemberTable();
+  });
+}
+
+function renderMemberTable() {
+  const el = document.getElementById('memberTable');
+  el.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="border-bottom:1px solid var(--border)">
+      <th style="padding:6px;text-align:left">순위</th>
+      <th style="padding:6px;text-align:left">닉네임</th>
+      <th style="padding:6px;text-align:right">포인트</th>
+      <th style="padding:6px;text-align:right">참여율</th>
+    </tr></thead>
+    <tbody>
+      ${weeklyData.map((m,i) => `<tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+        <td style="padding:6px">${i===0?'🏆':i===1?'🥈':i===2?'🥉':`${i+1}위`}</td>
+        <td style="padding:6px;font-weight:600">${m.nick}</td>
+        <td style="padding:6px;text-align:right">${m.pts.toFixed(1)}</td>
+        <td style="padding:6px;text-align:right">${m.rate.toFixed(1)}%</td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+function calcDist() {
+  if(weeklyData.length === 0) { showToast('주간기록을 먼저 불러오세요','error'); return; }
+  const input = document.getElementById('qtyInput').value.trim();
+  if(!input) { showToast('수량을 입력하세요','error'); return; }
+
+  const qtys = input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+  if(qtys.length === 0) { showToast('올바른 수량을 입력하세요','error'); return; }
+
+  // 10% 미만 제외
+  const eligible = weeklyData.filter(m => m.rate >= 10);
+  const totalRate = eligible.reduce((s,m) => s + m.rate, 0);
+  const n = eligible.length;
+
+  let html = '';
+
+  qtys.forEach(qty => {
+    // 참여율 비례 분배
+    const rateArr = eligible.map(m => ({
+      nick: m.nick,
+      rate: m.rate,
+      rank: m.rank,
+      rateDist: Math.round(m.rate / totalRate * qty)
+    }));
+    // 합계 맞추기
+    let rateSum = rateArr.reduce((s,m) => s + m.rateDist, 0);
+    let diff = qty - rateSum;
+    for(let i = 0; diff > 0; i = (i+1) % rateArr.length) { rateArr[i].rateDist++; diff--; }
+    for(let i = 0; diff < 0; i = (i+1) % rateArr.length) { if(rateArr[i].rateDist > 0){ rateArr[i].rateDist--; diff++; } }
+
+    // 등수 비례 분배 (1등 가중치 높게)
+    // 역순위 가중치: n등이면 1점, 1등이면 n점
+    const rankWeights = eligible.map((m,i) => ({...m, w: n - i}));
+    const totalW = rankWeights.reduce((s,m) => s + m.w, 0);
+    const rankArr = rankWeights.map(m => ({
+      nick: m.nick,
+      rate: m.rate,
+      rankDist: Math.round(m.w / totalW * qty)
+    }));
+    let rankSum = rankArr.reduce((s,m) => s + m.rankDist, 0);
+    let diff2 = qty - rankSum;
+    for(let i = 0; diff2 > 0; i = (i+1) % rankArr.length) { rankArr[i].rankDist++; diff2--; }
+    for(let i = 0; diff2 < 0; i = (i+1) % rankArr.length) { if(rankArr[i].rankDist > 0){ rankArr[i].rankDist--; diff2++; } }
+
+    html += `<div class="card" style="margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:12px">📦 ${qty.toLocaleString()}개 분배</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">📊 참여율 비례</div>
+          ${rateArr.map((m,i) => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span>${i===0?'🏆':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${m.nick}</span>
+            <span style="font-weight:700;color:var(--accent)">${m.rateDist}개</span>
+          </div>`).join('')}
+          <div style="font-size:11px;color:var(--text2);margin-top:6px;text-align:right">합계: ${rateArr.reduce((s,m)=>s+m.rateDist,0)}개</div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">🏆 등수 비례</div>
+          ${rankArr.map((m,i) => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span>${i===0?'🏆':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${m.nick}</span>
+            <span style="font-weight:700;color:#14b8a6">${m.rankDist}개</span>
+          </div>`).join('')}
+          <div style="font-size:11px;color:var(--text2);margin-top:6px;text-align:right">합계: ${rankArr.reduce((s,m)=>s+m.rankDist,0)}개</div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('result').innerHTML = html;
+}
+
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+function showToast(msg,type){
+  let el=document.getElementById('toast');
+  if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);background:rgba(5,9,18,.97);border:2px solid #f0a500;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;color:#f0a500;z-index:300;transition:transform .3s;white-space:nowrap;';document.body.appendChild(el);}
+  el.textContent=msg;
+  el.style.transform='translateX(-50%) translateY(0)';
+  clearTimeout(el._t);el._t=setTimeout(()=>el.style.transform='translateX(-50%) translateY(-60px)',2500);
+}
+</script>
+</body>
+</html>

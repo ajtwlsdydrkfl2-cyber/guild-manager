@@ -292,7 +292,7 @@ function renderSidebar(activePage) {
     {id:'market', label:'거래소 내역', icon:'💰', href:'market.html', oc:''},
     {id:'items', label:'아이템 분배', icon:'📦', href:'items.html', oc:''},
     {id:'game', label:'길드 게임', icon:'🎮', href:'game.html', oc:''},
-    {id:'board', label:'로드나인마블', icon:'🎲', href:'board.html', oc:''},
+    {id:'calc', label:'분배 계산기', icon:'🧮', href:'calc.html', oc:''},
     {id:'guide', label:'사용 설명서', icon:'📖', href:'guide.html', oc:''},
   ];
   if (admin) pages.push({id:'admin', label:'관리자', icon:'⚙️', href:'admin.html', oc:''});
@@ -397,10 +397,10 @@ tr:hover .sc{background:#101c2e;}
 // ===== 길드 게임 결과 자동 디스코드 전송 =====
 const GUILD_DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1505266643293569268/G0VJghqRfFpTPGTMuKiJP13IOUFw9WBNH0bE8Y3GWJ4dp__rMeqKU1HvPVuux8KZSP8N';
 
-async function sendGameResultsToDiscord() {
+async function sendGameResultsToDiscord(preloadedData) {
   try {
-    // localStorage 대신 Firebase에서 직접 최신 데이터 읽기
-    const gd = await new Promise(resolve => {
+    // 이미 데이터가 있으면 재사용, 없으면 Firebase에서 읽기
+    const gd = preloadedData || await new Promise(resolve => {
       fbGet('gameData', data => resolve(data || {}));
     });
     const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
@@ -448,24 +448,26 @@ async function sendGameResultsToDiscord() {
 }
 
 // 1분마다 23:59 KST 체크
+let _discordSending = false; // 중복 실행 방지
 setInterval(async () => {
+  if(_discordSending) return;
   const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
   const h = kst.getHours(), m = kst.getMinutes();
-  // KST 날짜 기준 (YYYY-MM-DD)
   const todayKey = `${kst.getFullYear()}-${String(kst.getMonth()+1).padStart(2,'0')}-${String(kst.getDate()).padStart(2,'0')}`;
   const lastPost = localStorage.getItem('lastAutoDiscord');
   if(h===23 && m===59 && lastPost!==todayKey) {
+    _discordSending = true;
     localStorage.setItem('lastAutoDiscord', todayKey);
-    // 1. 결과 전송
-    await sendGameResultsToDiscord();
-    // 2. 전송 후 게임 데이터 초기화 (Firebase + 로컬 둘 다)
-    fbGet('gameData', curGd => {
+    // Firebase에서 직접 읽어서 전송 후 초기화
+    fbGet('gameData', async curGd => {
+      // 1. 전송
+      await sendGameResultsToDiscord(curGd||{});
+      // 2. 초기화 (rsp 제외)
       const newGd = {};
-      // 가위바위보 토너먼트는 유지
-      if(curGd?.rsp) newGd.rsp = curGd.rsp;
       setData('gameData', newGd);
       if(typeof fbSet === 'function') fbSet('gameData', newGd);
-      console.log('게임 데이터 자동 초기화 완료');
+      _discordSending = false;
+      console.log('전송+초기화 완료');
     });
   }
 }, 60000);
