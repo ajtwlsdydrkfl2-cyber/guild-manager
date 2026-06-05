@@ -220,7 +220,13 @@ function switchTab(tab, el) {
   renderSidebar(tab==='boss'?'boss':'dashboard');
   if(tab==='dash') renderDash();
   else if(tab==='boss') renderBoss();
-  else renderHistory();
+  else {
+    // Firebase에서 최신 주간기록 로드 후 렌더
+    fbGet('weeklyHistory', data => {
+      if(data) setData('weeklyHistory', data);
+      renderHistory();
+    });
+  }
 }
 
 // ===== 대시보드 =====
@@ -988,13 +994,6 @@ function renderHistory() {
     }).join('')}
   `;
 
-  // Firebase에서도 로드 (탭 체크 추가)
-  fbGet('weeklyHistory', data => {
-    if (data && curTab==='history') {
-      setData('weeklyHistory', data);
-      renderHistory();
-    }
-  });
 }
 
 // ===== 디스코드 웹훅 =====
