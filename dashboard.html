@@ -811,17 +811,23 @@ function setAttMobile(bn, rk, mid, newSt, btn) {
 }
 
 function toggleAttendHistory(wk, btn) {
-  const el = document.getElementById('attend-history-' + wk);
-  if(el.style.display !== 'none') {
-    el.style.display = 'none';
-    btn.textContent = '👥 참여 내역';
-    return;
-  }
   btn.textContent = '⏳ 로딩중...';
   btn.disabled = true;
 
-  fbGet('attend', allAttend => {
-    const wkData = allAttend?.[wk] || {};
+  const sess = getSession();
+  if(!firebaseDB || !sess) {
+    showToast('Firebase 연결 필요','error');
+    btn.textContent = '👥 참여 내역';
+    btn.disabled = false;
+    return;
+  }
+
+  const y=wk.slice(0,4), m=wk.slice(4,6), d=wk.slice(6,8);
+  document.getElementById('attend-history-title').textContent = `📅 ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 주 - 보스 참여 내역`;
+
+  firebaseDB.ref(`servers/server${sess.serverId}/attend/${wk}`).once('value', snap => {
+    const wkData = snap.val() || {};
+    const body = document.getElementById('attend-history-body');
     const mList = [...members].sort((a,b) => a.nick.localeCompare(b.nick,'ko'));
 
     if(Object.keys(wkData).length === 0) {
@@ -878,10 +884,10 @@ function toggleAttendHistory(wk, btn) {
     });
 
     html += '</div>';
-    el.innerHTML = html;
-    el.style.display = 'block';
-    btn.textContent = '👥 참여 내역 닫기';
+    body.innerHTML = html;
+    btn.textContent = '👥 참여 내역';
     btn.disabled = false;
+    openModal('attend-history');
   });
 }
 
@@ -951,7 +957,7 @@ function renderHistory() {
               <button class="btn btn-s btn-sm" onclick="toggleAttendHistory('${wk}', this)">👥 참여 내역</button>
             </div>
           </div>
-          <div id="attend-history-${wk}" style="display:none"></div>
+
           <div style="overflow-x:auto">
             <table>
               <thead><tr>
