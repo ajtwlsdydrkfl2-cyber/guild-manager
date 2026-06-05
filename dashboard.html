@@ -810,6 +810,81 @@ function setAttMobile(bn, rk, mid, newSt, btn) {
   document.getElementById('content').scrollTop = scrollPos;
 }
 
+function toggleAttendHistory(wk, btn) {
+  const el = document.getElementById('attend-history-' + wk);
+  if(el.style.display !== 'none') {
+    el.style.display = 'none';
+    btn.textContent = '👥 참여 내역';
+    return;
+  }
+  btn.textContent = '⏳ 로딩중...';
+  btn.disabled = true;
+
+  fbGet('attend', allAttend => {
+    const wkData = allAttend?.[wk] || {};
+    const mList = [...members].sort((a,b) => a.nick.localeCompare(b.nick,'ko'));
+
+    if(Object.keys(wkData).length === 0) {
+      el.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:10px">이 주차의 참여 데이터가 없습니다</div>';
+      el.style.display = 'block';
+      btn.textContent = '👥 참여 내역';
+      btn.disabled = false;
+      return;
+    }
+
+    // 보스별 정렬
+    const bossNames = Object.keys(wkData).sort();
+    let html = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:12px">';
+
+    bossNames.forEach(bossName => {
+      const rounds = wkData[bossName];
+      const roundKeys = Object.keys(rounds).sort();
+      html += `<div style="margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px">⚔️ ${bossName} (${roundKeys.length}회차)</div>`;
+
+      roundKeys.forEach((rk, ri) => {
+        const round = rounds[rk];
+        const att = round.attendance || {};
+        const time = round.time ? fmtDT(round.time) : '';
+        const joinList = [], lateList = [], missList = [];
+
+        mList.forEach(m => {
+          const st = att[m.id] || '미참';
+          if(st === '참여') joinList.push(m.nick);
+          else if(st === '늦참') lateList.push(m.nick);
+          else missList.push(m.nick);
+        });
+
+        html += `<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:6px;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:700">${ri+1}회차</span>
+            <span style="font-size:10px;color:var(--text2)">${time}</span>
+          </div>
+          <div style="font-size:11px;margin-bottom:3px">
+            <span style="color:var(--green);font-weight:700">✅ 참여 (${joinList.length})</span>
+            <span style="color:var(--text2);margin-left:6px">${joinList.join(', ') || '-'}</span>
+          </div>
+          ${lateList.length>0?`<div style="font-size:11px;margin-bottom:3px">
+            <span style="color:#f59e0b;font-weight:700">⏰ 늦참 (${lateList.length})</span>
+            <span style="color:var(--text2);margin-left:6px">${lateList.join(', ')}</span>
+          </div>`:''}
+          <div style="font-size:11px">
+            <span style="color:var(--red);font-weight:700">❌ 미참 (${missList.length})</span>
+            <span style="color:var(--text2);margin-left:6px">${missList.join(', ') || '-'}</span>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    });
+
+    html += '</div>';
+    el.innerHTML = html;
+    el.style.display = 'block';
+    btn.textContent = '👥 참여 내역 닫기';
+    btn.disabled = false;
+  });
+}
+
 // ===== 주간 기록 저장 =====
 function saveWeeklyHistory() {
   const wk = getWeekKey();
@@ -871,8 +946,12 @@ function renderHistory() {
         <div class="card" style="margin-bottom:14px">
           <div class="card-head">
             <div class="card-title">📅 ${date}</div>
-            <div style="font-size:11px;color:var(--text2)">${fmtDT(rec.savedAt)} 저장</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-size:11px;color:var(--text2)">${fmtDT(rec.savedAt)} 저장</div>
+              <button class="btn btn-s btn-sm" onclick="toggleAttendHistory('${wk}', this)">👥 참여 내역</button>
+            </div>
           </div>
+          <div id="attend-history-${wk}" style="display:none"></div>
           <div style="overflow-x:auto">
             <table>
               <thead><tr>
