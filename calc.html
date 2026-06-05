@@ -17,29 +17,71 @@
         <div class="topbar-title">🧮 분배 계산기</div>
       </div>
     </div>
-    <div class="content" id="content" style="padding:16px;max-width:800px">
+    <div class="content" id="content" style="padding:16px;max-width:860px">
 
-      <!-- 주간기록 불러오기 -->
-      <div class="card" style="margin-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">📊 기준 주간기록</div>
-        <div id="weekInfo" style="font-size:12px;color:var(--text2);margin-bottom:10px"></div>
-        <div id="memberTable"></div>
+      <!-- 탭 -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-p" id="tab-item" onclick="switchCalcTab('item')" style="flex:1">📦 소모품 분배</button>
+        <button class="btn btn-s" id="tab-dia" onclick="switchCalcTab('dia')" style="flex:1">💎 다이아 분배</button>
       </div>
 
-      <!-- 수량 입력 -->
-      <div class="card" style="margin-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">📦 분배할 수량 입력</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <div class="fg" style="flex:1;min-width:200px;margin:0">
-            <label>수량 (쉼표로 여러개 입력 가능)</label>
-            <input class="inp" id="qtyInput" type="text" placeholder="예: 500, 1200, 34" style="width:100%">
+      <!-- 소모품 분배 -->
+      <div id="calc-item">
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">📊 기준 주간기록 선택</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select class="sel" id="weekSelect" onchange="loadWeekData()" style="flex:1;min-width:200px">
+              <option value="">주차 선택</option>
+            </select>
+            <div style="font-size:12px;color:var(--text2)" id="weekInfo"></div>
           </div>
-          <button class="btn btn-p" onclick="calcDist()" style="padding:10px 20px">계산하기</button>
         </div>
+
+        <div class="card" style="margin-bottom:16px" id="member-table-card" style="display:none">
+          <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">👥 참여자 목록 (10% 미만 제외)</div>
+          <div id="memberTable"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">📦 분배할 수량</div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div class="fg" style="flex:1;min-width:200px;margin:0">
+              <label>수량 (쉼표로 여러개)</label>
+              <input class="inp" id="qtyInput" type="text" placeholder="예: 500, 1200, 34" style="width:100%">
+            </div>
+            <button class="btn btn-p" onclick="calcItem()" style="padding:10px 20px">계산하기</button>
+          </div>
+        </div>
+        <div id="item-result"></div>
       </div>
 
-      <!-- 결과 -->
-      <div id="result"></div>
+      <!-- 다이아 분배 -->
+      <div id="calc-dia" style="display:none">
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px">💎 다이아 균등 분배</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="fg" style="margin:0">
+              <label>총 다이아</label>
+              <input class="inp" id="totalDia" type="number" placeholder="예: 5000" style="width:100%" oninput="calcDia()">
+            </div>
+            <div class="fg" style="margin:0">
+              <label>총 참여 인원</label>
+              <input class="inp" id="totalPeople" type="number" placeholder="예: 10" min="1" style="width:100%" oninput="calcDia()">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px">
+            <div class="fg" style="margin:0">
+              <label>늦참 인원 <span style="color:var(--text2);font-size:11px">(20% 차감)</span></label>
+              <input class="inp" id="latePeople" type="number" placeholder="예: 2" min="0" value="0" style="width:100%" oninput="calcDia()">
+            </div>
+            <div class="fg" style="margin:0">
+              <label>차감 비율 (%)</label>
+              <input class="inp" id="lateRate" type="number" placeholder="20" min="0" max="100" value="20" style="width:100%" oninput="calcDia()">
+            </div>
+          </div>
+        </div>
+        <div id="dia-result"></div>
+      </div>
 
     </div>
   </div>
@@ -52,130 +94,188 @@
 <script>
 document.getElementById('commonStyle').textContent = COMMON_CSS;
 
-let weeklyData = []; // {nick, pts, rate, rank}
-let weekKey = '';
+let weeklyData = [];
+let allWeeks = {};
 
 window.addEventListener('load', () => {
   const sess = requireLogin(); if(!sess) return;
   initFirebase(); watchServerName(); renderSidebar('calc');
-  loadLatestWeekly();
+  loadAllWeeks();
 });
 
-function loadLatestWeekly() {
+function switchCalcTab(tab) {
+  document.getElementById('calc-item').style.display = tab==='item' ? 'block' : 'none';
+  document.getElementById('calc-dia').style.display = tab==='dia' ? 'block' : 'none';
+  document.getElementById('tab-item').className = tab==='item' ? 'btn btn-p' : 'btn btn-s';
+  document.getElementById('tab-dia').className = tab==='dia' ? 'btn btn-p' : 'btn btn-s';
+}
+
+function loadAllWeeks() {
   fbGet('weeklyHistory', data => {
-    if(!data) { document.getElementById('weekInfo').textContent = '주간기록 없음'; return; }
-    // 가장 최근 주차
+    if(!data) return;
+    allWeeks = data;
+    const sel = document.getElementById('weekSelect');
     const keys = Object.keys(data).sort().reverse();
-    if(keys.length === 0) return;
-    weekKey = keys[0];
-    const wk = data[weekKey];
-    // 날짜 포맷
-    const y = weekKey.slice(0,4), m = weekKey.slice(4,6), d = weekKey.slice(6,8);
-    document.getElementById('weekInfo').textContent = `📅 ${y}년 ${parseInt(m)}월 ${parseInt(d)}일 주 기준`;
-
-    // 순위별 정렬
-    weeklyData = Object.entries(wk)
-      .map(([nick, v]) => ({nick, pts: v.pts||0, rate: v.rate||0, rank: v.rank||99}))
-      .sort((a,b) => a.rank - b.rank);
-
-    renderMemberTable();
+    keys.forEach(wk => {
+      const y=wk.slice(0,4), m=parseInt(wk.slice(4,6)), d=parseInt(wk.slice(6,8));
+      const opt = document.createElement('option');
+      opt.value = wk;
+      opt.textContent = `${y}년 ${m}월 ${d}일 주`;
+      sel.appendChild(opt);
+    });
+    // 최신 주차 자동 선택
+    if(keys.length > 0) {
+      sel.value = keys[0];
+      loadWeekData();
+    }
   });
+}
+
+function loadWeekData() {
+  const wk = document.getElementById('weekSelect').value;
+  if(!wk || !allWeeks[wk]) { weeklyData = []; renderMemberTable(); return; }
+  const rec = allWeeks[wk];
+  document.getElementById('weekInfo').textContent = `${rec.rankings?.length||0}명`;
+  weeklyData = (rec.rankings || [])
+    .map(m => ({nick:m.nick, pts:m.pts||0, rate:m.rate||0}))
+    .filter(m => m.rate >= 10)
+    .sort((a,b) => b.pts - a.pts);
+  renderMemberTable();
 }
 
 function renderMemberTable() {
   const el = document.getElementById('memberTable');
+  if(weeklyData.length === 0) { el.innerHTML = '<div style="color:var(--text2);font-size:12px">주차를 선택하세요</div>'; return; }
   el.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
     <thead><tr style="border-bottom:1px solid var(--border)">
-      <th style="padding:6px;text-align:left">순위</th>
-      <th style="padding:6px;text-align:left">닉네임</th>
-      <th style="padding:6px;text-align:right">포인트</th>
-      <th style="padding:6px;text-align:right">참여율</th>
+      <th style="padding:5px;text-align:left">순위</th>
+      <th style="padding:5px;text-align:left">닉네임</th>
+      <th style="padding:5px;text-align:right">참여율</th>
     </tr></thead>
-    <tbody>
-      ${weeklyData.map((m,i) => `<tr style="border-bottom:1px solid rgba(255,255,255,.05)">
-        <td style="padding:6px">${i===0?'🏆':i===1?'🥈':i===2?'🥉':`${i+1}위`}</td>
-        <td style="padding:6px;font-weight:600">${m.nick}</td>
-        <td style="padding:6px;text-align:right">${m.pts.toFixed(1)}</td>
-        <td style="padding:6px;text-align:right">${m.rate.toFixed(1)}%</td>
-      </tr>`).join('')}
-    </tbody>
+    <tbody>${weeklyData.map((m,i)=>`<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+      <td style="padding:5px">${i===0?'🏆':i===1?'🥈':i===2?'🥉':`${i+1}위`}</td>
+      <td style="padding:5px;font-weight:600">${m.nick}</td>
+      <td style="padding:5px;text-align:right">${m.rate.toFixed(1)}%</td>
+    </tr>`).join('')}</tbody>
   </table></div>`;
 }
 
-function calcDist() {
-  if(weeklyData.length === 0) { showToast('주간기록을 먼저 불러오세요','error'); return; }
+function calcItem() {
+  if(weeklyData.length === 0) { showToast('주차를 먼저 선택하세요','error'); return; }
   const input = document.getElementById('qtyInput').value.trim();
   if(!input) { showToast('수량을 입력하세요','error'); return; }
-
-  const qtys = input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+  const qtys = input.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>0);
   if(qtys.length === 0) { showToast('올바른 수량을 입력하세요','error'); return; }
 
-  // 10% 미만 제외
-  const eligible = weeklyData.filter(m => m.rate >= 10);
-  const totalRate = eligible.reduce((s,m) => s + m.rate, 0);
-  const n = eligible.length;
-
+  const n = weeklyData.length;
+  const totalRate = weeklyData.reduce((s,m)=>s+m.rate,0);
   let html = '';
 
   qtys.forEach(qty => {
-    // 참여율 비례 분배
-    const rateArr = eligible.map(m => ({
-      nick: m.nick,
-      rate: m.rate,
-      rank: m.rank,
-      rateDist: Math.round(m.rate / totalRate * qty)
-    }));
-    // 합계 맞추기
-    let rateSum = rateArr.reduce((s,m) => s + m.rateDist, 0);
-    let diff = qty - rateSum;
-    for(let i = 0; diff > 0; i = (i+1) % rateArr.length) { rateArr[i].rateDist++; diff--; }
-    for(let i = 0; diff < 0; i = (i+1) % rateArr.length) { if(rateArr[i].rateDist > 0){ rateArr[i].rateDist--; diff++; } }
+    // 참여율 비례
+    let rateArr = weeklyData.map(m => ({...m, dist: Math.round(m.rate/totalRate*qty)}));
+    let diff = qty - rateArr.reduce((s,m)=>s+m.dist,0);
+    for(let i=0; diff>0; i=(i+1)%n){ rateArr[i].dist++; diff--; }
+    for(let i=0; diff<0; i=(i+1)%n){ if(rateArr[i].dist>0){rateArr[i].dist--;diff++;} }
 
-    // 등수 비례 분배 (1등 가중치 높게)
-    // 역순위 가중치: n등이면 1점, 1등이면 n점
-    const rankWeights = eligible.map((m,i) => ({...m, w: n - i}));
-    const totalW = rankWeights.reduce((s,m) => s + m.w, 0);
-    const rankArr = rankWeights.map(m => ({
-      nick: m.nick,
-      rate: m.rate,
-      rankDist: Math.round(m.w / totalW * qty)
-    }));
-    let rankSum = rankArr.reduce((s,m) => s + m.rankDist, 0);
-    let diff2 = qty - rankSum;
-    for(let i = 0; diff2 > 0; i = (i+1) % rankArr.length) { rankArr[i].rankDist++; diff2--; }
-    for(let i = 0; diff2 < 0; i = (i+1) % rankArr.length) { if(rankArr[i].rankDist > 0){ rankArr[i].rankDist--; diff2++; } }
+    // 등수 비례
+    let rankArr = weeklyData.map((m,i) => ({...m, w:n-i, dist:0}));
+    const totalW = rankArr.reduce((s,m)=>s+m.w,0);
+    rankArr = rankArr.map(m=>({...m, dist:Math.round(m.w/totalW*qty)}));
+    let diff2 = qty - rankArr.reduce((s,m)=>s+m.dist,0);
+    for(let i=0; diff2>0; i=(i+1)%n){ rankArr[i].dist++; diff2--; }
+    for(let i=0; diff2<0; i=(i+1)%n){ if(rankArr[i].dist>0){rankArr[i].dist--;diff2++;} }
 
-    html += `<div class="card" style="margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:12px">📦 ${qty.toLocaleString()}개 분배</div>
+    html += `<div class="card" style="margin-bottom:14px">
+      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:12px">📦 ${qty.toLocaleString()}개</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div>
-          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">📊 참여율 비례</div>
-          ${rateArr.map((m,i) => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">📊 참여율 비례</div>
+          ${rateArr.map((m,i)=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">
             <span>${i===0?'🏆':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${m.nick}</span>
-            <span style="font-weight:700;color:var(--accent)">${m.rateDist}개</span>
+            <span style="font-weight:700;color:var(--accent)">${m.dist}개</span>
           </div>`).join('')}
-          <div style="font-size:11px;color:var(--text2);margin-top:6px;text-align:right">합계: ${rateArr.reduce((s,m)=>s+m.rateDist,0)}개</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;text-align:right">합계: ${rateArr.reduce((s,m)=>s+m.dist,0)}개</div>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">🏆 등수 비례</div>
-          ${rankArr.map((m,i) => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">🏆 등수 비례</div>
+          ${rankArr.map((m,i)=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">
             <span>${i===0?'🏆':i===1?'🥈':i===2?'🥉':`${i+1}.`} ${m.nick}</span>
-            <span style="font-weight:700;color:#14b8a6">${m.rankDist}개</span>
+            <span style="font-weight:700;color:#14b8a6">${m.dist}개</span>
           </div>`).join('')}
-          <div style="font-size:11px;color:var(--text2);margin-top:6px;text-align:right">합계: ${rankArr.reduce((s,m)=>s+m.rankDist,0)}개</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;text-align:right">합계: ${rankArr.reduce((s,m)=>s+m.dist,0)}개</div>
         </div>
       </div>
     </div>`;
   });
 
-  document.getElementById('result').innerHTML = html;
+  document.getElementById('item-result').innerHTML = html;
+}
+
+// ===== 다이아 분배 =====
+function calcDia() {
+  const total = parseInt(document.getElementById('totalDia').value)||0;
+  const totalP = parseInt(document.getElementById('totalPeople').value)||0;
+  const lateP = parseInt(document.getElementById('latePeople').value)||0;
+  const lateRate = parseInt(document.getElementById('lateRate').value)||20;
+  const el = document.getElementById('dia-result');
+
+  if(total<=0 || totalP<=0) { el.innerHTML=''; return; }
+  if(lateP > totalP) { el.innerHTML='<div style="color:var(--red);font-size:12px">늦참 인원이 총 인원보다 많아요!</div>'; return; }
+
+  const normalP = totalP - lateP;
+  const lateRatio = 1 - lateRate/100;
+
+  // 가중치 계산
+  const totalWeight = normalP * 1.0 + lateP * lateRatio;
+  const unit = total / totalWeight;
+  const normalDia = Math.floor(unit);
+  const lateDia = Math.floor(unit * lateRatio);
+
+  // 합계 맞추기
+  const calcTotal = normalP * normalDia + lateP * lateDia;
+  const remainder = total - calcTotal;
+
+  el.innerHTML = `<div class="card">
+    <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px">💎 계산 결과</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="background:rgba(34,197,94,.1);border:1px solid var(--green);border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">✅ 일반 참여 (${normalP}명)</div>
+        <div style="font-size:28px;font-weight:900;color:var(--green)">${normalDia.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text2)">다이아/인</div>
+      </div>
+      <div style="background:rgba(245,158,11,.1);border:1px solid #f59e0b;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">⏰ 늦참 (${lateP}명) -${lateRate}%</div>
+        <div style="font-size:28px;font-weight:900;color:#f59e0b">${lateP>0?lateDia.toLocaleString():'-'}</div>
+        <div style="font-size:11px;color:var(--text2)">다이아/인</div>
+      </div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:12px;font-size:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>일반 ${normalP}명 × ${normalDia.toLocaleString()}</span>
+        <span style="color:var(--accent)">${(normalP*normalDia).toLocaleString()}</span>
+      </div>
+      ${lateP>0?`<div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>늦참 ${lateP}명 × ${lateDia.toLocaleString()}</span>
+        <span style="color:#f59e0b">${(lateP*lateDia).toLocaleString()}</span>
+      </div>`:''}
+      ${remainder>0?`<div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:var(--text2)">나머지 (1위~${remainder}위 +1씩)</span>
+        <span style="color:var(--text2)">${remainder.toLocaleString()}</span>
+      </div>`:''}
+      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;margin-top:4px">
+        <span>합계</span>
+        <span style="color:var(--accent)">${(normalP*normalDia+lateP*lateDia+remainder).toLocaleString()} / ${total.toLocaleString()}</span>
+      </div>
+    </div>
+  </div>`;
 }
 
 function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
 function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
 function showToast(msg,type){
-  let el=document.getElementById('toast');
-  if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);background:rgba(5,9,18,.97);border:2px solid #f0a500;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;color:#f0a500;z-index:300;transition:transform .3s;white-space:nowrap;';document.body.appendChild(el);}
+  let el=document.getElementById('gm-toast');
+  if(!el){el=document.createElement('div');el.id='gm-toast';el.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);background:rgba(5,9,18,.97);border:2px solid #f0a500;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;color:#f0a500;z-index:300;transition:transform .3s;white-space:nowrap;';document.body.appendChild(el);}
   el.textContent=msg;
   el.style.transform='translateX(-50%) translateY(0)';
   clearTimeout(el._t);el._t=setTimeout(()=>el.style.transform='translateX(-50%) translateY(-60px)',2500);
