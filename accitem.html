@@ -151,12 +151,13 @@ function render() {
   const sess = getSession();
 
   // 헤더 생성
+  let html = '';
   if(admin) {
     html += `<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:rgba(240,165,0,.08);border-radius:6px;border-left:3px solid var(--accent)">
       💡 관리자: 셀 클릭 → 지급 처리 / ✅ 셀 클릭 → 지급 취소
     </div>`;
   }
-  let html = `<table class="acc-table">
+  html += `<table class="acc-table">
     <thead>
       <tr>
         <th rowspan="2" style="text-align:left;min-width:90px">길드원</th>
