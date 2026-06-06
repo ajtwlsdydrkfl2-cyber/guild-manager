@@ -287,12 +287,12 @@ function renderSidebar(activePage) {
   const pages = [
     {id:'dashboard', label:'대시보드', icon:'🏠', href:'dashboard.html', oc:''},
     {id:'boss', label:'보스 포인트', icon:'⚔️', href:'#', oc:onDash?"switchTab('boss',document.querySelector('.tab:nth-child(2)'));closeSb();return false;":"location.href='dashboard.html?tab=boss';return false;"},
-    {id:'equipment', label:'장비 기록', icon:'🛡️', href:'equipment.html', oc:''},
     {id:'warehouse', label:'길드 창고', icon:'🏦', href:'warehouse.html', oc:''},
-    {id:'market', label:'거래소 내역', icon:'💰', href:'market.html', oc:''},
     {id:'items', label:'아이템 분배', icon:'📦', href:'items.html', oc:''},
-    {id:'game', label:'길드 게임', icon:'🎮', href:'game.html', oc:''},
+    {id:'accitem', label:'고투악세', icon:'💍', href:'accitem.html', oc:''},
     {id:'calc', label:'분배 계산기', icon:'🧮', href:'calc.html', oc:''},
+    {id:'market', label:'거래소 내역', icon:'💰', href:'market.html', oc:''},
+    {id:'game', label:'길드 게임', icon:'🎮', href:'game.html', oc:''},
     {id:'guide', label:'사용 설명서', icon:'📖', href:'guide.html', oc:''},
   ];
   if (admin) pages.push({id:'admin', label:'관리자', icon:'⚙️', href:'admin.html', oc:''});
