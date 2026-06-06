@@ -283,7 +283,7 @@ function renderSidebarItems(pages, activePage) {
     {label:'길드 관리', ids:['dashboard','boss']},
     {label:'아이템', ids:['warehouse','items','accitem','calc']},
     {label:null, ids:['game']}, // 특별 강조
-    {label:'기타', ids:['market','guide','admin'], collapsible:true},
+    {label:'기타', ids:['guide','admin'], collapsible:true},
   ];
 
   let html = '';
@@ -349,6 +349,7 @@ function renderSidebar(activePage) {
     {id:'dashboard', label:'대시보드', icon:'🏠', href:'dashboard.html', oc:''},
     {id:'boss', label:'보스 포인트', icon:'⚔️', href:'#', oc:onDash?"switchTab('boss',document.querySelector('.tab:nth-child(2)'));closeSb();return false;":"location.href='dashboard.html?tab=boss';return false;"},
     {id:'warehouse', label:'길드 창고', icon:'🏦', href:'warehouse.html', oc:''},
+    {id:'market', label:'거래소 내역', icon:'💰', href:'market.html', oc:''},
     {id:'items', label:'아이템 분배', icon:'📦', href:'items.html', oc:''},
     {id:'accitem', label:'고투악세', icon:'💍', href:'accitem.html', oc:''},
     {id:'calc', label:'분배 계산기', icon:'🧮', href:'calc.html', oc:''},
@@ -358,7 +359,7 @@ function renderSidebar(activePage) {
   ];
   if (admin) pages.push({id:'admin', label:'관리자', icon:'⚙️', href:'admin.html', oc:''});
   // 기타 메뉴 페이지면 자동 펼치기
-  const extraPages = ['market','guide','admin'];
+  const extraPages = ['guide','admin'];
   if(extraPages.includes(activePage)) {
     setTimeout(() => {
       const menu = document.getElementById('extra-menu');
@@ -394,7 +395,7 @@ function renderSidebar(activePage) {
       <span id="extra-arrow" style="font-size:12px">▶</span>
     </div>
     <div id="extra-menu" style="display:none">
-      ${pages.filter(p=>['market','guide','admin'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
+      ${pages.filter(p=>['guide','admin'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
     </div>
     </nav>
     <div class="sb-footer">

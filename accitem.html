@@ -230,45 +230,51 @@ function updateNeed(key, val) {
   setData('accData', accData);
 }
 
-function openGiveCell(key, nick, itemName, alreadyGiven) {
+function giveOne(key, nick, itemName) {
   if(!isAdmin()) return;
-  pendingGive = {key, nick, itemName, alreadyGiven};
-  const info = alreadyGiven
-    ? `${nick}의 <b>${itemName}</b> 지급을 취소하시겠어요?`
-    : `${nick}에게 <b>${itemName}</b>을 지급 처리하시겠어요?`;
-  document.getElementById('give-info').innerHTML = info;
+  pendingGive = {key, nick, itemName};
+  document.getElementById('give-info').innerHTML =
+    `<b>${nick}</b>에게 <b>${itemName}</b> 1개를 지급하시겠어요?`;
   openModal('give');
 }
 
 function confirmGive() {
   if(!pendingGive) return;
-  const {key, alreadyGiven} = pendingGive;
+  const {key, nick, itemName} = pendingGive;
   if(!accData[key]) accData[key] = {};
-  if(alreadyGiven) {
-    delete accData[key].given;
-  } else {
-    const now = new Date();
-    const kst = new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-    const dateStr = `${kst.getFullYear()}.${String(kst.getMonth()+1).padStart(2,'0')}.${String(kst.getDate()).padStart(2,'0')}`;
-    accData[key].given = {date: dateStr};
-    accData[key].need = 0;
-  }
+
+  // 지급 횟수 +1
+  const givenCount = (accData[key].givenCount || 0) + 1;
+  accData[key].givenCount = givenCount;
+
+  // 지급 내역 기록
+  const now = new Date();
+  const kst = new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const dateStr = `${kst.getFullYear()}.${String(kst.getMonth()+1).padStart(2,'0')}.${String(kst.getDate()).padStart(2,'0')}`;
+  if(!accData[key].history) accData[key].history = [];
+  accData[key].history.push({date: dateStr, count: 1});
+
   fbSet('accData', accData);
   setData('accData', accData);
   closeModal('give');
   pendingGive = null;
   render();
+  showToast(`${nick} - ${itemName} 지급 완료!`, 'success');
 }
 
 function showReceipt(memberId, nick) {
   document.getElementById('receipt-title').textContent = `📋 ${nick} 수령 내역`;
   const items = [];
   Object.entries(accData).forEach(([key, val]) => {
-    if(key.startsWith(memberId+'_') && val.given) {
+    if(key.startsWith(memberId+'_') && val.history?.length > 0) {
       const parts = key.split('_');
       const series = ACC_SERIES.find(s => s.key === parts[1]);
       const part = parts.slice(2).join('_');
-      if(series) items.push({name:`${series.name} ${part}`, date:val.given.date, grade:series.grade});
+      if(series) {
+        val.history.forEach(h => {
+          items.push({name:`${series.name} ${part}`, date:h.date, grade:series.grade});
+        });
+      }
     }
   });
 
