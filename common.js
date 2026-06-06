@@ -353,7 +353,6 @@ function renderSidebar(activePage) {
     {id:'items', label:'아이템 분배', icon:'📦', href:'items.html', oc:''},
     {id:'accitem', label:'고투악세', icon:'💍', href:'accitem.html', oc:''},
     {id:'calc', label:'분배 계산기', icon:'🧮', href:'calc.html', oc:''},
-    {id:'market', label:'거래소 내역', icon:'💰', href:'market.html', oc:''},
     {id:'game', label:'길드 게임', icon:'🎮', href:'game.html', oc:''},
     {id:'guide', label:'사용 설명서', icon:'📖', href:'guide.html', oc:''},
   ];
@@ -384,7 +383,7 @@ function renderSidebar(activePage) {
 
     <!-- 아이템 -->
     <div style="font-size:10px;color:var(--text2);padding:8px 14px 4px;letter-spacing:.08em;font-weight:700">── 아이템</div>
-    ${pages.filter(p=>['warehouse','items','accitem','calc'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
+    ${pages.filter(p=>['warehouse','market','items','accitem','calc'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
 
     <!-- 게임 -->
     ${pages.filter(p=>p.id==='game').map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
