@@ -82,9 +82,10 @@ const ACC_SERIES = [
 ];
 const ACC_PARTS = ['목걸이','반지','팔찌','귀걸이','허리띠'];
 
-let accData = {}; // Firebase 데이터
+let accData = {};
 let myMemberId = null;
 let pendingGive = null;
+let members = [];  // 길드원 목록
 
 window.addEventListener('load', () => {
   const sess = requireLogin(); if(!sess) return;

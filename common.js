@@ -322,6 +322,15 @@ function renderSidebarItems(pages, activePage) {
   return html;
 }
 
+function toggleExtraMenu(el) {
+  const menu = document.getElementById('extra-menu');
+  const arrow = document.getElementById('extra-arrow');
+  if(!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▶' : '▼';
+}
+
 function toggleSbGroup(el) {
   const items = el.nextElementSibling;
   const arrow = el.querySelector('.sb-toggle-arrow');
