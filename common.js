@@ -278,6 +278,58 @@ const DEFAULT_GRADES = [
 ];
 
 // ===== 사이드바 렌더 =====
+function renderSidebarItems(pages, activePage) {
+  const groups = [
+    {label:'길드 관리', ids:['dashboard','boss']},
+    {label:'아이템', ids:['warehouse','items','accitem','calc']},
+    {label:null, ids:['game']}, // 특별 강조
+    {label:'기타', ids:['market','guide','admin'], collapsible:true},
+  ];
+
+  let html = '';
+  groups.forEach(g => {
+    const groupPages = pages.filter(p => g.ids.includes(p.id));
+    if(groupPages.length === 0) return;
+
+    if(g.label === null) {
+      // 게임 특별 강조
+      groupPages.forEach(p => {
+        const isActive = activePage === p.id;
+        html += `<a href="${p.href}" class="sb-item${isActive?' active':''}" onclick="${p.oc}" style="margin:8px 0;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.4);border-radius:8px;color:#a855f7;font-weight:700">${p.icon} ${p.label}</a>`;
+      });
+    } else if(g.collapsible) {
+      // 접을 수 있는 그룹
+      const hasActive = groupPages.some(p => activePage === p.id);
+      html += `<div class="sb-group-toggle" onclick="toggleSbGroup(this)" style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;user-select:none;letter-spacing:.05em">
+        <span>${g.label.toUpperCase()}</span>
+        <span class="sb-toggle-arrow" style="transition:transform .2s">${hasActive?'▲':'▼'}</span>
+      </div>
+      <div class="sb-group-items" style="display:${hasActive?'block':'none'}">
+        ${groupPages.map(p => {
+          const isActive = activePage === p.id;
+          return `<a href="${p.href}" class="sb-item${isActive?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`;
+        }).join('')}
+      </div>`;
+    } else {
+      // 일반 그룹
+      html += `<div style="padding:6px 12px 2px;color:var(--text2);font-size:11px;font-weight:700;letter-spacing:.05em">${g.label.toUpperCase()}</div>`;
+      groupPages.forEach(p => {
+        const isActive = activePage === p.id;
+        html += `<a href="${p.href}" class="sb-item${isActive?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`;
+      });
+    }
+  });
+  return html;
+}
+
+function toggleSbGroup(el) {
+  const items = el.nextElementSibling;
+  const arrow = el.querySelector('.sb-toggle-arrow');
+  const isOpen = items.style.display !== 'none';
+  items.style.display = isOpen ? 'none' : 'block';
+  arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
 function renderSidebar(activePage) {
   const sess = getSession();
   const sname = getServerName();
@@ -296,6 +348,16 @@ function renderSidebar(activePage) {
     {id:'guide', label:'사용 설명서', icon:'📖', href:'guide.html', oc:''},
   ];
   if (admin) pages.push({id:'admin', label:'관리자', icon:'⚙️', href:'admin.html', oc:''});
+  // 기타 메뉴 페이지면 자동 펼치기
+  const extraPages = ['market','guide','admin'];
+  if(extraPages.includes(activePage)) {
+    setTimeout(() => {
+      const menu = document.getElementById('extra-menu');
+      const arrow = document.getElementById('extra-arrow');
+      if(menu) menu.style.display = 'block';
+      if(arrow) arrow.textContent = '▼';
+    }, 100);
+  }
 
   const el = document.getElementById('sidebar');
   if (!el) return;
@@ -306,7 +368,25 @@ function renderSidebar(activePage) {
       <div class="sb-role">${sess?.role==='super'?'🔓 총관리자':admin?'🔑 서버관리자':'👤 길드원'}</div>
     </div>
     <nav class="sb-nav">
-      ${pages.map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id||activePage==='boss'&&p.id==='boss'?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
+      <!-- 길드 관리 -->
+    <div style="font-size:10px;color:var(--text2);padding:8px 14px 4px;letter-spacing:.08em;font-weight:700">── 길드 관리</div>
+    ${pages.filter(p=>['dashboard','boss'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id||activePage==='boss'&&p.id==='boss'?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
+
+    <!-- 아이템 -->
+    <div style="font-size:10px;color:var(--text2);padding:8px 14px 4px;letter-spacing:.08em;font-weight:700">── 아이템</div>
+    ${pages.filter(p=>['warehouse','items','accitem','calc'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
+
+    <!-- 게임 강조 -->
+    ${pages.filter(p=>p.id==='game').map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}" style="margin:8px 8px 4px;border-radius:8px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.4);color:#a855f7;font-weight:700">${p.icon} ${p.label}</a>`).join('')}
+
+    <!-- 기타 (접기/펼치기) -->
+    <div onclick="toggleExtraMenu(this)" style="font-size:10px;color:var(--text2);padding:8px 14px 4px;letter-spacing:.08em;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
+      <span>── 기타</span>
+      <span id="extra-arrow" style="font-size:12px">▶</span>
+    </div>
+    <div id="extra-menu" style="display:none">
+      ${pages.filter(p=>['market','guide','admin'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
+    </div>
     </nav>
     <div class="sb-footer">
       <button onclick="doLogout()" class="sb-logout">🚪 로그아웃</button>
