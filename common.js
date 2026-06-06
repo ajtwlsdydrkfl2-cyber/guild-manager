@@ -295,7 +295,7 @@ function renderSidebarItems(pages, activePage) {
       // 게임 특별 강조
       groupPages.forEach(p => {
         const isActive = activePage === p.id;
-        html += `<a href="${p.href}" class="sb-item${isActive?' active':''}" onclick="${p.oc}" style="margin:8px 0;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.4);border-radius:8px;color:#a855f7;font-weight:700">${p.icon} ${p.label}</a>`;
+        html += `<a href="${p.href}" class="sb-item${isActive?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`;
       });
     } else if(g.collapsible) {
       // 접을 수 있는 그룹

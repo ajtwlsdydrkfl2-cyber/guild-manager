@@ -127,7 +127,25 @@ window.addEventListener('load', () => {
 });
 
 function render() {
-  if(!members.length) return;
+  console.log('render() called, members:', members.length, 'accData keys:', Object.keys(accData).length);
+  if(!members.length) {
+    document.getElementById('acc-content').innerHTML = '<div style="color:var(--text2);padding:20px;text-align:center">길드원 데이터 로딩중...</div>';
+    // 재시도
+    setTimeout(() => {
+      fbGet('members', data => {
+        if(data) {
+          members = Array.isArray(data) ? data : Object.values(data);
+          const s = getSession();
+          if(s) {
+            const me = members.find(m => m.nick === s.serverName);
+            myMemberId = me ? me.id : null;
+          }
+          render();
+        }
+      });
+    }, 1500);
+    return;
+  }
   const admin = isAdmin();
   const sorted = [...members].sort((a,b) => b.power - a.power);
   const sess = getSession();
