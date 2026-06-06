@@ -317,6 +317,8 @@ function resetAllAcc() {
   render();
 }
 
+function openModal(n){const el=document.getElementById('modal-'+n);if(el)el.classList.add('open');}
+function closeModal(n){const el=document.getElementById('modal-'+n);if(el)el.classList.remove('open');}
 function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
 function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
 </script>
