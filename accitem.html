@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>고투악세 — 길드 매니저</title>
+<style id="commonStyle"></style>
+<style>
+.acc-table { width:100%; border-collapse:collapse; font-size:12px; }
+.acc-table th { padding:6px 8px; text-align:center; border:1px solid var(--border); font-weight:700; position:sticky; top:0; background:var(--bg2); z-index:10; }
+.acc-table td { padding:5px 6px; text-align:center; border:1px solid var(--border); }
+.acc-table tr:hover td { background:rgba(255,255,255,.03); }
+.th-hero { background:rgba(168,85,247,.15); color:#a855f7; }
+.th-rare { background:rgba(59,130,246,.15); color:#3b82f6; }
+.th-sub { background:rgba(255,255,255,.05); color:var(--text2); font-size:10px; }
+.cell-done { color:var(--green); font-weight:700; }
+.cell-need { color:var(--accent); font-weight:700; }
+.cell-zero { color:var(--text2); }
+.nick-cell { text-align:left; font-weight:600; min-width:80px; }
+.power-cell { color:var(--text2); font-size:10px; }
+.acc-select { background:var(--bg2); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:2px 4px; font-size:11px; width:36px; cursor:pointer; }
+.receipt-btn { background:none; border:none; color:var(--text2); font-size:10px; cursor:pointer; padding:2px 4px; border-radius:4px; }
+.receipt-btn:hover { background:var(--bg3); color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">💍 고투악세</div>
+      </div>
+      <div id="adminBtns"></div>
+    </div>
+    <div class="content" style="padding:12px;overflow-x:auto">
+      <div id="acc-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 수령내역 모달 -->
+<div class="modal-ov" id="modal-receipt">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title" id="receipt-title">수령 내역</div>
+    <div id="receipt-body" style="max-height:400px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('receipt')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 지급 모달 -->
+<div class="modal-ov" id="modal-give">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">✅ 지급 처리</div>
+    <div id="give-info" style="font-size:13px;color:var(--text2);margin-bottom:12px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('give')">취소</button>
+      <button class="btn btn-p" onclick="confirmGive()">지급 확인</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+
+// 악세 정의
+const ACC_SERIES = [
+  {key:'kransia', name:'크란시아', grade:'hero'},
+  {key:'blackthorn', name:'검은가시', grade:'hero'},
+  {key:'blackor', name:'검은 오르의', grade:'rare'},
+  {key:'redsun', name:'붉은 태양의', grade:'rare'},
+  {key:'heir', name:'계승자의', grade:'rare'},
+  {key:'goldblood', name:'황금피의', grade:'rare'},
+];
+const ACC_PARTS = ['목걸이','반지','팔찌','귀걸이','허리띠'];
+
+let accData = {}; // Firebase 데이터
+let myMemberId = null;
+let pendingGive = null;
+
+window.addEventListener('load', () => {
+  const sess = requireLogin(); if(!sess) return;
+  initFirebase(); watchServerName(); renderSidebar('accitem');
+
+  if(isAdmin()) {
+    document.getElementById('adminBtns').innerHTML =
+      `<button class="btn btn-s btn-sm" onclick="resetAllAcc()" style="color:var(--red);border-color:var(--red)">🔄 초기화</button>`;
+  }
+
+  fbListen('members', data => {
+    if(data) {
+      members = Array.isArray(data) ? data : Object.values(data);
+      const sess2 = getSession();
+      if(sess2) {
+        const me = members.find(m => m.nick === sess2.serverName);
+        myMemberId = me ? me.id : null;
+      }
+    }
+    render();
+  });
+
+  fbListen('accData', data => {
+    accData = data || {};
+    render();
+  });
+});
+
+function render() {
+  if(!members.length) return;
+  const admin = isAdmin();
+  const sorted = [...members].sort((a,b) => b.power - a.power);
+  const sess = getSession();
+
+  // 헤더 생성
+  let html = `<table class="acc-table">
+    <thead>
+      <tr>
+        <th rowspan="2" style="text-align:left;min-width:90px">길드원</th>
+        <th rowspan="2" class="power-cell" style="font-size:10px">전투력</th>`;
+
+  // 시리즈 헤더
+  ACC_SERIES.forEach(s => {
+    const cls = s.grade==='hero' ? 'th-hero' : 'th-rare';
+    html += `<th colspan="5" class="${cls}">${s.name}</th>`;
+  });
+  html += `<th rowspan="2" style="font-size:10px">내역</th></tr><tr>`;
+
+  // 부위 헤더
+  ACC_SERIES.forEach(() => {
+    ACC_PARTS.forEach(p => {
+      html += `<th class="th-sub">${p[0]}</th>`;
+    });
+  });
+  html += `</tr></thead><tbody>`;
+
+  // 길드원 행
+  sorted.forEach(m => {
+    const isMe = m.id === myMemberId;
+    const canEdit = admin || isMe;
+    html += `<tr>
+      <td class="nick-cell">${m.nick}${isMe?'<span style="color:var(--accent);font-size:10px;margin-left:3px">나</span>':''}</td>
+      <td class="power-cell">${(m.power||0).toLocaleString()}</td>`;
+
+    ACC_SERIES.forEach(s => {
+      ACC_PARTS.forEach(p => {
+        const key = `${m.id}_${s.key}_${p}`;
+        const cellData = accData[key] || {};
+        const need = cellData.need || 0;
+        const given = cellData.given;
+
+        if(given) {
+          // 지급 완료
+          html += `<td class="cell-done" title="${given.date}" style="cursor:${admin?'pointer':'default'}" onclick="${admin?`openGiveCell('${key}','${m.nick}','${s.name} ${p}',true)`:''}">✅</td>`;
+        } else if(need === 0) {
+          // 필요없음/완료
+          html += `<td class="cell-zero">${canEdit?`<select class="acc-select" onchange="updateNeed('${key}',this.value)"><option value="0" selected>✓</option>${[1,2,3,4,5].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`:'✓'}</td>`;
+        } else {
+          // 필요 수량
+          html += `<td class="cell-need" style="cursor:${admin?'pointer':'default'}" onclick="${admin?`openGiveCell('${key}','${m.nick}','${s.name} ${p}',false)`:''}">${canEdit?`<select class="acc-select" onchange="updateNeed('${key}',this.value)">${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${n==need?'selected':''}>${n==0?'✓':n}</option>`).join('')}</select>`:need}</td>`;
+        }
+      });
+    });
+
+    // 수령내역 버튼
+    const hasReceipt = Object.entries(accData).some(([k,v]) => k.startsWith(m.id+'_') && v.given);
+    html += `<td><button class="receipt-btn" onclick="showReceipt(${m.id},'${m.nick}')">📋${hasReceipt?'●':''}</button></td>`;
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById('acc-content').innerHTML = html;
+}
+
+function updateNeed(key, val) {
+  const parts = key.split('_');
+  const memberId = parts[0];
+  const isMe = parseInt(memberId) === myMemberId;
+  if(!isAdmin() && !isMe) { showToast('본인 것만 수정 가능해요','error'); return; }
+
+  if(!accData[key]) accData[key] = {};
+  accData[key].need = parseInt(val);
+  fbSet('accData', accData);
+  setData('accData', accData);
+}
+
+function openGiveCell(key, nick, itemName, alreadyGiven) {
+  if(!isAdmin()) return;
+  pendingGive = {key, nick, itemName, alreadyGiven};
+  const info = alreadyGiven
+    ? `${nick}의 <b>${itemName}</b> 지급을 취소하시겠어요?`
+    : `${nick}에게 <b>${itemName}</b>을 지급 처리하시겠어요?`;
+  document.getElementById('give-info').innerHTML = info;
+  openModal('give');
+}
+
+function confirmGive() {
+  if(!pendingGive) return;
+  const {key, alreadyGiven} = pendingGive;
+  if(!accData[key]) accData[key] = {};
+  if(alreadyGiven) {
+    delete accData[key].given;
+  } else {
+    const now = new Date();
+    const kst = new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const dateStr = `${kst.getFullYear()}.${String(kst.getMonth()+1).padStart(2,'0')}.${String(kst.getDate()).padStart(2,'0')}`;
+    accData[key].given = {date: dateStr};
+    accData[key].need = 0;
+  }
+  fbSet('accData', accData);
+  setData('accData', accData);
+  closeModal('give');
+  pendingGive = null;
+  render();
+}
+
+function showReceipt(memberId, nick) {
+  document.getElementById('receipt-title').textContent = `📋 ${nick} 수령 내역`;
+  const items = [];
+  Object.entries(accData).forEach(([key, val]) => {
+    if(key.startsWith(memberId+'_') && val.given) {
+      const parts = key.split('_');
+      const series = ACC_SERIES.find(s => s.key === parts[1]);
+      const part = parts.slice(2).join('_');
+      if(series) items.push({name:`${series.name} ${part}`, date:val.given.date, grade:series.grade});
+    }
+  });
+
+  if(items.length === 0) {
+    document.getElementById('receipt-body').innerHTML = '<div style="color:var(--text2);padding:12px;text-align:center">수령 내역 없음</div>';
+  } else {
+    document.getElementById('receipt-body').innerHTML = items.map(item =>
+      `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-weight:600;color:${item.grade==='hero'?'#a855f7':'#3b82f6'}">${item.name}</span>
+        <span style="color:var(--text2);font-size:12px">${item.date}</span>
+      </div>`
+    ).join('') + `<div style="padding:8px 0;font-size:12px;color:var(--text2)">총 ${items.length}개 수령</div>`;
+  }
+  openModal('receipt');
+}
+
+function resetAllAcc() {
+  if(!confirm('고투악세 데이터를 초기화하시겠어요?')) return;
+  accData = {};
+  fbSet('accData', accData);
+  setData('accData', accData);
+  render();
+}
+
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+</script>
+</body>
+</html>

@@ -125,6 +125,7 @@
     <div class="fg"><label>전투력</label><input class="inp" type="number" id="m-power" placeholder="예: 230000"></div>
 
     <div class="fg"><label>전문화 레벨</label><input class="inp" type="number" id="m-spec" placeholder="예: 150"></div>
+    <div class="fg"><label>항마력</label><input class="inp" type="number" id="m-resist" placeholder="예: 15000"></div>
     <div class="fg"><label>장비 레벨</label><input class="inp" type="number" id="m-itemlv" placeholder="예: 1200"></div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('member')">취소</button>
@@ -283,8 +284,8 @@ function renderDash() {
           <thead><tr>
             <th class="tl">순위</th><th class="tl">닉네임</th><th>전투력</th>
             <th>이번주 포인트</th><th>포인트 순위</th><th>참여율</th>
-            <th>전문화</th><th>장비기록포인트</th>
-            ${admin?'<th>관리</th>':''}
+            <th>전문화</th><th>장비기록포인트</th><th>항마력</th>
+            <th>관리</th>
           </tr></thead>
           <tbody>
             ${filtered.map((m,i)=>{
@@ -298,9 +299,13 @@ function renderDash() {
                 <td><span style="color:var(--accent);font-weight:700;font-size:14px">${m.pts.toFixed(1)}</span></td>
                 <td>${prB}</td>
                 <td style="color:var(--accent2)">${m.rate.toFixed(1)}%</td>
-                <td>${m.spec>0?m.spec:'-'}</td>
-                <td>${m.itemLv>0?m.itemLv:'-'}</td>
-                ${admin?`<td style="display:flex;gap:4px"><button class="btn btn-s btn-sm" onclick="openEditMember(${m.id})">✏️</button><button class="btn btn-d btn-sm" onclick="delMember(${m.id})">🗑️</button></td>`:''}
+                <td>${m.spec>0?m.spec.toLocaleString():'-'}</td>
+                <td>${m.itemLv>0?m.itemLv.toLocaleString():'-'}</td>
+                <td>${m.resist>0?m.resist.toLocaleString():'-'}</td>
+                <td style="display:flex;gap:4px">
+                  ${(admin||m.id===sess?.memberId)?`<button class="btn btn-s btn-sm" onclick="openEditMember(${m.id})">✏️</button>`:''}
+                  ${admin?`<button class="btn btn-d btn-sm" onclick="delMember(${m.id})">🗑️</button>`:''}
+                </td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -746,7 +751,7 @@ function addBossLog(action, bossName, rk) {
 function openAddMember() {
   document.getElementById('memberModalTitle').textContent='👤 길드원 추가';
   document.getElementById('m-id').value='';
-  ['m-nick','m-power','m-spec','m-itemlv'].forEach(id=>document.getElementById(id).value='');
+  ['m-nick','m-power','m-spec','m-itemlv','m-resist'].forEach(id=>document.getElementById(id).value='');
   openModal('member');
 }
 
@@ -757,6 +762,7 @@ function openEditMember(id) {
   document.getElementById('m-nick').value=m.nick;
   document.getElementById('m-power').value=m.power||'';
   document.getElementById('m-spec').value=m.spec||'';
+  document.getElementById('m-resist').value=m.resist||'';
   document.getElementById('m-itemlv').value=m.itemLv||'';
   openModal('member');
 }
@@ -769,10 +775,11 @@ function saveMember() {
     const m=members.find(x=>x.id===parseInt(id)); if(!m) return;
     m.nick=nick; m.power=parseInt(document.getElementById('m-power').value)||m.power;
     m.spec=parseInt(document.getElementById('m-spec').value)||0;
+    m.resist=parseInt(document.getElementById('m-resist').value)||0;
     m.itemLv=parseInt(document.getElementById('m-itemlv').value)||0;
   } else {
     const newId=Math.max(0,...members.map(m=>m.id))+1;
-    members.push({id:newId,nick,power:parseInt(document.getElementById('m-power').value)||0,spec:parseInt(document.getElementById('m-spec').value)||0,itemLv:parseInt(document.getElementById('m-itemlv').value)||0});
+    members.push({id:newId,nick,power:parseInt(document.getElementById('m-power').value)||0,spec:parseInt(document.getElementById('m-spec').value)||0,itemLv:parseInt(document.getElementById('m-itemlv').value)||0,resist:parseInt(document.getElementById('m-resist').value)||0});
   }
   setData('members',members);
   fbSet('members', members);
