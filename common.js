@@ -447,27 +447,102 @@ async function sendGameResultsToDiscord(preloadedData) {
   }
 }
 
-// 1분마다 23:59 KST 체크
-let _discordSending = false; // 중복 실행 방지
-setInterval(async () => {
-  if(_discordSending) return;
-  const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+// ===== 게임 자동 타임라인 =====
+let _gameScheduleLock = false;
+
+function getKST() {
+  return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+}
+
+function getKSTKey() {
+  const k = getKST();
+  return `${k.getFullYear()}-${String(k.getMonth()+1).padStart(2,'0')}-${String(k.getDate()).padStart(2,'0')}`;
+}
+
+async function sendDiscordMsg(msg) {
+  try {
+    await fetch('https://discord.com/api/webhooks/1505266643293569268/G0VJghqRfFpTPGTMuKiJP13IOUFw9WBNH0bE8Y3GWJ4dp__rMeqKU1HvPVuux8KZSP8N', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({content: msg})
+    });
+  } catch(e) { console.error('Discord 전송 실패:', e); }
+}
+
+setInterval(() => {
+  if(_gameScheduleLock) return;
+  const kst = getKST();
   const h = kst.getHours(), m = kst.getMinutes();
-  const todayKey = `${kst.getFullYear()}-${String(kst.getMonth()+1).padStart(2,'0')}-${String(kst.getDate()).padStart(2,'0')}`;
-  const lastPost = localStorage.getItem('lastAutoDiscord');
-  if(h===23 && m===59 && lastPost!==todayKey) {
-    _discordSending = true;
-    localStorage.setItem('lastAutoDiscord', todayKey);
-    // Firebase에서 직접 읽어서 전송 후 초기화
-    fbGet('gameData', async curGd => {
-      // 1. 전송
-      await sendGameResultsToDiscord(curGd||{});
-      // 2. 초기화 (rsp 제외)
-      const newGd = {};
-      setData('gameData', newGd);
-      if(typeof fbSet === 'function') fbSet('gameData', newGd);
-      _discordSending = false;
-      console.log('전송+초기화 완료');
+  const todayKey = getKSTKey();
+
+  // 23:30 - 스냅샷 저장 + 게임 잠금
+  if(h===23 && m===30) {
+    fbGet('gameSchedule', sch => {
+      if(sch?.snapshotKey === todayKey) return;
+      _gameScheduleLock = true;
+      fbGet('gameData', curGd => {
+        const snapshot = JSON.parse(JSON.stringify(curGd||{}));
+        fbSet('gameSchedule', {
+          snapshotKey: todayKey,
+          snapshot: snapshot,
+          locked: true
+        });
+        // 게임 잠금 표시
+        fbSet('gameLocked', todayKey);
+        console.log('23:30 스냅샷 저장 + 잠금');
+        _gameScheduleLock = false;
+      });
+    });
+  }
+
+  // 23:50 - 스냅샷으로 디스코드 전송 + 초기화
+  if(h===23 && m===50) {
+    fbGet('gameSchedule', async sch => {
+      if(!sch || sch.sentKey === todayKey) return;
+      if(_gameScheduleLock) return;
+      _gameScheduleLock = true;
+      fbSet('gameSchedule', {...sch, sentKey: todayKey});
+
+      // 스냅샷 데이터로 전송
+      await sendGameResultsToDiscord(sch.snapshot||{});
+
+      // 게임 데이터 초기화
+      setData('gameData', {});
+      fbSet('gameData', {});
+      console.log('23:50 전송+초기화 완료');
+      _gameScheduleLock = false;
+    });
+  }
+
+  // 00:01 - 자동 활성화 + 기본 상품 설정 + 디코 알림
+  if(h===0 && m===1) {
+    fbGet('gameSchedule', sch => {
+      if(sch?.activatedKey === todayKey) return;
+      if(_gameScheduleLock) return;
+      _gameScheduleLock = true;
+
+      // 게임 잠금 해제
+      fbSet('gameLocked', null);
+
+      // 기본 상품 설정
+      fbGet('gameData', curGd => {
+        const GAME_KEYS = ['roulette','slot','timer','card','memory','mole','numcard','guess'];
+        const newGd = curGd || {};
+        GAME_KEYS.forEach(key => {
+          if(!newGd[key]) newGd[key] = {};
+          if(!newGd[key].prize) newGd[key].prize = '영웅장비1개';
+        });
+        fbSet('gameData', newGd);
+        setData('gameData', newGd);
+
+        // 디스코드 알림
+        sendDiscordMsg('🎮 **고물상길드 게임 시작!**\n오늘의 상품: 영웅장비1개\n지금 바로 참여해보세요!');
+
+        // 활성화 기록
+        fbSet('gameSchedule', {...(sch||{}), activatedKey: todayKey});
+        console.log('00:01 자동 활성화 완료');
+        _gameScheduleLock = false;
+      });
     });
   }
 }, 60000);

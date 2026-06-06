@@ -96,6 +96,9 @@
       <span id="myNickDisplay" style="font-size:12px;color:var(--accent2)"></span>
       <div id="discordBtn"></div>
     </div>
+    <div id="game-lock-banner" style="display:none;background:rgba(239,68,68,.15);border:1px solid var(--red);color:var(--red);text-align:center;padding:10px;font-size:13px;font-weight:700;margin:10px 16px;border-radius:8px">
+      🔒 오늘 게임이 종료됐습니다. 00:01에 자동으로 새 게임이 시작돼요!
+    </div>
     <div class="content" id="content"></div>
   </div>
 </div>
@@ -287,6 +290,22 @@
   </div>
 </div>
 
+<!-- 일괄 상품 설정 모달 -->
+<div class="modal-ov" id="modal-bulkPrize">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">🎁 일괄 상품 설정</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">입력한 상품이 모든 게임에 적용돼요</div>
+    <div class="fg">
+      <label>상품명</label>
+      <input class="inp" id="bulkPrizeInput" type="text" placeholder="예: 영웅장비1개" style="width:100%">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('bulkPrize')">취소</button>
+      <button class="btn btn-p" onclick="applyBulkPrize()">전체 적용</button>
+    </div>
+  </div>
+</div>
+
 <!-- 닉네임 선택 모달 -->
 <div class="modal-ov" id="modal-nick">
   <div class="modal">
@@ -361,7 +380,10 @@ window.addEventListener('load', () => {
   renderSidebar('game');
   if(isAdmin()) {
     document.getElementById('discordBtn').innerHTML =
-      `<button class="btn btn-s btn-sm" onclick="sendDailyResults()" style="background:rgba(88,101,242,.2);border-color:#5865F2;color:#5865F2">📢 결과전송</button>`;
+      `<div style="display:flex;gap:6px">
+        <button class="btn btn-s btn-sm" onclick="openBulkPrize()" style="background:rgba(240,165,0,.15);border-color:var(--accent);color:var(--accent)">🎁 일괄상품</button>
+        <button class="btn btn-s btn-sm" onclick="sendDailyResults()" style="background:rgba(88,101,242,.2);border-color:#5865F2;color:#5865F2">📢 결과전송</button>
+      </div>`;
   }
   members = getData('members', []);
   warehouseItems = getData('warehouseItems', []);
@@ -369,6 +391,16 @@ window.addEventListener('load', () => {
   fbListen('gameData', data => {
     gameData = data || {};
     renderGames();
+  });
+
+  // 게임 잠금 감지
+  fbListen('gameLocked', lockedKey => {
+    const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const todayKey = `${kst.getFullYear()}-${String(kst.getMonth()+1).padStart(2,'0')}-${String(kst.getDate()).padStart(2,'0')}`;
+    const isLocked = lockedKey === todayKey;
+    const lockBanner = document.getElementById('game-lock-banner');
+    if(lockBanner) lockBanner.style.display = isLocked ? 'block' : 'none';
+    if(isLocked) renderGames(); // 잠금 상태로 재렌더
   });
   fbListen('warehouseItems', data => {
     warehouseItems = data ? (Array.isArray(data)?data:Object.values(data)) : [];
@@ -449,6 +481,10 @@ function renderGames() {
     const cardWon = key==='card' && Object.values(d.cardPlays||{}).some(v=>v===true||v?.win===true);
     const btnText = (!prize&&!noNeedPrize) ? '상품 미설정' : cardWon ? '🎉 당첨자 발생' : (isDone&&!alwaysPlay) ? '✓ 완료' : '▶ 플레이';
     const btnClass = (!prize&&!noNeedPrize) ? 'no-prize' : (cardWon||(isDone&&!alwaysPlay)) ? 'done' : '';
+    // 게임 잠금 체크
+    const kst2 = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const todayKey2 = `${kst2.getFullYear()}-${String(kst2.getMonth()+1).padStart(2,'0')}-${String(kst2.getDate()).padStart(2,'0')}`;
+    const gameLocked = getData('gameLocked_cache', null);
     const canPlay = (prize||noNeedPrize) && (!isDone||alwaysPlay) && !cardWon;
 
     return `<div class="game-card${wide?' wide':''}" style="${!canPlay?'cursor:default':''}">
@@ -1114,6 +1150,23 @@ function savePrize() {
   saveGameData();
   closeModal('prize');
   showToast('상품 설정 완료!', 'success');
+}
+
+function openBulkPrize() {
+  document.getElementById('bulkPrizeInput').value = '영웅장비1개';
+  openModal('bulkPrize');
+}
+
+function applyBulkPrize() {
+  const prize = document.getElementById('bulkPrizeInput').value.trim();
+  if(!prize) { showToast('상품명을 입력하세요','error'); return; }
+  Object.keys(GAMES).forEach(key => {
+    if(!gameData[key]) gameData[key] = {};
+    gameData[key].prize = prize;
+  });
+  saveGameData();
+  closeModal('bulkPrize');
+  showToast(`전체 게임 상품: ${prize}`, 'success');
 }
 
 function resetGame(key) {

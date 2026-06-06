@@ -71,6 +71,36 @@
   </div>
 </div>
 
+<!-- 접두어 설정 모달 -->
+<div class="modal-ov" id="modal-prefix">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">🏷️ 접두어 자동분류 설정</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">
+      접두어를 등록하면 텍스트 붙여넣기 시 자동으로 해당 등급으로 분류돼요
+    </div>
+    <div id="prefix-list"></div>
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-top:10px;align-items:end">
+      <div class="fg" style="margin:0">
+        <label>접두어</label>
+        <input class="inp" id="prefix-input" type="text" placeholder="예: 검은가시" style="width:100%">
+      </div>
+      <div class="fg" style="margin:0">
+        <label>등급</label>
+        <select class="sel" id="prefix-grade">
+          <option value="myth">🔴 신화</option>
+          <option value="legend">🟡 전설</option>
+          <option value="hero">🟣 영웅</option>
+          <option value="rare">🔵 희귀</option>
+        </select>
+      </div>
+      <button class="btn btn-p" onclick="addPrefix()" style="margin-bottom:0;padding:10px 14px">추가</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('prefix')">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 스크린샷 붙여넣기 모달 -->
 <div class="modal-ov" id="modal-screenshot">
   <div class="modal" style="max-width:540px">
@@ -140,7 +170,7 @@
 <!-- 일괄입력 모달 -->
 <div class="modal-ov" id="modal-bulk">
   <div class="modal" style="max-width:520px">
-    <div class="modal-title">📋 일괄 입력</div>
+    <div class="modal-title">📋 일괄 입력 (텍스트 자동분류)</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7">
       한 줄에 하나씩 입력하세요.<br>
       형식: <span style="color:var(--accent)">아이템명 수량</span> (수량 없으면 1개로 등록)<br>
@@ -196,6 +226,7 @@ window.addEventListener('load', () => {
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-s btn-sm" onclick="openModal('bulk')">📋 일괄입력</button>
         <button class="btn btn-s btn-sm" onclick="openModal('screenshot')">📸 스크린샷</button>
+        <button class="btn btn-s btn-sm" onclick="openModal('prefix')">🏷️ 접두어 설정</button>
         <button class="btn btn-d btn-sm" onclick="openModal('deduct')">➖ 일괄차감</button>
         <button class="btn btn-p btn-sm" onclick="openAddItem()">+ 추가</button>
         <button class="btn btn-d btn-sm" onclick="clearAll()">🗑️ 전체삭제</button>
@@ -210,6 +241,7 @@ window.addEventListener('load', () => {
 
   warehouseItems = getData('warehouseItems', []);
   loadSeriesMap();
+  loadPrefixMap();
   renderWarehouse();
 });
 
@@ -571,6 +603,70 @@ function renderScreenshotResult(items) {
   document.getElementById('screenshot-save-btn').disabled = false;
 }
 
+// ===== 접두어 자동분류 =====
+let prefixMap = {}; // {접두어: 등급}
+
+function loadPrefixMap() {
+  const saved = getData('prefixMap', {});
+  prefixMap = saved;
+  fbListen('prefixMap', d => {
+    if(d) { prefixMap = d; setData('prefixMap', d); }
+    renderPrefixList();
+  });
+}
+
+function renderPrefixList() {
+  const el = document.getElementById('prefix-list');
+  if(!el) return;
+  const GRADE_LABELS = {myth:'🔴 신화', legend:'🟡 전설', hero:'🟣 영웅', rare:'🔵 희귀'};
+  const entries = Object.entries(prefixMap);
+  if(entries.length === 0) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:8px 0">등록된 접두어 없음</div>';
+    return;
+  }
+  // 등급별 그룹
+  const groups = {myth:[], legend:[], hero:[], rare:[]};
+  entries.forEach(([prefix, grade]) => { if(groups[grade]) groups[grade].push(prefix); });
+  el.innerHTML = Object.entries(groups).map(([grade, list]) => {
+    if(list.length === 0) return '';
+    return `<div style="margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">${GRADE_LABELS[grade]}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${list.map(p => `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px">
+          ${p} <button onclick="removePrefix('${p}')" style="background:none;border:none;color:var(--red);cursor:pointer;padding:0;font-size:12px">✕</button>
+        </span>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addPrefix() {
+  const prefix = document.getElementById('prefix-input').value.trim();
+  const grade = document.getElementById('prefix-grade').value;
+  if(!prefix) { showToast('접두어를 입력하세요','error'); return; }
+  prefixMap[prefix] = grade;
+  setData('prefixMap', prefixMap);
+  fbSet('prefixMap', prefixMap);
+  document.getElementById('prefix-input').value = '';
+  renderPrefixList();
+  showToast(`${prefix} 추가됨`, 'success');
+}
+
+function removePrefix(prefix) {
+  delete prefixMap[prefix];
+  setData('prefixMap', prefixMap);
+  fbSet('prefixMap', prefixMap);
+  renderPrefixList();
+}
+
+function findGradeByPrefix(name) {
+  // 접두어맵에서 먼저 확인
+  for(const [prefix, grade] of Object.entries(prefixMap)) {
+    if(name.startsWith(prefix)) return grade;
+  }
+  return null;
+}
+
 function loadSeriesMap() {
   const saved = getData('seriesMap', {});
   seriesMap = saved;
@@ -588,10 +684,13 @@ function findGradeByName(name) {
   // 1. 완전 일치 아이템이 창고에 있으면 그 등급
   const exact = warehouseItems.find(x => x.name === name);
   if(exact) return exact.grade;
-  // 2. 시리즈맵에서 찾기
+  // 2. 접두어맵 확인
+  const byPrefix = findGradeByPrefix(name);
+  if(byPrefix) return byPrefix;
+  // 3. 시리즈맵에서 찾기
   const series = getSeriesKey(name);
   if(seriesMap[series]) return seriesMap[series];
-  // 3. 시리즈맵 앞단어만으로도 확인
+  // 4. 시리즈맵 앞단어만으로도 확인
   const firstWord = name.split(' ')[0];
   const match = Object.keys(seriesMap).find(k => k.startsWith(firstWord));
   if(match) return seriesMap[match];
