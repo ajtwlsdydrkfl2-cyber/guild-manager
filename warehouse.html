@@ -444,7 +444,8 @@ async function analyzeScreenshotWithClaude(b64data, mediaType) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-OCR-SECRET': 'KwpERSGocLgCkWuvFESowSohnDDjnKap'
+        'X-OCR-SECRET': 'KwpERSGocLgCkWuvFESowSohnDDjnKap',
+        'X-NCP-APIGW-API-KEY': 'kev0g5CpiLJ3NtPpFI1AbJwXT1m39r0h3NJJv0x1'
       },
       body: JSON.stringify({
         version: 'V2',
