@@ -439,57 +439,100 @@ function processScreenshotFile(file) {
 
 async function analyzeScreenshotWithClaude(b64data, mediaType) {
   try {
-    const GRADE_COLORS = {
-      '신화': 'myth', '빨강': 'myth', '빨간': 'myth', 'red': 'myth',
-      '전설': 'legend', '주황': 'legend', '노랑': 'legend', 'orange': 'legend',
-      '영웅': 'hero', '보라': 'hero', '자주': 'hero', 'purple': 'hero',
-      '희귀': 'rare', '파랑': 'rare', '파란': 'rare', 'blue': 'rare'
-    };
-
-    const prompt = `이 이미지는 게임 아이템 목록 스크린샷입니다.
-텍스트 색상을 보고 각 아이템의 이름과 등급을 분류해주세요.
-색상 기준: 빨강계열=myth, 주황/노랑계열=legend, 보라계열=hero, 파랑계열=rare
-
-JSON만 반환하세요 (다른 텍스트 없이):
-{"items":[{"name":"아이템명","grade":"myth"}]}`;
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    // CLOVA OCR로 텍스트 추출
+    const ocrRes = await fetch('https://qdshhhjoa3.apigw.ntruss.com/custom/v1/53879/2c7b0ce84b1a02e5ad722c9029d9d779e00bf789282706fee124aa5b6317fc2d/general', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'anthropic-dangerous-direct-browser-access': 'true',
+        'X-OCR-SECRET': 'KwpERSGocLgCkWuvFESowSohnDDjnKap'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            {type: 'image', source: {type: 'base64', media_type: mediaType, data: b64data}},
-            {type: 'text', text: prompt}
-          ]
+        version: 'V2',
+        requestId: 'ocr_' + Date.now(),
+        timestamp: Date.now(),
+        lang: 'ko',
+        images: [{
+          format: mediaType.split('/')[1]||'jpg',
+          name: 'screenshot',
+          data: b64data
         }]
       })
     });
 
-    const data = await res.json();
-    console.log('API response:', JSON.stringify(data));
-    const text = data.content?.[0]?.text || '';
-    if(!text) throw new Error('응답이 비어있습니다');
-    const clean = text.replace(/```json|```/g,'').trim();
-    // JSON 부분만 추출
-    const jsonMatch = clean.match(/\{[\s\S]*\}/);
-    if(!jsonMatch) throw new Error('JSON을 찾을 수 없습니다: ' + clean.slice(0,100));
-    const parsed = JSON.parse(jsonMatch[0]);
+    const ocrData = await ocrRes.json();
+    console.log('OCR response:', JSON.stringify(ocrData));
+
+    // 텍스트 추출
+    const texts = [];
+    (ocrData.images||[]).forEach(img => {
+      (img.fields||[]).forEach(field => {
+        const t = field.inferText?.trim();
+        if(t && t.length > 1) texts.push(t);
+      });
+    });
+
+    if(texts.length === 0) throw new Error('텍스트를 인식하지 못했습니다');
+
+    // 인식된 텍스트를 아이템명으로 파싱
+    // 인접한 텍스트들을 합쳐서 아이템명 구성
+    const itemNames = mergeOcrTexts(texts);
+    
+    // 창고 기존 아이템 + 시리즈맵으로 등급 분류
+    const items = itemNames.map(name => ({
+      name,
+      grade: findGradeByName(name)
+    }));
 
     document.getElementById('screenshot-analyzing').style.display = 'none';
-    renderScreenshotResult(parsed.items || []);
+    renderScreenshotResult(items);
   } catch(e) {
     document.getElementById('screenshot-analyzing').style.display = 'none';
     document.getElementById('screenshot-preview').innerHTML =
       `<div style="color:var(--red);font-size:12px">❌ 분석 실패: ${e.message}<br>다시 시도해주세요.</div>`;
     console.error(e);
   }
+}
+
+function mergeOcrTexts(texts) {
+  // OCR 결과 텍스트를 아이템명으로 합치기
+  // 짧은 단어들을 합쳐서 아이템명 구성
+  const items = [];
+  let current = '';
+  
+  texts.forEach(t => {
+    // 숫자만이거나 너무 짧으면 스킵
+    if(/^\d+$/.test(t) || t.length < 2) return;
+    // 아이템 접두사 패턴 감지 (새 아이템 시작)
+    const isNewItem = warehouseItems.some(x => x.name.startsWith(t)) ||
+                      Object.keys(seriesMap).some(k => k.startsWith(t)) ||
+                      t.includes('의') || t.includes('의') ||
+                      items.length === 0;
+    
+    if(current && (isNewItem || t.length > 4)) {
+      if(current.length > 2) items.push(current.trim());
+      current = t;
+    } else {
+      current = current ? current + ' ' + t : t;
+    }
+  });
+  if(current.trim().length > 2) items.push(current.trim());
+  
+  // 창고 아이템과 매핑
+  const matched = [];
+  items.forEach(name => {
+    // 정확히 일치
+    const exact = warehouseItems.find(x => x.name === name);
+    if(exact) { matched.push(name); return; }
+    // 부분 일치
+    const partial = warehouseItems.find(x => x.name.includes(name) || name.includes(x.name));
+    if(partial) { matched.push(partial.name); return; }
+    // 시리즈맵 확인
+    if(findGradeByName(name)) { matched.push(name); return; }
+    // 미분류
+    matched.push(name);
+  });
+  
+  return [...new Set(matched)]; // 중복 제거
 }
 
 function renderScreenshotResult(items) {
