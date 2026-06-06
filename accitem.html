@@ -96,7 +96,7 @@ window.addEventListener('load', () => {
       `<button class="btn btn-s btn-sm" onclick="resetAllAcc()" style="color:var(--red);border-color:var(--red)">🔄 초기화</button>`;
   }
 
-  fbListen('members', data => {
+  fbGet('members', data => {
     if(data) {
       members = Array.isArray(data) ? data : Object.values(data);
       const sess2 = getSession();
@@ -111,6 +111,18 @@ window.addEventListener('load', () => {
   fbListen('accData', data => {
     accData = data || {};
     render();
+  });
+
+  fbListen('members', data => {
+    if(data) {
+      members = Array.isArray(data) ? data : Object.values(data);
+      const sess2 = getSession();
+      if(sess2) {
+        const me = members.find(m => m.nick === sess2.serverName);
+        myMemberId = me ? me.id : null;
+      }
+      render();
+    }
   });
 });
 

@@ -385,8 +385,8 @@ function renderSidebar(activePage) {
     <div style="font-size:10px;color:var(--text2);padding:8px 14px 4px;letter-spacing:.08em;font-weight:700">── 아이템</div>
     ${pages.filter(p=>['warehouse','items','accitem','calc'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
 
-    <!-- 게임 강조 -->
-    ${pages.filter(p=>p.id==='game').map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}" style="margin:8px 8px 4px;border-radius:8px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.4);color:#a855f7;font-weight:700">${p.icon} ${p.label}</a>`).join('')}
+    <!-- 게임 -->
+    ${pages.filter(p=>p.id==='game').map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
 
     <!-- 기타 (접기/펼치기) -->
     <div onclick="toggleExtraMenu(this)" style="font-size:10px;color:var(--text2);padding:8px 14px 4px;letter-spacing:.08em;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
