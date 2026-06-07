@@ -13,9 +13,10 @@
 .map-img-wrap { overflow:hidden; border-radius:14px; }
 .map-img-wrap img { width:100%; border-radius:14px; display:block; background:#000; }
 @media(max-width:768px){ #mapImgWrap > div { width:100% !important; } }
-/* 21:9 모니터 - 이미지 박스 양쪽 줄이기 */
+/* 21:9 모니터 - 왼쪽 카드 패딩 최소화, 이미지 박스 크기 키우기 */
 @media(min-width:2400px){
-  #mapImgWrap > div { width:25% !important; }
+  #mapImgWrap > div { width:70% !important; }
+  .patrol-layout > .card:first-child { padding:6px !important; }
 }
 .patrol-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:14px; }
 .zone-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; }
