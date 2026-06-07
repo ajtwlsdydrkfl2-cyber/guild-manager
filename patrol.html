@@ -45,12 +45,6 @@
     </div>
 
     <div class="content" style="padding:14px">
-      <!-- 모드 선택 -->
-      <div class="patrol-mode-tabs">
-        <button id="btnServer" class="active" onclick="setMode('server')">🏠 서버 순찰</button>
-        <button id="btnWorld" onclick="setMode('world')">🌍 월드 순찰</button>
-      </div>
-
       <!-- 맵 선택 -->
       <div class="map-select-wrap">
         <label style="font-size:13px;font-weight:700">맵 선택</label>
@@ -206,7 +200,11 @@ function loadMap() {
   // 맵 이미지
   const imgUrl = `${MAP_BASE}${currentMap.id}.png`;
   document.getElementById('mapImgWrap').innerHTML =
-    `<div class="map-img-wrap"><img src="${imgUrl}" alt="${currentMap.name}" onerror="this.parentElement.innerHTML='<div class=no-img>🗺️ 맵 이미지 준비중</div>'"></div>`;
+    `<div style="display:flex;gap:0;margin-bottom:6px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+      <button id="btnServer" onclick="setMode('server')" style="flex:1;padding:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;background:${mode==='server'?'rgba(240,165,0,.2)':'var(--bg3)'};color:${mode==='server'?'var(--accent)':'var(--text2)'}">🏠 서버</button>
+      <button id="btnWorld" onclick="setMode('world')" style="flex:1;padding:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;background:${mode==='world'?'rgba(240,165,0,.2)':'var(--bg3)'};color:${mode==='world'?'var(--accent)':'var(--text2)'}">🌍 월드</button>
+    </div>
+    <div class="map-img-wrap"><img src="${imgUrl}" alt="${currentMap.name}" onerror="this.parentElement.innerHTML='<div class=no-img>🗺️ 맵 이미지 준비중</div>'"></div>`;
 
   // 구역 버튼 먼저 렌더 (Firebase 없어도)
   renderZones({});
