@@ -208,7 +208,11 @@ function loadMap() {
   document.getElementById('mapImgWrap').innerHTML =
     `<div class="map-img-wrap"><img src="${imgUrl}" alt="${currentMap.name}" onerror="this.parentElement.innerHTML='<div class=no-img>🗺️ 맵 이미지 준비중</div>'"></div>`;
 
+  // 구역 버튼 먼저 렌더 (Firebase 없어도)
+  renderZones({});
+
   // Firebase 구독
+  if(!firebaseDB) return;
   if(activeRef) activeRef.off();
   if(logsRef) logsRef.off();
 
