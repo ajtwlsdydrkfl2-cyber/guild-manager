@@ -128,11 +128,13 @@ window.addEventListener('load', () => {
   sess = requireLogin(); if(!sess) return;
   initFirebase(); watchServerName(); renderSidebar('patrol');
 
-  fbGet('members', data => {
-    if(data) members = Array.isArray(data) ? data : Object.values(data);
-    updateNickWrap();
-    if(!myNick) openModal('nick');
-    else renderMapSelect();
+  fbListen('members', data => {
+    if(data) {
+      members = Array.isArray(data) ? data : Object.values(data);
+      updateNickWrap();
+      if(!myNick) changeNick();
+      else renderMapSelect();
+    }
   });
 });
 
