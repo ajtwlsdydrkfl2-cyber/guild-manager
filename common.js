@@ -380,7 +380,7 @@ function renderSidebar(activePage) {
     <nav class="sb-nav">
       <!-- 길드 관리 -->
     <div style="font-size:10px;color:var(--text2);padding:8px 14px 4px;letter-spacing:.08em;font-weight:700">── 길드 관리</div>
-    ${pages.filter(p=>['dashboard','boss'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id||activePage==='boss'&&p.id==='boss'?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
+    ${pages.filter(p=>['dashboard','boss','patrol'].includes(p.id)).map(p=>`<a href="${p.href}" class="sb-item${activePage===p.id||activePage==='boss'&&p.id==='boss'?' active':''}" onclick="${p.oc}">${p.icon} ${p.label}</a>`).join('')}
 
     <!-- 아이템 -->
     <div style="font-size:10px;color:var(--text2);padding:8px 14px 4px;letter-spacing:.08em;font-weight:700">── 아이템</div>
