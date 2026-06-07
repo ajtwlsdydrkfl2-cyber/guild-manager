@@ -145,8 +145,24 @@ function updateNickWrap() {
 function changeNick() {
   const sel = document.getElementById('nickSel');
   sel.innerHTML = '<option value="">선택하세요</option>';
-  members.forEach(m => sel.innerHTML += `<option value="${m.nick}" ${m.nick===myNick?'selected':''}>${m.nick}</option>`);
-  openModal('nick');
+  
+  if(members.length > 0) {
+    members.sort((a,b)=>a.nick.localeCompare(b.nick,'ko')).forEach(m => {
+      sel.innerHTML += `<option value="${m.nick}" ${m.nick===myNick?'selected':''}>${m.nick}</option>`;
+    });
+    openModal('nick');
+  } else {
+    // 멤버 없으면 Firebase에서 다시 로드
+    fbGet('members', data => {
+      if(data) {
+        members = Array.isArray(data) ? data : Object.values(data);
+        members.sort((a,b)=>a.nick.localeCompare(b.nick,'ko')).forEach(m => {
+          sel.innerHTML += `<option value="${m.nick}" ${m.nick===myNick?'selected':''}>${m.nick}</option>`;
+        });
+      }
+      openModal('nick');
+    });
+  }
 }
 
 function confirmNick() {
