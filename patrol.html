@@ -139,7 +139,7 @@ window.addEventListener('load', () => {
 function updateNickWrap() {
   document.getElementById('nickWrap').innerHTML = myNick
     ? `<span class="nick-badge" onclick="changeNick()" style="cursor:pointer">👤 ${myNick} ✎</span>`
-    : `<button class="btn btn-s btn-sm" onclick="openModal('nick')">닉네임 선택</button>`;
+    : `<button class="btn btn-s btn-sm" onclick="changeNick()">닉네임 선택</button>`;
 }
 
 function changeNick() {
