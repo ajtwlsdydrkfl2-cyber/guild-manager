@@ -10,8 +10,14 @@
 .patrol-mode-tabs button { flex:1; padding:10px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); font-family:'Noto Sans KR',sans-serif; }
 .patrol-mode-tabs button.active { background:rgba(240,165,0,.15); border-color:var(--accent); color:var(--accent); }
 .map-select-wrap { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+.map-img-wrap { overflow:hidden; border-radius:14px; }
 .map-img-wrap img { width:100%; border-radius:14px; display:block; background:#000; }
 @media(max-width:768px){ #mapImgWrap > div { width:100% !important; } }
+/* 21:9 모니터 - 양쪽 크롭 */
+@media(min-width:2400px){
+  .map-img-wrap { width:100%; }
+  .map-img-wrap img { width:133%; margin-left:-16.5%; object-fit:cover; border-radius:0; }
+}
 .patrol-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:14px; }
 .zone-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; }
 .zone-title { font-size:14px; font-weight:700; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
@@ -119,6 +125,7 @@ let activeRef = null;
 let logsRef = null;
 let members = [];
 let sess = null;
+let patrolTimers = {}; // {zone: {timerId, endTime}}
 
 window.addEventListener('load', () => {
   sess = requireLogin(); if(!sess) return;
@@ -246,28 +253,50 @@ async function startPatrol(zone) {
   const displayName = mode==='world' ? `${sess.serverId}서버` : myNick;
 
   const logRef = firebaseDB.ref(`${base}/logs`).push();
+  const endTime = Date.now() + 3 * 60 * 1000; // 3분 후
   const data = {
     zone, nick: myNick, displayName,
     serverId: sess.serverId,
     time: t.time, date: t.date, ts: t.ts,
-    logKey: logRef.key, done: false
+    logKey: logRef.key, done: false, endTime
   };
   await logRef.set(data);
   await firebaseDB.ref(`${base}/active/${zone}`).set(data);
-  showToast(`${zone}구역 순찰 시작!`, 'success');
+  showToast(`${zone}구역 순찰 시작! 3분 후 자동완료`, 'success');
+
+  // 3분 타이머
+  if(patrolTimers[zone]) clearTimeout(patrolTimers[zone].timerId);
+  const timerId = setTimeout(() => donePatrol(zone, true), 3 * 60 * 1000);
+  patrolTimers[zone] = {timerId, endTime};
+
+  // 1초마다 카운트다운 업데이트
+  const countId = setInterval(() => {
+    const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+    const el = document.getElementById(`timer_${zone}`);
+    if(el) el.textContent = remaining > 0 ? `⏱ ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}` : '완료';
+    if(remaining <= 0) clearInterval(countId);
+  }, 1000);
+  patrolTimers[zone].countId = countId;
 }
 
-async function donePatrol(zone) {
+async function donePatrol(zone, auto=false) {
   const base = getPatrolPath();
   const snap = await firebaseDB.ref(`${base}/active/${zone}`).once('value');
   const active = snap.val();
-  if(!active) { showToast('순찰 시작 기록이 없어요','error'); return; }
+  if(!active) return;
+
+  // 타이머 정리
+  if(patrolTimers[zone]) {
+    clearTimeout(patrolTimers[zone].timerId);
+    clearInterval(patrolTimers[zone].countId);
+    delete patrolTimers[zone];
+  }
 
   const t = kstNow();
   const update = {done:true, doneTime:t.time, doneDts:t.ts, doneBy:myNick};
   await firebaseDB.ref(`${base}/logs/${active.logKey}`).update(update);
   await firebaseDB.ref(`${base}/active/${zone}`).remove();
-  showToast(`${zone}구역 순찰 완료!`, 'success');
+  showToast(`${zone}구역 순찰 완료!${auto?' (자동)':''}`, 'success');
 }
 
 function renderZones(activeData) {
@@ -276,15 +305,32 @@ function renderZones(activeData) {
     const a = activeData[z];
     const isActive = !!a;
     const displayName = a ? a.displayName : '';
+    // 타이머 복원 (다른 기기에서 시작한 경우)
+    if(isActive && a.endTime && a.nick === myNick && !patrolTimers[z]) {
+      const remaining = a.endTime - Date.now();
+      if(remaining > 0) {
+        const timerId = setTimeout(() => donePatrol(z, true), remaining);
+        const countId = setInterval(() => {
+          const rem = Math.max(0, Math.ceil((a.endTime - Date.now()) / 1000));
+          const el = document.getElementById(`timer_${z}`);
+          if(el) el.textContent = rem > 0 ? `⏱ ${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}` : '완료';
+          if(rem <= 0) clearInterval(countId);
+        }, 1000);
+        patrolTimers[z] = {timerId, countId, endTime: a.endTime};
+      }
+    }
+    const rem = isActive && a.endTime ? Math.max(0, Math.ceil((a.endTime - Date.now()) / 1000)) : 0;
+    const timerTxt = isActive && a.endTime ? `⏱ ${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}` : '';
     return `<div class="zone-card ${isActive?'zone-active':''}">
       <div class="zone-title">
         <span>${z} 구역</span>
         <span style="font-size:11px;color:${isActive?'var(--accent)':'var(--text2)'}">${isActive?'🟡 순찰중':'⚪ 대기'}</span>
       </div>
       <div class="zone-status">${isActive?`${displayName} · ${a.time} 시작`:''}</div>
+      ${isActive?`<div id="timer_${z}" style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px">${timerTxt}</div>`:''}
       <div class="zone-btns">
         <button class="btn-start" onclick="startPatrol('${z}')" ${isActive?'disabled style="opacity:.4;cursor:not-allowed"':''}>▶ 순찰 시작</button>
-        <button class="btn-done" onclick="donePatrol('${z}')" ${!isActive?'disabled':''}>✅ 순찰 완료</button>
+        <button class="btn-done" onclick="donePatrol('${z}')" ${!isActive?'disabled':''}>✅ 완료</button>
       </div>
     </div>`;
   }).join('');
