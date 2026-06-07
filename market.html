@@ -204,6 +204,34 @@ function renderMarket() {
         </div>
       </div>
 
+      <!-- 수수료 요약 -->
+      ${(()=>{
+        const fees = {myth:60, legend:15, hero:4, rare:1};
+        const icons = {myth:'🔴', legend:'🟡', hero:'🟣', rare:'🔵'};
+        const labels = {myth:'신화', legend:'전설', hero:'영웅', rare:'희귀'};
+        const colors = {myth:'#ef4444', legend:'#eab308', hero:'#a855f7', rare:'#3b82f6'};
+        const counts = {myth:0, legend:0, hero:0, rare:0};
+        salesHistory.forEach(s=>{ if(counts[s.grade]!==undefined) counts[s.grade]++; });
+        let totalFee=0;
+        const rows = ['myth','legend','hero','rare'].map(g=>{
+          const cnt=counts[g], fee=cnt*fees[g];
+          totalFee+=fee;
+          if(cnt===0) return '';
+          return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+            <span style="color:${colors[g]};font-weight:600;font-size:12px">${icons[g]} ${labels[g]}</span>
+            <span style="font-size:12px">${cnt}개 × ${fees[g]}다이아 = <b style="color:${colors[g]}">${fee.toLocaleString()}다이아</b></span>
+          </div>`;
+        }).join('');
+        return `<div style="border-top:2px solid var(--border);margin-top:4px;padding:10px 0">
+          <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px">💎 등급별 수수료</div>
+          ${rows||''}
+          <div style="display:flex;justify-content:space-between;padding:6px 0;margin-top:4px;border-top:1px solid var(--border)">
+            <span style="font-weight:700;font-size:13px">총 수수료</span>
+            <span style="font-weight:900;color:var(--accent);font-size:14px">${totalFee.toLocaleString()} 다이아</span>
+          </div>
+        </div>`;
+      })()}
+
       ${admin?`
       <div style="padding:14px 16px;display:flex;justify-content:flex-end">
         <button class="btn btn-p" onclick="completeDist()" style="background:var(--green);font-size:14px;padding:10px 24px">
@@ -299,5 +327,6 @@ document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e
 function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
 function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
 </script>
+<div id="market-summary" style="max-width:800px;margin:0 auto;padding:0 16px 16px"></div>
 </body>
 </html>
