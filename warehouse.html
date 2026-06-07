@@ -109,17 +109,10 @@
       아이템 목록 스크린샷을 올리면 AI가 색상을 읽어서 자동 분류해요!<br>
       <span style="color:var(--accent)">🔴신화 🟡전설 🟣영웅 🔵희귀</span>
     </div>
-    <div id="screenshot-upload-area" 
-      style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;margin-bottom:10px;outline:none"
-      onclick="document.getElementById('screenshot-file').click()"
-      ondragover="event.preventDefault()"
-      ondrop="handleScreenshotDrop(event)"
-      tabindex="0">
-      <div style="font-size:36px;margin-bottom:8px">📸</div>
-      <div style="font-size:13px;color:var(--text2)">클릭 / 드래그 / <b style="color:var(--accent)">Ctrl+V</b> 로 붙여넣기</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px">PNG, JPG 지원</div>
-    </div>
-    <input type="file" id="screenshot-file" accept="image/*" style="display:none" onchange="handleScreenshotFile(event)">
+    <textarea id="screenshot-text" class="inp" rows="8"
+      placeholder="아이템 이름을 한 줄씩 입력하세요&#10;예:&#10;검은가시 반지&#10;일리아나 로브&#10;엘 세라 귀걸이"
+      style="width:100%;resize:vertical;font-size:13px;line-height:1.8"
+      oninput="previewTextItems()"></textarea>
     <img id="screenshot-img-preview" style="display:none;max-width:100%;border-radius:8px;margin-bottom:10px">
     <div id="screenshot-analyzing" style="display:none;text-align:center;padding:16px;color:var(--accent)">
       <div style="font-size:24px;margin-bottom:8px">🤖</div>
@@ -128,7 +121,7 @@
     <div id="screenshot-preview" style="margin-top:10px;max-height:280px;overflow-y:auto"></div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeScreenshotModal()">취소</button>
-      <button class="btn btn-p" id="screenshot-save-btn" onclick="saveScreenshotItems()" disabled>✅ 분류 등록</button>
+      <button class="btn btn-p" id="screenshot-save-btn" onclick="saveTextItems()" disabled>✅ 분류 등록</button>
     </div>
   </div>
 </div>
@@ -413,6 +406,58 @@ function saveBulk() {
 // ===== 스크린샷 자동 분류 (Claude API) =====
 let seriesMap = {};
 let previewItems = [];
+
+function switchScreenshotTab(tab) {
+  document.getElementById('screenshot-img-tab').style.display = tab==='img' ? 'block' : 'none';
+  document.getElementById('screenshot-txt-tab').style.display = tab==='txt' ? 'block' : 'none';
+  document.getElementById('tab-img').className = tab==='img' ? 'btn btn-p btn-sm' : 'btn btn-s btn-sm';
+  document.getElementById('tab-txt').className = tab==='txt' ? 'btn btn-p btn-sm' : 'btn btn-s btn-sm';
+}
+
+function previewTextItems() {
+  const text = document.getElementById('screenshot-text').value.trim();
+  if(!text) { document.getElementById('screenshot-preview').innerHTML=''; document.getElementById('screenshot-save-btn').disabled=true; return; }
+
+  const lines = text.split(/[
+,]/).map(l=>l.trim()).filter(l=>l.length>1);
+  previewItems = [];
+  const GRADE_LABELS = {myth:'🔴 신화', legend:'🟡 전설', hero:'🟣 영웅', rare:'🔵 희귀'};
+
+  lines.forEach(name => {
+    if(/^\d+$/.test(name)) return;
+    const grade = findGradeByName(name);
+    previewItems.push({name, grade, series: getSeriesKey(name)});
+  });
+
+  if(previewItems.length === 0) { document.getElementById('screenshot-preview').innerHTML='<div style="color:var(--text2)">인식된 아이템 없음</div>'; return; }
+
+  const known = previewItems.filter(x=>x.grade);
+  const unknown = previewItems.filter(x=>!x.grade);
+  let html = '';
+  if(known.length>0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">✅ 자동 분류 (${known.length}개)</div>`;
+    html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">';
+    known.forEach(item => { html += `<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:var(--bg3);border:1px solid var(--border)">${GRADE_LABELS[item.grade]} ${item.name}</span>`; });
+    html += '</div>';
+  }
+  if(unknown.length>0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px">❓ 미분류 - 등급 선택 (${unknown.length}개)</div>`;
+    unknown.forEach((item,i) => {
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;background:var(--bg3);padding:6px 10px;border-radius:8px">
+        <span style="font-size:12px;flex:1">${item.name}</span>
+        <select class="sel" id="unclass_${i}" onchange="updatePreviewGrade(${i},this.value)" style="font-size:11px;padding:3px 6px">
+          <option value="">등급선택</option>
+          <option value="myth">🔴 신화</option>
+          <option value="legend">🟡 전설</option>
+          <option value="hero">🟣 영웅</option>
+          <option value="rare">🔵 희귀</option>
+        </select>
+      </div>`;
+    });
+  }
+  document.getElementById('screenshot-preview').innerHTML = html;
+  document.getElementById('screenshot-save-btn').disabled = false;
+}
 
 // Ctrl+V 클립보드 이미지 붙여넣기
 document.addEventListener('paste', function(e) {
@@ -764,6 +809,32 @@ function updatePreviewGrade(unknownIdx, grade) {
       cnt++;
     }
   });
+}
+
+function saveTextItems() {
+  if(previewItems.length === 0) return;
+  let added = 0;
+  const newSeriesMap = {...seriesMap};
+  previewItems.forEach(item => {
+    const finalGrade = item.grade || item._manualGrade;
+    if(!finalGrade) return;
+    const existing = warehouseItems.find(x => x.name === item.name && x.grade === finalGrade);
+    if(existing) { existing.qty++; }
+    else { warehouseItems.push({id: Date.now()+Math.random(), name:item.name, grade:finalGrade, qty:1, memo:''}); }
+    added++;
+    if(!item.grade && item._manualGrade) newSeriesMap[item.series] = item._manualGrade;
+  });
+  if(JSON.stringify(newSeriesMap) !== JSON.stringify(seriesMap)) {
+    seriesMap = newSeriesMap;
+    setData('seriesMap', seriesMap);
+    fbSet('seriesMap', seriesMap);
+  }
+  saveWarehouse();
+  closeModal('screenshot');
+  document.getElementById('screenshot-text').value = '';
+  document.getElementById('screenshot-preview').innerHTML = '';
+  previewItems = [];
+  showToast(`${added}개 아이템 분류 완료!`, 'success');
 }
 
 function saveScreenshotItems() {
