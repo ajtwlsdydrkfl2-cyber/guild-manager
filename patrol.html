@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>순찰 — 길드 매니저</title>
+<style id="commonStyle"></style>
+<style>
+.patrol-mode-tabs { display:flex; gap:8px; margin-bottom:14px; }
+.patrol-mode-tabs button { flex:1; padding:10px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); font-family:'Noto Sans KR',sans-serif; }
+.patrol-mode-tabs button.active { background:rgba(240,165,0,.15); border-color:var(--accent); color:var(--accent); }
+.map-select-wrap { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+.map-img-wrap { position:relative; border-radius:12px; overflow:hidden; margin-bottom:14px; }
+.map-img-wrap img { width:100%; display:block; border-radius:12px; }
+.patrol-layout { display:grid; grid-template-columns:1fr 320px; gap:14px; }
+.zone-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; }
+.zone-title { font-size:14px; font-weight:700; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+.zone-status { font-size:12px; color:var(--text2); margin-bottom:8px; min-height:18px; }
+.zone-active { border-color:var(--accent); background:rgba(240,165,0,.06); }
+.zone-btns { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.btn-start { background:rgba(240,165,0,.2); border:1px solid var(--accent); color:var(--accent); padding:9px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif; }
+.btn-start:hover { background:rgba(240,165,0,.35); }
+.btn-done { background:rgba(34,197,94,.15); border:1px solid var(--green); color:var(--green); padding:9px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif; }
+.btn-done:hover { background:rgba(34,197,94,.3); }
+.btn-done:disabled { opacity:.4; cursor:not-allowed; }
+.log-item { padding:8px 12px; border-radius:8px; background:var(--bg3); border-left:3px solid var(--accent); margin-bottom:6px; font-size:12px; }
+.log-done { border-left-color:var(--green); }
+.log-main { font-weight:600; }
+.log-sub { color:var(--text2); margin-top:2px; }
+.nick-badge { display:inline-block; background:rgba(240,165,0,.15); border:1px solid var(--accent); color:var(--accent); border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }
+.no-img { width:100%; height:200px; background:var(--bg3); border-radius:12px; display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:13px; margin-bottom:14px; }
+@media(max-width:700px){ .patrol-layout{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+  <div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="ham" onclick="toggleSb()">☰</button>
+        <div class="topbar-title">🗺️ 순찰</div>
+      </div>
+      <div id="nickWrap"></div>
+    </div>
+
+    <div class="content" style="padding:14px">
+      <!-- 모드 선택 -->
+      <div class="patrol-mode-tabs">
+        <button id="btnServer" class="active" onclick="setMode('server')">🏠 서버 순찰</button>
+        <button id="btnWorld" onclick="setMode('world')">🌍 월드 순찰</button>
+      </div>
+
+      <!-- 맵 선택 -->
+      <div class="map-select-wrap">
+        <label style="font-size:13px;font-weight:700">맵 선택</label>
+        <select class="sel" id="mapSel" onchange="onMapChange()" style="flex:1;max-width:300px"></select>
+        <span id="modeInfo" style="font-size:11px;color:var(--text2)"></span>
+      </div>
+
+      <!-- 맵 이미지 -->
+      <div id="mapImgWrap"></div>
+
+      <!-- 메인 레이아웃 -->
+      <div class="patrol-layout">
+        <!-- 구역 -->
+        <div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">📍 구역별 순찰 현황</div>
+          <div id="zoneWrap"></div>
+        </div>
+        <!-- 로그 -->
+        <div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 최근 기록</div>
+          <div id="logWrap" style="max-height:500px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 닉네임 선택 모달 -->
+<div class="modal-ov" id="modal-nick">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-title">👤 닉네임 선택</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">순찰 기록에 표시될 닉네임을 선택하세요</div>
+    <select class="sel" id="nickSel" style="width:100%;margin-bottom:10px">
+      <option value="">선택하세요</option>
+    </select>
+    <div class="modal-footer">
+      <button class="btn btn-p" onclick="confirmNick()">확인</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="common.js"></script>
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+
+// ===== 맵 설정 =====
+const WORLD_MAPS = [
+  {id:'fallen_wilderness', name:'몰락한 황야', zones:['A','B','C','D']},
+  {id:'volcanka', name:'볼칸카', zones:['A','B','C']},
+  {id:'end_land', name:'종언대지', zones:['A','B','C','D']},
+  {id:'ancient_chasm', name:'태고의 심연1층', zones:['A','B']},
+];
+const SERVER_MAPS = [
+  {id:'barbas', name:'바르바스', zones:['A','B','C','D']},
+  {id:'red_reeds', name:'붉은억새', zones:['A','B','C','D']},
+  {id:'shadow_forest', name:'그림자의숲', zones:['A','B','C']},
+  {id:'frozen_land', name:'얼어붙은 대지', zones:['A','B','C']},
+  {id:'lady_lake', name:'여인의 호수', zones:['A','B','C']},
+];
+const MAP_BASE = 'https://raw.githubusercontent.com/ajtwlsdydrkfl2-cyber/guild-manager/main/maps/';
+
+let myNick = localStorage.getItem('patrol_nick') || '';
+let mode = 'server';
+let currentMap = SERVER_MAPS[0];
+let activeRef = null;
+let logsRef = null;
+let members = [];
+let sess = null;
+
+window.addEventListener('load', () => {
+  sess = requireLogin(); if(!sess) return;
+  initFirebase(); watchServerName(); renderSidebar('patrol');
+
+  fbGet('members', data => {
+    if(data) members = Array.isArray(data) ? data : Object.values(data);
+    updateNickWrap();
+    if(!myNick) openModal('nick');
+    else renderMapSelect();
+  });
+});
+
+function updateNickWrap() {
+  document.getElementById('nickWrap').innerHTML = myNick
+    ? `<span class="nick-badge" onclick="changeNick()" style="cursor:pointer">👤 ${myNick} ✎</span>`
+    : `<button class="btn btn-s btn-sm" onclick="openModal('nick')">닉네임 선택</button>`;
+}
+
+function changeNick() {
+  const sel = document.getElementById('nickSel');
+  sel.innerHTML = '<option value="">선택하세요</option>';
+  members.forEach(m => sel.innerHTML += `<option value="${m.nick}" ${m.nick===myNick?'selected':''}>${m.nick}</option>`);
+  openModal('nick');
+}
+
+function confirmNick() {
+  const v = document.getElementById('nickSel').value;
+  if(!v) { showToast('닉네임을 선택하세요','error'); return; }
+  myNick = v;
+  localStorage.setItem('patrol_nick', v);
+  closeModal('nick');
+  updateNickWrap();
+  renderMapSelect();
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btnServer').className = m==='server' ? 'active' : '';
+  document.getElementById('btnWorld').className = m==='world' ? 'active' : '';
+  document.getElementById('modeInfo').textContent = m==='world' ? '월드: 1~10서버 전체 공유 (닉네임 숨김)' : '서버: 같은 서버끼리만 공유';
+  currentMap = (m==='world' ? WORLD_MAPS : SERVER_MAPS)[0];
+  renderMapSelect();
+}
+
+function renderMapSelect() {
+  const maps = mode==='world' ? WORLD_MAPS : SERVER_MAPS;
+  const sel = document.getElementById('mapSel');
+  sel.innerHTML = maps.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  sel.value = currentMap.id;
+  document.getElementById('modeInfo').textContent = mode==='world' ? '월드: 1~10서버 전체 공유 (닉네임 숨김)' : '서버: 같은 서버끼리만 공유';
+  loadMap();
+}
+
+function onMapChange() {
+  const maps = mode==='world' ? WORLD_MAPS : SERVER_MAPS;
+  currentMap = maps.find(m=>m.id===document.getElementById('mapSel').value) || maps[0];
+  loadMap();
+}
+
+function loadMap() {
+  // 맵 이미지
+  const imgUrl = `${MAP_BASE}${currentMap.id}.png`;
+  document.getElementById('mapImgWrap').innerHTML =
+    `<div class="map-img-wrap"><img src="${imgUrl}" alt="${currentMap.name}" onerror="this.parentElement.innerHTML='<div class=no-img>🗺️ 맵 이미지 준비중</div>'"></div>`;
+
+  // Firebase 구독
+  if(activeRef) activeRef.off();
+  if(logsRef) logsRef.off();
+
+  const base = getPatrolPath();
+  activeRef = firebaseDB.ref(`${base}/active`);
+  logsRef = firebaseDB.ref(`${base}/logs`).limitToLast(50);
+
+  activeRef.on('value', snap => renderZones(snap.val()||{}));
+  logsRef.on('value', snap => renderLogs(snap.val()||{}));
+}
+
+function getPatrolPath() {
+  if(mode==='world') return `patrol/world/${currentMap.id}`;
+  return `patrol/server${sess.serverId}/${currentMap.id}`;
+}
+
+function kstNow() {
+  const kst = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  return {
+    time: `${String(kst.getHours()).padStart(2,'0')}:${String(kst.getMinutes()).padStart(2,'0')}`,
+    date: `${kst.getFullYear()}-${String(kst.getMonth()+1).padStart(2,'0')}-${String(kst.getDate()).padStart(2,'0')}`,
+    ts: Date.now()
+  };
+}
+
+async function startPatrol(zone) {
+  if(!myNick) { openModal('nick'); return; }
+  const t = kstNow();
+  const base = getPatrolPath();
+  const displayName = mode==='world' ? `${sess.serverId}서버` : myNick;
+
+  const logRef = firebaseDB.ref(`${base}/logs`).push();
+  const data = {
+    zone, nick: myNick, displayName,
+    serverId: sess.serverId,
+    time: t.time, date: t.date, ts: t.ts,
+    logKey: logRef.key, done: false
+  };
+  await logRef.set(data);
+  await firebaseDB.ref(`${base}/active/${zone}`).set(data);
+  showToast(`${zone}구역 순찰 시작!`, 'success');
+}
+
+async function donePatrol(zone) {
+  const base = getPatrolPath();
+  const snap = await firebaseDB.ref(`${base}/active/${zone}`).once('value');
+  const active = snap.val();
+  if(!active) { showToast('순찰 시작 기록이 없어요','error'); return; }
+
+  const t = kstNow();
+  const update = {done:true, doneTime:t.time, doneDts:t.ts, doneBy:myNick};
+  await firebaseDB.ref(`${base}/logs/${active.logKey}`).update(update);
+  await firebaseDB.ref(`${base}/active/${zone}`).remove();
+  showToast(`${zone}구역 순찰 완료!`, 'success');
+}
+
+function renderZones(activeData) {
+  const wrap = document.getElementById('zoneWrap');
+  wrap.innerHTML = currentMap.zones.map(z => {
+    const a = activeData[z];
+    const isActive = !!a;
+    const displayName = a ? a.displayName : '';
+    return `<div class="zone-card ${isActive?'zone-active':''}">
+      <div class="zone-title">
+        <span>${z} 구역</span>
+        <span style="font-size:11px;color:${isActive?'var(--accent)':'var(--text2)'}">${isActive?'🟡 순찰중':'⚪ 대기'}</span>
+      </div>
+      <div class="zone-status">${isActive?`${displayName} · ${a.time} 시작`:''}</div>
+      <div class="zone-btns">
+        <button class="btn-start" onclick="startPatrol('${z}')" ${isActive?'disabled style="opacity:.4;cursor:not-allowed"':''}>▶ 순찰 시작</button>
+        <button class="btn-done" onclick="donePatrol('${z}')" ${!isActive?'disabled':''}>✅ 순찰 완료</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderLogs(logsData) {
+  const wrap = document.getElementById('logWrap');
+  const arr = Object.values(logsData).sort((a,b)=>b.ts-a.ts).slice(0,30);
+  if(!arr.length) { wrap.innerHTML='<div style="color:var(--text2);font-size:12px">기록 없음</div>'; return; }
+  wrap.innerHTML = arr.map(log => {
+    const name = log.displayName || log.nick;
+    let main = `${log.time} ${name} · ${log.zone}구역 순찰 시작`;
+    if(log.done) main += ` → ✅ ${log.doneTime} 완료`;
+    return `<div class="log-item ${log.done?'log-done':''}">
+      <div class="log-main">${main}</div>
+      <div class="log-sub">${currentMap.name} · ${log.date}</div>
+    </div>`;
+  }).join('');
+}
+
+function openModal(n){const el=document.getElementById('modal-'+n);if(el)el.classList.add('open');}
+function closeModal(n){const el=document.getElementById('modal-'+n);if(el)el.classList.remove('open');}
+function toggleSb(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('open');}
+function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open');}
+</script>
+</body>
+</html>

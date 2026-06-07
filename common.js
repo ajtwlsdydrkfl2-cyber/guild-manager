@@ -280,7 +280,7 @@ const DEFAULT_GRADES = [
 // ===== 사이드바 렌더 =====
 function renderSidebarItems(pages, activePage) {
   const groups = [
-    {label:'길드 관리', ids:['dashboard','boss']},
+    {label:'길드 관리', ids:['dashboard','boss','patrol']},
     {label:'아이템', ids:['warehouse','items','accitem','calc']},
     {label:null, ids:['game']}, // 특별 강조
     {label:'기타', ids:['guide','admin'], collapsible:true},
@@ -348,6 +348,7 @@ function renderSidebar(activePage) {
   const pages = [
     {id:'dashboard', label:'대시보드', icon:'🏠', href:'dashboard.html', oc:''},
     {id:'boss', label:'보스 포인트', icon:'⚔️', href:'#', oc:onDash?"switchTab('boss',document.querySelector('.tab:nth-child(2)'));closeSb();return false;":"location.href='dashboard.html?tab=boss';return false;"},
+    {id:'patrol', label:'순찰', icon:'🗺️', href:'patrol.html', oc:''},
     {id:'warehouse', label:'길드 창고', icon:'🏦', href:'warehouse.html', oc:''},
     {id:'market', label:'거래소 내역', icon:'💰', href:'market.html', oc:''},
     {id:'items', label:'아이템 분배', icon:'📦', href:'items.html', oc:''},
