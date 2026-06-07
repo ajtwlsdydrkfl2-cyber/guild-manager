@@ -313,6 +313,41 @@ function renderWarehouse() {
 
   html += '</div>';
   document.getElementById('content').innerHTML = html;
+
+  // 수수료 요약
+  const fees = {myth:60, legend:15, hero:4, rare:1};
+  const icons = {myth:'🔴', legend:'🟡', hero:'🟣', rare:'🔵'};
+  const labels = {myth:'신화', legend:'전설', hero:'영웅', rare:'희귀'};
+  const colors = {myth:'#ef4444', legend:'#eab308', hero:'#a855f7', rare:'#3b82f6'};
+  const counts = {myth:0, legend:0, hero:0, rare:0};
+
+  // qty 포함해서 등급별 총 수량 계산
+  warehouseItems.forEach(item => {
+    const g = item.grade || 'myth';
+    if(counts[g] !== undefined) counts[g] += (item.qty || 1);
+  });
+
+  let totalFee = 0;
+  const rows = ['myth','legend','hero','rare'].map(g => {
+    const cnt = counts[g];
+    const fee = cnt * fees[g];
+    totalFee += fee;
+    if(cnt === 0) return '';
+    return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span style="color:${colors[g]};font-weight:600;font-size:12px">${icons[g]} ${labels[g]}</span>
+      <span style="font-size:12px">${cnt}개 × ${fees[g]}다이아 = <b style="color:${colors[g]}">${fee.toLocaleString()}다이아</b></span>
+    </div>`;
+  }).join('');
+
+  const sumEl = document.getElementById('warehouse-summary');
+  if(sumEl) sumEl.innerHTML = `<div class="card" style="margin-top:12px">
+    <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">💎 창고 수수료 요약</div>
+    ${rows || '<div style="color:var(--text2);font-size:12px">등록된 아이템 없음</div>'}
+    <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid var(--border)">
+      <span style="font-weight:700">총 수수료</span>
+      <span style="font-weight:900;color:var(--accent);font-size:15px">${totalFee.toLocaleString()} 다이아</span>
+    </div>
+  </div>`;
 }
 
 function openAddItem() {
