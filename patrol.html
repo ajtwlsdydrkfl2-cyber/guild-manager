@@ -10,8 +10,8 @@
 .patrol-mode-tabs button { flex:1; padding:10px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); font-family:'Noto Sans KR',sans-serif; }
 .patrol-mode-tabs button.active { background:rgba(240,165,0,.15); border-color:var(--accent); color:var(--accent); }
 .map-select-wrap { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
-.map-img-wrap { position:relative; border-radius:12px; overflow:hidden; margin-bottom:14px; width:100%; max-width:600px; height:350px; background:#000; }
-.map-img-wrap img { width:100%; height:100%; object-fit:contain; display:block; border-radius:12px; }
+.map-img-wrap { border-radius:12px; overflow:hidden; margin-bottom:0; }
+.map-img-wrap img { width:100%; border-radius:12px; display:block; }
 .patrol-layout { display:grid; grid-template-columns:1fr 320px; gap:14px; }
 .zone-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; }
 .zone-title { font-size:14px; font-weight:700; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
@@ -59,20 +59,18 @@
         <span id="modeInfo" style="font-size:11px;color:var(--text2)"></span>
       </div>
 
-      <!-- 맵 이미지 -->
-      <div id="mapImgWrap"></div>
-
       <!-- 메인 레이아웃 -->
       <div class="patrol-layout">
-        <!-- 구역 -->
+        <!-- 맵 이미지 + 구역 -->
+        <div>
+          <div id="mapImgWrap" style="margin-bottom:14px"></div>
+        </div>
+        <!-- 순찰 현황 + 로그 -->
         <div>
           <div style="font-size:13px;font-weight:700;margin-bottom:10px">📍 구역별 순찰 현황</div>
           <div id="zoneWrap"></div>
-        </div>
-        <!-- 로그 -->
-        <div>
-          <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 최근 기록</div>
-          <div id="logWrap" style="max-height:500px;overflow-y:auto"></div>
+          <div style="font-size:13px;font-weight:700;margin:14px 0 10px">📋 최근 기록</div>
+          <div id="logWrap" style="max-height:350px;overflow-y:auto"></div>
         </div>
       </div>
     </div>
