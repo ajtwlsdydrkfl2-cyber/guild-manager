@@ -418,8 +418,7 @@ function previewTextItems() {
   const text = document.getElementById('screenshot-text').value.trim();
   if(!text) { document.getElementById('screenshot-preview').innerHTML=''; document.getElementById('screenshot-save-btn').disabled=true; return; }
 
-  const lines = text.split(/[
-,]/).map(l=>l.trim()).filter(l=>l.length>1);
+  const lines = text.split(/[\n,]/).map(l=>l.trim()).filter(l=>l.length>1);
   previewItems = [];
   const GRADE_LABELS = {myth:'🔴 신화', legend:'🟡 전설', hero:'🟣 영웅', rare:'🔵 희귀'};
 
