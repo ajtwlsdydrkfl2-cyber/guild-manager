@@ -10,8 +10,8 @@
 .patrol-mode-tabs button { flex:1; padding:10px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--bg3); color:var(--text2); font-family:'Noto Sans KR',sans-serif; }
 .patrol-mode-tabs button.active { background:rgba(240,165,0,.15); border-color:var(--accent); color:var(--accent); }
 .map-select-wrap { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
-.map-img-wrap img { width:35%; border-radius:14px; display:block; background:#000; margin:0 auto; }
-@media(max-width:768px){ .map-img-wrap img { width:100%; } }
+.map-img-wrap img { width:100%; border-radius:14px; display:block; background:#000; }
+@media(max-width:768px){ #mapImgWrap > div { width:100% !important; } }
 .patrol-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:14px; }
 .zone-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; }
 .zone-title { font-size:14px; font-weight:700; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
@@ -201,11 +201,13 @@ function loadMap() {
   // 맵 이미지
   const imgUrl = `${MAP_BASE}${currentMap.id}.png`;
   document.getElementById('mapImgWrap').innerHTML =
-    `<div style="display:flex;gap:0;margin-bottom:6px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
-      <button id="btnServer" onclick="setMode('server')" style="flex:1;padding:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;background:${mode==='server'?'rgba(240,165,0,.2)':'var(--bg3)'};color:${mode==='server'?'var(--accent)':'var(--text2)'}">🏠 서버</button>
-      <button id="btnWorld" onclick="setMode('world')" style="flex:1;padding:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;background:${mode==='world'?'rgba(240,165,0,.2)':'var(--bg3)'};color:${mode==='world'?'var(--accent)':'var(--text2)'}">🌍 월드</button>
-    </div>
-    <div class="map-img-wrap"><img src="${imgUrl}" alt="${currentMap.name}" onerror="this.parentElement.innerHTML='<div class=no-img>🗺️ 맵 이미지 준비중</div>'"></div>`;
+    `<div style="width:35%;margin:0 auto">
+      <div style="display:flex;gap:0;margin-bottom:6px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+        <button id="btnServer" onclick="setMode('server')" style="flex:1;padding:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;background:${mode==='server'?'rgba(240,165,0,.2)':'var(--bg3)'};color:${mode==='server'?'var(--accent)':'var(--text2)'}">🏠 서버</button>
+        <button id="btnWorld" onclick="setMode('world')" style="flex:1;padding:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;background:${mode==='world'?'rgba(240,165,0,.2)':'var(--bg3)'};color:${mode==='world'?'var(--accent)':'var(--text2)'}">🌍 월드</button>
+      </div>
+      <div class="map-img-wrap"><img src="${imgUrl}" alt="${currentMap.name}" style="width:100%" onerror="this.parentElement.innerHTML='<div class=no-img>🗺️ 맵 이미지 준비중</div>'"></div>
+    </div>`;
 
   // 구역 버튼 먼저 렌더 (Firebase 없어도)
   renderZones({});
