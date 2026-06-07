@@ -13,10 +13,9 @@
 .map-img-wrap { overflow:hidden; border-radius:14px; }
 .map-img-wrap img { width:100%; border-radius:14px; display:block; background:#000; }
 @media(max-width:768px){ #mapImgWrap > div { width:100% !important; } }
-/* 21:9 모니터 - 양쪽 크롭 */
+/* 21:9 모니터 - 이미지 박스 양쪽 줄이기 */
 @media(min-width:2400px){
-  .map-img-wrap { width:100%; }
-  .map-img-wrap img { width:133%; margin-left:-16.5%; object-fit:cover; border-radius:0; }
+  #mapImgWrap > div { width:25% !important; }
 }
 .patrol-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:14px; }
 .zone-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; }
