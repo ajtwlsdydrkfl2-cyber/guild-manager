@@ -496,9 +496,9 @@ async function sendGameResultsToDiscord(preloadedData) {
     const today = kst.toISOString().slice(0,10);
     const GAME_NAMES = {
       roulette:'🎡 룰렛', slot:'🎰 슬롯머신', timer:'⏱ 10초챌린지',
-      card:'🃏 카드뽑기', memory:'🧩 짝맞추기', mole:'🔨 두더지잡기', rsp:'🪨 가위바위보'
+      card:'🃏 카드뽑기', memory:'🧩 짝맞추기', mole:'🔨 두더지잡기',
+      numcard:'🎴 숫자카드', guess:'🎯 숫자맞추기'
     };
-    const RSP_ROUNDS_NAMES = ['16강','8강','4강','결승'];
 
     let lines = [`**🎮 ${today} 고물상길드 게임 결과!**`, '───────────────────'];
 
@@ -507,14 +507,14 @@ async function sendGameResultsToDiscord(preloadedData) {
       if(key==='card') {
         const winner = Object.entries(d.cardPlays||{}).find(([,v])=>v===true||v?.win===true);
         lines.push(`${name}: ${winner?`**${winner[0]}** 🎉 당첨!`:'당첨자 없음'}`);
-      } else if(key==='rsp') {
-        const t = d.tournament;
-        if(t?.champion) lines.push(`${name}: **${t.champion}** 🏆 우승!`);
-        else if(t) lines.push(`${name}: ${RSP_ROUNDS_NAMES[t.round-1]||''} 진행중`);
-        else lines.push(`${name}: 미진행`);
       } else if(key==='timer') {
         const sorted = Object.entries(d.scores||{}).sort((a,b)=>a[1]-b[1]);
         lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (${sorted[0][1].toFixed(2)}초)`:'참여자 없음'}`);
+      } else if(key==='guess') {
+        // 숫자맞추기 - diff 낮은 순
+        const sorted = Object.entries(d.scores||{})
+          .sort((a,b)=>(a[1].diff||999)-(b[1].diff||999));
+        lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (입력:${sorted[0][1].input}, 차이:${sorted[0][1].diff})`:'참여자 없음'}`);
       } else {
         const sorted = Object.entries(d.scores||{}).sort((a,b)=>b[1]-a[1]);
         lines.push(`${name}: ${sorted.length>0?`**${sorted[0][0]}** (${sorted[0][1].toLocaleString()}점)`:'참여자 없음'}`);
@@ -524,13 +524,28 @@ async function sendGameResultsToDiscord(preloadedData) {
     lines.push('───────────────────');
     lines.push('*고물상길드 자동 발송*');
 
-    const res = await fetch(GUILD_DISCORD_WEBHOOK, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({content:lines.join('\n')})
-    });
-    if(res.ok) console.log('Discord 자동 전송 완료!');
-    else console.error('Discord 전송 실패:', res.status);
+    // 2000자 초과시 분할 전송
+    const fullMsg = lines.join('\n');
+    const sendMsg = async (msg) => {
+      await fetch(GUILD_DISCORD_WEBHOOK, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({content:msg})
+      });
+    };
+    if(fullMsg.length <= 1900) {
+      await sendMsg(fullMsg);
+    } else {
+      // 헤더 + 게임1~4 / 게임5~8 나눠서 전송
+      const header = lines[0] + '\n' + lines[1];
+      const footer = lines[lines.length-2] + '\n' + lines[lines.length-1];
+      const gameLines = lines.slice(2, lines.length-2);
+      const mid = Math.ceil(gameLines.length/2);
+      await sendMsg(header + '\n' + gameLines.slice(0,mid).join('\n'));
+      await new Promise(r=>setTimeout(r,500));
+      await sendMsg(gameLines.slice(mid).join('\n') + '\n' + footer);
+    }
+    console.log('Discord 자동 전송 완료!');
   } catch(e) {
     console.error('Discord 전송 오류:', e);
   }
