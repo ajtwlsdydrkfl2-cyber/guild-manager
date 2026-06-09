@@ -297,7 +297,7 @@ function saveSell() {
 
   // 창고 차감
   if(item.qty > 1) item.qty -= 1;
-  else warehouseItems = warehouseItems.filter(x=>x.id!==itemId);
+  else warehouseItems = warehouseItems.filter(x=>String(x.id)!==String(itemId));
 
   setData('salesHistory', salesHistory); fbSet('salesHistory', salesHistory);
   setData('warehouseItems', warehouseItems); fbSet('warehouseItems', warehouseItems);
