@@ -283,7 +283,7 @@ function updateCalc() {
 }
 
 function saveSell() {
-  const itemId = parseInt(document.getElementById('sell-item').value);
+  const itemId = document.getElementById('sell-item').value;
   const price = parseInt(document.getElementById('sell-price').value);
   if(!itemId) { showToast('아이템을 선택해주세요','error'); return; }
   if(!price||price<=0) { showToast('판매 금액을 입력해주세요','error'); return; }
